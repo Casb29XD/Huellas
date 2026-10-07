@@ -37,12 +37,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.tooling.preview.Preview
 import com.desarrolloMovielexample.huella.core.components.HuellaDropdownField
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextField
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import kotlinx.coroutines.delay
 
@@ -147,5 +149,16 @@ fun EditProfileScreen(
                 minHeight = 90.dp,
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditProfileScreenPreview() {
+    HuellaTheme {
+        EditProfileScreen(
+            onBack = {},
+            onSaved = {},
+        )
     }
 }

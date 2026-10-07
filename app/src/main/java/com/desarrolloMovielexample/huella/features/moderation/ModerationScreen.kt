@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,6 +37,7 @@ import com.desarrolloMovielexample.huella.core.components.ModerationStatusTag
 import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.PostStatus
 
@@ -196,5 +198,16 @@ private fun ModerationListItem(item: ModerationItem, onClick: () -> Unit) {
                 Text(item.publication.author.name, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ModerationScreenPreview() {
+    HuellaTheme {
+        ModerationScreen(
+            onBack = {},
+            onOpenItem = {},
+        )
     }
 }

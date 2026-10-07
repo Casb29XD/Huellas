@@ -44,7 +44,9 @@ import com.desarrolloMovielexample.huella.core.components.LevelBadge
 import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
+import androidx.compose.ui.tooling.preview.Preview
 
 private const val CONTACT_CONVERSATION_ID = "c1" // ponytail: only conversation in FakeRepository.
 
@@ -172,5 +174,18 @@ fun PublicProfileScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PublicProfileScreenPreview() {
+    HuellaTheme {
+        PublicProfileScreen(
+            userId = "u1",
+            onBack = {},
+            onOpenPublication = {},
+            onContact = {},
+        )
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,6 +33,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTextField
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 
 /** Not in the design: same visual language as "Iniciar sesión" (logo header, 52dp fields, green pill). */
 @Composable
@@ -111,5 +113,13 @@ fun ForgotPasswordScreen(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ForgotPasswordScreenPreview() {
+    HuellaTheme {
+        ForgotPasswordScreen(onBack = {})
     }
 }

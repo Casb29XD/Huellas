@@ -54,6 +54,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +72,7 @@ import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.components.StripedPlaceholder
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
@@ -514,3 +516,15 @@ private fun Modifier.outlinedWhite(): Modifier = this
     .clip(HuellaShapes.Card)
     .background(Color.White)
     .border(1.dp, HuellaColors.Divider, HuellaShapes.Card)
+
+@Preview(showBackground = true)
+@Composable
+fun ModerationDetailScreenPreview() {
+    HuellaTheme {
+        ModerationDetailScreen(
+            itemId = "mod_1",
+            onBack = {},
+            onDone = {},
+        )
+    }
+}

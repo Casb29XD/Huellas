@@ -58,6 +58,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,6 +77,7 @@ import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.repository.randomPhotoUrl
@@ -457,6 +459,17 @@ private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostV
             },
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 19.5.sp),
             color = Color(0xFF5C3D00),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CreatePostScreenPreview() {
+    HuellaTheme {
+        CreatePostScreen(
+            onBack = {},
+            onPublished = {},
         )
     }
 }

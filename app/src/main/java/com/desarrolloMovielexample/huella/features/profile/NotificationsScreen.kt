@@ -42,8 +42,10 @@ import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextButton
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
 import com.desarrolloMovielexample.huella.domain.model.NotificationType
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun NotificationsScreen(
@@ -189,4 +191,18 @@ private fun Modifier.confetti(): Modifier = drawBehind {
     piece(250f, 10f, 6f, 10f, 45f, Color(0xFFE0A526), fromBottom = true)
     piece(120f, 8f, 7f, 7f, 0f, Color(0xFFD64545), fromBottom = true, round = true)
     piece(330f, 22f, 6f, 10f, -15f, Color(0xFFF4A261), fromBottom = true)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NotificationsScreenPreview() {
+    HuellaTheme {
+        NotificationsScreen(
+            onBack = {},
+            onOpenRequests = {},
+            onOpenChat = {},
+            onOpenPublication = {},
+            onOpenLevels = {},
+        )
+    }
 }

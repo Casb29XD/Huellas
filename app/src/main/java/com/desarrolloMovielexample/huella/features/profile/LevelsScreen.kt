@@ -39,9 +39,11 @@ import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.Manrope
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Level
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun LevelsScreen(
@@ -148,5 +150,13 @@ private fun LevelCard(level: Level, current: Boolean) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LevelsScreenPreview() {
+    HuellaTheme {
+        LevelsScreen(onBack = {})
     }
 }

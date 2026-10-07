@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.desarrolloMovielexample.huella.R
@@ -27,6 +28,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTextButton
 import com.desarrolloMovielexample.huella.core.components.ModerationStatusTag
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.PostStatus
 
 @Composable
@@ -74,5 +76,16 @@ fun PostSentScreen(
             )
             ModerationStatusTag(PostStatus.EN_REVISION)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PostSentScreenPreview() {
+    HuellaTheme {
+        PostSentScreen(
+            onViewMyPublications = {},
+            onGoHome = {},
+        )
     }
 }

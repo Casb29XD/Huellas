@@ -52,7 +52,9 @@ import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaTabs
 import com.desarrolloMovielexample.huella.core.components.ModerationStatusTag
 import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
+import androidx.compose.ui.tooling.preview.Preview
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.Manrope
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.PointsEntry
@@ -307,6 +309,20 @@ private fun ModerationEntry(onClick: () -> Unit, modifier: Modifier = Modifier) 
             modifier = Modifier
                 .background(HuellaColors.SurfaceMuted, RoundedCornerShape(6.dp))
                 .padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreview() {
+    HuellaTheme {
+        ProfileScreen(
+            onEditProfile = {},
+            onSettings = {},
+            onOpenLevels = {},
+            onOpenPublication = {},
+            onOpenModeration = {},
         )
     }
 }

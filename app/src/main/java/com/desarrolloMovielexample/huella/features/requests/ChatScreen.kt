@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
@@ -59,6 +60,7 @@ import com.desarrolloMovielexample.huella.core.components.Avatar
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.ChatMessage
 
 @Composable
@@ -237,5 +239,16 @@ private fun MessageBubble(message: ChatMessage) {
             )
             Text(message.time, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = HuellaColors.TextTertiary)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ChatScreenPreview() {
+    HuellaTheme {
+        ChatScreen(
+            conversationId = "c1",
+            onBack = {},
+        )
     }
 }
