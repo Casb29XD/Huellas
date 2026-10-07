@@ -178,8 +178,13 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             }
             composable(Routes.PostSent.route) {
                 PostSentScreen(
-                    onViewMyPublications = { navController.navigateToTab(Routes.Profile.route) },
-                    onGoHome = { navController.navigateToTab(Routes.Home.route) },
+                    // Pop PostSent first so navigateToTab doesn't save it into Home's tab state
+                    // (restoreState would bring it back on the next "Inicio").
+                    onViewMyPublications = {
+                        navController.popBackStack()
+                        navController.navigateToTab(Routes.Profile.route)
+                    },
+                    onGoHome = { navController.popBackStack(Routes.Home.route, inclusive = false) },
                 )
             }
 
