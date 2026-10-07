@@ -59,6 +59,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +83,7 @@ import com.desarrolloMovielexample.huella.core.components.sexIcon
 import com.desarrolloMovielexample.huella.core.components.sizeIcon
 import com.desarrolloMovielexample.huella.core.components.speciesIcon
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
 import com.desarrolloMovielexample.huella.domain.model.Category
@@ -742,5 +744,18 @@ private fun CallDialog(name: String, phone: String, onDismiss: () -> Unit, onCal
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PublicationDetailScreenPreview() {
+    HuellaTheme {
+        PublicationDetailScreen(
+            publicationId = "pub_1",
+            onBack = {},
+            onOpenAuthor = {},
+            onOpenMap = {},
+        )
     }
 }

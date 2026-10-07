@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,6 +80,7 @@ import com.desarrolloMovielexample.huella.core.components.SecondaryButton
 import com.desarrolloMovielexample.huella.core.components.SegmentedSelector
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Category
 
@@ -102,20 +104,6 @@ fun HomeScreen(
     Scaffold(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
-        floatingActionButton = {
-            if (!state.isLoading && state.publications.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = onCreatePost,
-                    shape = RoundedCornerShape(16.dp),
-                    containerColor = HuellaColors.Secondary,
-                    contentColor = HuellaColors.TextPrimary,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
-                    modifier = Modifier.size(56.dp),
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = "Crear publicación", modifier = Modifier.size(28.dp))
-                }
-            }
-        },
     ) { padding ->
         Box(
             Modifier
@@ -576,4 +564,18 @@ internal fun SheetTitle(title: String, onClose: () -> Unit) {
 @Composable
 internal fun SheetLabel(text: String) {
     Text(text, style = MaterialTheme.typography.labelMedium, color = HuellaColors.TextBody)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    HuellaTheme {
+        HomeScreen(
+            onOpenPublication = {},
+            onOpenMap = {},
+            onOpenNotifications = {},
+            onOpenProfile = {},
+            onCreatePost = {},
+        )
+    }
 }

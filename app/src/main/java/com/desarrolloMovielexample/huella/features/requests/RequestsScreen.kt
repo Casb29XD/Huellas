@@ -52,10 +52,12 @@ import com.desarrolloMovielexample.huella.core.components.RequestStatusTag
 import com.desarrolloMovielexample.huella.core.components.SecondaryButton
 import com.desarrolloMovielexample.huella.core.components.StripedPlaceholder
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
 import com.desarrolloMovielexample.huella.domain.model.Applicant
 import com.desarrolloMovielexample.huella.domain.model.RequestStatus
+import androidx.compose.ui.tooling.preview.Preview
 
 private const val CHAT_ID = "c1" // ponytail: FakeRepository has a single conversation; map applicant -> conversation when a backend exists.
 
@@ -375,5 +377,18 @@ private fun RequestAcceptedDialog(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun RequestsScreenPreview() {
+    HuellaTheme {
+        RequestsScreen(
+            initialTab = 0,
+            onOpenPublication = {},
+            onOpenChat = {},
+            onExplore = {},
+        )
     }
 }

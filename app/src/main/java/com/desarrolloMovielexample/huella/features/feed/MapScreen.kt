@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
@@ -55,6 +56,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Publication
@@ -268,5 +270,16 @@ internal fun MapBackground(modifier: Modifier = Modifier) {
                 y += minor; i++
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MapScreenPreview() {
+    HuellaTheme {
+        MapScreen(
+            onBack = {},
+            onOpenPublication = {},
+        )
     }
 }
