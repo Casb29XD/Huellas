@@ -53,16 +53,16 @@ class RegisterViewModel(private val repo: HuellaRepository = FakeRepository) : V
     fun register() {
         val s = _uiState.value
         if (s.isLoading) return
-        val nameError = if (s.name.isBlank()) "Ingresa tu nombre" else null
+        val nameError = if (s.name.isBlank()) "El nombre es obligatorio" else null
         val emailError = when {
-            s.email.isBlank() -> "Ingresa tu correo"
-            !isValidEmail(s.email) -> "Ingresa un correo válido"
+            s.email.isBlank() -> "El correo electrónico es obligatorio"
+            !isValidEmail(s.email) -> "Ingresa un correo electrónico válido (ej. usuario@correo.com)"
             else -> null
         }
         val cityError = if (s.city.isBlank()) "Selecciona tu ciudad" else null
-        val passwordError = if (!isValidPassword(s.password)) "Mínimo $MIN_PASSWORD_LENGTH caracteres" else null
+        val passwordError = if (!isValidPassword(s.password)) "La contraseña debe tener al menos $MIN_PASSWORD_LENGTH caracteres" else null
         val confirmError = when {
-            s.confirmPassword.isEmpty() -> "Repite tu contraseña"
+            s.confirmPassword.isEmpty() -> "Debes confirmar tu contraseña"
             s.confirmPassword != s.password -> "Las contraseñas no coinciden"
             else -> null
         }
@@ -74,7 +74,7 @@ class RegisterViewModel(private val repo: HuellaRepository = FakeRepository) : V
             )
         }
         when {
-            !fieldsOk -> { _messages.trySend("Revisa los campos marcados"); return }
+            !fieldsOk -> { _messages.trySend("Revisa los datos ingresados en el formulario"); return }
             !s.acceptedTerms -> { _messages.trySend("Debes aceptar los términos y condiciones"); return }
         }
         _uiState.update { it.copy(isLoading = true) }

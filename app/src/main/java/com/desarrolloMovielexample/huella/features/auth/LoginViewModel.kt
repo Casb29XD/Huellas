@@ -40,14 +40,14 @@ class LoginViewModel(private val repo: HuellaRepository = FakeRepository) : View
         val s = _uiState.value
         if (s.isLoading) return
         val emailError = when {
-            s.email.isBlank() -> "Ingresa tu correo"
-            !isValidEmail(s.email) -> "Ingresa un correo válido"
+            s.email.isBlank() -> "El correo electrónico es obligatorio"
+            !isValidEmail(s.email) -> "Ingresa un correo electrónico válido (ej. usuario@correo.com)"
             else -> null
         }
-        val passwordError = if (s.password.isEmpty()) "Ingresa tu contraseña" else null
+        val passwordError = if (s.password.isEmpty()) "La contraseña es obligatoria" else null
         if (emailError != null || passwordError != null) {
             _uiState.update { it.copy(emailError = emailError, passwordError = passwordError) }
-            _messages.trySend("Revisa los campos marcados")
+            _messages.trySend("Revisa los datos ingresados en el formulario")
             return
         }
         _uiState.update { it.copy(isLoading = true) }
