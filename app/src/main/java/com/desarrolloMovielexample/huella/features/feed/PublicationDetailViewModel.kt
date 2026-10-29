@@ -3,7 +3,7 @@ package com.desarrolloMovielexample.huella.features.feed
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.Publication
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -32,7 +32,7 @@ data class PublicationDetailUiState(
 
 class PublicationDetailViewModel(
     private val publicationId: String,
-    private val repo: HuellaRepository = FakeRepository,
+    private val repo: HuellaRepository = SupabaseRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PublicationDetailUiState(publication = repo.getPublication(publicationId)))

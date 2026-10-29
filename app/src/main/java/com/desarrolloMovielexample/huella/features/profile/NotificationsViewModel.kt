@@ -3,7 +3,7 @@ package com.desarrolloMovielexample.huella.features.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +21,7 @@ data class NotificationsUiState(
     val hasUnread: Boolean get() = groups.any { (_, items) -> items.any { !it.read } }
 }
 
-class NotificationsViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class NotificationsViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private fun toState(list: List<AppNotification>) = NotificationsUiState(list.groupBy { it.group }.toList())
 
     val uiState: StateFlow<NotificationsUiState> = repo.notifications

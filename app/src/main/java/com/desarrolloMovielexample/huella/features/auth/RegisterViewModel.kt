@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.core.utils.MIN_PASSWORD_LENGTH
 import com.desarrolloMovielexample.huella.core.utils.isValidEmail
 import com.desarrolloMovielexample.huella.core.utils.isValidPassword
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -35,7 +35,7 @@ data class RegisterUiState(
     val registered: Boolean = false,
 )
 
-class RegisterViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class RegisterViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(RegisterUiState(cities = repo.cities, city = repo.cities.firstOrNull().orEmpty()))
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.core.utils.isValidEmail
 import com.desarrolloMovielexample.huella.domain.model.Level
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +32,7 @@ data class EditProfileUiState(
     val saved: Boolean = false,
 )
 
-class EditProfileViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class EditProfileViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(
         repo.currentUser.value.let { u ->
             EditProfileUiState(

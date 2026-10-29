@@ -1,7 +1,7 @@
 package com.desarrolloMovielexample.huella.features.profile
 
 import androidx.lifecycle.ViewModel
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.update
 // ponytail: toggles live in memory only; persist them (DataStore) when notifications are real.
 data class SettingsUiState(val pushEnabled: Boolean = true, val emailDigestEnabled: Boolean = false)
 
-class SettingsViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 

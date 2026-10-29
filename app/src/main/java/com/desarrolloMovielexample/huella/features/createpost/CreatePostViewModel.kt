@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.PublicationDraft
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,7 +52,7 @@ data class CreatePostUiState(
     val stepTitle: String get() = listOf("Categoría y fotos", "Datos de la mascota", "Descripción y ubicación")[step - 1]
 }
 
-class CreatePostViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(CreatePostUiState())
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
 

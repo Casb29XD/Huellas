@@ -15,8 +15,8 @@ import com.desarrolloMovielexample.huella.domain.model.User
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Single data contract of the app. Implemented in-memory by [FakeRepository] for this phase.
- * All suspend functions simulate network latency and return [Result] with Spanish error messages.
+ * Data contract shared by the Supabase implementation and the in-memory preview repository.
+ * Suspend functions return [Result] with Spanish error messages.
  */
 interface HuellaRepository {
     // Auth / user
@@ -45,6 +45,7 @@ interface HuellaRepository {
 
     // Chat
     fun getConversation(id: String): Conversation?
+    suspend fun openConversation(contactUserId: String, publicationId: String? = null): Result<String>
     fun messages(conversationId: String): StateFlow<List<ChatMessage>>
     suspend fun sendMessage(conversationId: String, text: String): Result<Unit>
 

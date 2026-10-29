@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.ModerationStats
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +29,7 @@ data class ModerationUiState(
     val visibleItems: List<ModerationItem> get() = if (selectedTab == 0) pending else reported
 }
 
-class ModerationViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class ModerationViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val selectedTab = MutableStateFlow(0)
 
     val uiState: StateFlow<ModerationUiState> =
@@ -65,7 +65,7 @@ data class ModerationDetailUiState(
     val busy: Boolean get() = isApproving || isRejecting || finished
 }
 
-class ModerationDetailViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class ModerationDetailViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(ModerationDetailUiState())
     val uiState: StateFlow<ModerationDetailUiState> = _uiState.asStateFlow()
 
