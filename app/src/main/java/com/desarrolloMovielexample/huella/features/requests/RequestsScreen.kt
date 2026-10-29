@@ -59,8 +59,6 @@ import com.desarrolloMovielexample.huella.domain.model.Applicant
 import com.desarrolloMovielexample.huella.domain.model.RequestStatus
 import androidx.compose.ui.tooling.preview.Preview
 
-private const val CHAT_ID = "c1" // ponytail: FakeRepository has a single conversation; map applicant -> conversation when a backend exists.
-
 @Composable
 fun RequestsScreen(
     initialTab: Int,
@@ -73,6 +71,7 @@ fun RequestsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(initialTab) { viewModel.setInitialTab(initialTab) }
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    LaunchedEffect(Unit) { viewModel.openChats.collect(onOpenChat) }
 
     Scaffold(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
@@ -152,7 +151,7 @@ fun RequestsScreen(
                                 busyApplicantId = state.busyApplicantId,
                                 onOpenPublication = { onOpenPublication(group.publication.id) },
                                 onRespond = { applicant, accept -> viewModel.respond(applicant, group.publication.id, accept) },
-                                onContact = { onOpenChat(CHAT_ID) },
+                                onContact = { applicant -> viewModel.openChat(applicant, group.publication.id) },
                             )
                         }
                     }
@@ -181,7 +180,7 @@ private fun ReceivedGroupCard(
     busyApplicantId: String?,
     onOpenPublication: () -> Unit,
     onRespond: (Applicant, Boolean) -> Unit,
-    onContact: () -> Unit,
+    onContact: (Applicant) -> Unit,
 ) {
     val p = group.publication
     Column(
@@ -231,8 +230,7 @@ private fun ReceivedGroupCard(
                 busy = busyApplicantId == applicant.id,
                 onReject = { onRespond(applicant, false) },
                 onAccept = { onRespond(applicant, true) },
-                onContact = onContact,
-            )
+                onContact = { onContact(applicant) },            )
         }
     }
 }
@@ -355,7 +353,7 @@ private fun RequestAcceptedDialog(
                 color = HuellaColors.TextPrimary,
             )
             Text(
-                "¿Deseas cerrar la publicación? La mascota se marcará como adoptada y sumarás 50 puntos.",
+                "¿Deseas cerrar esta publicación? El esquema actual no registra el estado de adopción ni otorga puntos automáticamente.",
                 style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
                 color = HuellaColors.TextSecondary,
             )

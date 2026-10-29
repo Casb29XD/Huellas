@@ -460,6 +460,9 @@ object FakeRepository : HuellaRepository {
 
     override fun getConversation(id: String): Conversation? = conversations.firstOrNull { it.id == id }
 
+    override suspend fun openConversation(contactUserId: String, publicationId: String?): Result<String> =
+        Result.success(conversations.firstOrNull { it.contact.userId == contactUserId }?.id ?: conversations.first().id)
+
     override fun messages(conversationId: String): StateFlow<List<ChatMessage>> =
         chatFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }.asStateFlow()
 

@@ -3,6 +3,23 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+fun readEnvValue(name: String): String {
+    val envFile = rootProject.file("app/.env")
+    if (!envFile.isFile) return ""
+    val prefix = "$name="
+    val raw = envFile.readLines().firstOrNull { it.trimStart().startsWith(prefix) }
+        ?.substringAfter(prefix)
+        ?.trim()
+        ?: return ""
+    return raw.removeSurrounding("\"").removeSurrounding("'")
+}
+
+fun buildConfigString(value: String): String =
+    "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+val supabaseUrl = readEnvValue("SUPABASE_URL").trimEnd('/')
+val supabasePublishableKey = readEnvValue("SUPABASE_PUBLISHABLE_KEY")
+
 android {
     namespace = "com.desarrolloMovielexample.huella"
     compileSdk {
@@ -17,6 +34,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", buildConfigString(supabasePublishableKey))
     }
 
     buildTypes {
@@ -33,7 +52,9 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+
 }
 
 dependencies {

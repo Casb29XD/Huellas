@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.Level
 import com.desarrolloMovielexample.huella.domain.model.PointsAction
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,7 @@ data class LevelsUiState(
     val actions: List<PointsAction> = emptyList(),
 )
 
-class LevelsViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class LevelsViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     val uiState: StateFlow<LevelsUiState> = repo.currentUser
         .map { LevelsUiState(currentLevel = it?.level, actions = repo.pointsActions) }
         .stateIn(

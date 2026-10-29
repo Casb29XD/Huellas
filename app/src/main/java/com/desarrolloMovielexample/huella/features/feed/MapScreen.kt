@@ -60,7 +60,7 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Publication
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +68,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /** Lost & found publications for the "Buscar" tab. */
-class MapViewModel(repo: HuellaRepository = FakeRepository) : ViewModel() {
+class MapViewModel(repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     val publications: StateFlow<List<Publication>> = repo.publications
         .map { list -> list.filter { it.category.isLostFound } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repo.publications.value.filter { it.category.isLostFound })

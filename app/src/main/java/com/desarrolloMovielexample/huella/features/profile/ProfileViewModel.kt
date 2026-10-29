@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.PointsEntry
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.domain.model.User
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +20,7 @@ data class ProfileUiState(
     val selectedTab: Int = 0,
 )
 
-class ProfileViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class ProfileViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val tab = MutableStateFlow(0)
 
     val uiState: StateFlow<ProfileUiState> =

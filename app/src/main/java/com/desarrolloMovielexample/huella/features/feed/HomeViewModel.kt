@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Level
 import com.desarrolloMovielexample.huella.domain.model.Publication
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -48,7 +48,7 @@ data class HomeUiState(
     val isSearching: Boolean get() = query.isNotBlank() || filters.isActive || category != null
 }
 
-class HomeViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class HomeViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
 
     private val controls = MutableStateFlow(HomeUiState(cities = repo.cities, species = repo.species))
 

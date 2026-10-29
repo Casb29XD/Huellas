@@ -6,7 +6,7 @@ import com.desarrolloMovielexample.huella.domain.model.Applicant
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.domain.model.ReceivedRequestGroup
 import com.desarrolloMovielexample.huella.domain.model.SentRequest
-import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -32,11 +32,13 @@ data class RequestsUiState(
     val isClosing: Boolean = false,
 )
 
-class RequestsViewModel(private val repo: HuellaRepository = FakeRepository) : ViewModel() {
+class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
 
     private val local = MutableStateFlow(RequestsUiState())
     private val _messages = Channel<String>(Channel.BUFFERED)
     val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _openChats = Channel<String>(Channel.BUFFERED)
+    val openChats: Flow<String> = _openChats.receiveAsFlow()
 
     val uiState: StateFlow<RequestsUiState> =
         combine(local, repo.sentRequests, repo.receivedRequests) { l, sent, received -> merge(l, sent, received) }
@@ -78,6 +80,14 @@ class RequestsViewModel(private val repo: HuellaRepository = FakeRepository) : V
         }
     }
 
+    fun openChat(applicant: Applicant, publicationId: String) {
+        viewModelScope.launch {
+            repo.openConversation(applicant.userId, publicationId)
+                .onSuccess { _openChats.send(it) }
+                .onFailure { e -> _messages.send(e.message ?: "No pudimos abrir la conversación") }
+        }
+    }
+
     fun closePublication() {
         val id = local.value.acceptedPublicationId ?: return
         viewModelScope.launch {
@@ -85,7 +95,7 @@ class RequestsViewModel(private val repo: HuellaRepository = FakeRepository) : V
             repo.closePublication(id)
                 .onSuccess {
                     local.update { it.copy(isClosing = false, acceptedPublicationId = null) }
-                    _messages.send("Publicación cerrada · +50 puntos")
+                    _messages.send("Publicación retirada")
                 }
                 .onFailure { e ->
                     local.update { it.copy(isClosing = false) }
