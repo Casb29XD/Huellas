@@ -48,8 +48,6 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import androidx.compose.ui.tooling.preview.Preview
 
-private const val CONTACT_CONVERSATION_ID = "c1" // ponytail: only conversation in FakeRepository.
-
 @Composable
 fun PublicProfileScreen(
     userId: String,
@@ -62,6 +60,7 @@ fun PublicProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(userId) { viewModel.load(userId) }
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    LaunchedEffect(Unit) { viewModel.openChats.collect(onContact) }
     val user = state.user
 
     Scaffold(
@@ -96,7 +95,7 @@ fun PublicProfileScreen(
                 ) {
                     HorizontalDivider(color = HuellaColors.Divider, thickness = 1.dp)
                     Button(
-                        onClick = { onContact(CONTACT_CONVERSATION_ID) },
+                        onClick = { viewModel.contact(userId) },
                         modifier = Modifier
                             .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 12.dp)
                             .fillMaxWidth()
