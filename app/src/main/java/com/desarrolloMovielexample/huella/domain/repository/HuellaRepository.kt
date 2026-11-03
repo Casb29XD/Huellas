@@ -61,6 +61,7 @@ interface HuellaRepository {
     val moderationQueue: StateFlow<List<ModerationItem>>     // pending review
     val moderationReports: StateFlow<List<ModerationItem>>   // reported publications
     val moderationStats: StateFlow<ModerationStats>
+    suspend fun refreshModerationData(): Result<Unit>
     fun getModerationItem(id: String): ModerationItem?
     suspend fun approve(itemId: String): Result<Unit>
     suspend fun reject(itemId: String, reason: String, comment: String): Result<Unit>
