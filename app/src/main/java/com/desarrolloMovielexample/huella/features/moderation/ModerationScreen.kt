@@ -11,10 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,6 +51,9 @@ fun ModerationScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    androidx.compose.runtime.LaunchedEffect(viewModel) {
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
+    }
 
     Scaffold(
         topBar = {
@@ -94,7 +98,29 @@ fun ModerationScreen(
             )
 
             val visible = state.visibleItems
-            if (visible.isEmpty()) {
+            if (state.isLoading && visible.isEmpty()) {
+                Box(
+                    Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(color = HuellaColors.Primary)
+                }
+            } else if (state.loadError != null && visible.isEmpty()) {
+                Box(
+                    Modifier.weight(1f).fillMaxWidth().padding(bottom = 40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EmptyState(
+                        illustration = R.drawable.illus_tasks,
+                        title = "No pudimos cargar la cola",
+                        text = state.loadError.orEmpty(),
+                        illustrationSize = 210.dp,
+                        actionText = "Reintentar",
+                        onAction = viewModel::retry,
+                        actionOutlined = true,
+                    )
+                }
+            } else if (visible.isEmpty()) {
                 Box(
                     Modifier
                         .weight(1f)

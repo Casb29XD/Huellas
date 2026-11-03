@@ -24,25 +24,61 @@ data class ModerationUiState(
     val stats: ModerationStats = ModerationStats(0, 0, 0),
     val pending: List<ModerationItem> = emptyList(),
     val reported: List<ModerationItem> = emptyList(),
-    val selectedTab: Int = 0, // 0 Pendientes, 1 Reportes
+    val selectedTab: Int = 0,
+    val isLoading: Boolean = true,
+    val loadError: String? = null,
 ) {
     val visibleItems: List<ModerationItem> get() = if (selectedTab == 0) pending else reported
 }
 
 class ModerationViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val selectedTab = MutableStateFlow(0)
+    private val isLoading = MutableStateFlow(true)
+    private val loadError = MutableStateFlow<String?>(null)
+    private val _messages = Channel<String>(Channel.BUFFERED)
+    val messages: Flow<String> = _messages.receiveAsFlow()
 
     val uiState: StateFlow<ModerationUiState> =
-        combine(repo.moderationStats, repo.moderationQueue, repo.moderationReports, selectedTab) { stats, queue, reports, tab ->
-            ModerationUiState(stats, queue, reports, tab)
+        combine(
+            combine(repo.moderationStats, repo.moderationQueue) { stats, queue -> stats to queue },
+            repo.moderationReports,
+            selectedTab,
+            isLoading,
+            loadError,
+        ) { statsAndQueue, reports, tab, loading, error ->
+            ModerationUiState(statsAndQueue.first, statsAndQueue.second, reports, tab, loading, error)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
-            ModerationUiState(repo.moderationStats.value, repo.moderationQueue.value, repo.moderationReports.value),
+            ModerationUiState(
+                stats = repo.moderationStats.value,
+                pending = repo.moderationQueue.value,
+                reported = repo.moderationReports.value,
+            ),
         )
 
+    init {
+        refresh()
+    }
+
     fun selectTab(index: Int) {
-        selectedTab.value = index
+        selectedTab.value = index.coerceIn(0, 1)
+    }
+
+    fun retry() = refresh()
+
+    private fun refresh() {
+        viewModelScope.launch {
+            isLoading.value = true
+            loadError.value = null
+            repo.refreshModerationData()
+                .onSuccess { isLoading.value = false }
+                .onFailure { error ->
+                    isLoading.value = false
+                    loadError.value = error.message ?: "No pudimos cargar la cola de moderación"
+                    _messages.send(loadError.value.orEmpty())
+                }
+        }
     }
 }
 

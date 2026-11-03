@@ -264,6 +264,7 @@ object FakeRepository : HuellaRepository {
 
     private val _moderationStats = MutableStateFlow(ModerationStats(pending = 3, reported = 2, approvedToday = 12))
     override val moderationStats: StateFlow<ModerationStats> = _moderationStats.asStateFlow()
+    override suspend fun refreshModerationData(): Result<Unit> = Result.success(Unit)
 
     // ---------- Requests ----------
     private val _sentRequests = MutableStateFlow(
