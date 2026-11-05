@@ -185,4 +185,5 @@ data class PublicationDraft(
     val sex: String,
     val city: String,
     val eventDate: String? = null,
+    val imageUrl: String? = null,
 )

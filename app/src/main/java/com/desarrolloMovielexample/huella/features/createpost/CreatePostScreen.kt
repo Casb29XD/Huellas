@@ -1,6 +1,9 @@
 package com.desarrolloMovielexample.huella.features.createpost
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -91,6 +94,9 @@ fun CreatePostScreen(
     onPublished: () -> Unit,
     viewModel: CreatePostViewModel = viewModel(),
 ) {
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        viewModel.addPhotos(uris)
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scroll = rememberScrollState()
@@ -158,7 +164,7 @@ fun CreatePostScreen(
                 verticalArrangement = Arrangement.spacedBy(if (state.step == 3) 18.dp else 20.dp),
             ) {
                 when (state.step) {
-                    1 -> StepCategoryAndPhotos(state, viewModel)
+                    1 -> StepCategoryAndPhotos(state, viewModel) { photoPicker.launch("image/*") }
                     2 -> StepPetData(state, viewModel)
                     else -> StepDescriptionAndLocation(state, viewModel)
                 }
@@ -188,7 +194,7 @@ private fun ContinueButton(text: String, onClick: () -> Unit, modifier: Modifier
 // ---------------- Paso 1 · Categoría y fotos ----------------
 
 @Composable
-private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewModel) {
+private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewModel, onAddPhotos: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("¿Qué quieres publicar?", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
         Category.entries.chunked(2).forEach { row ->
@@ -205,13 +211,13 @@ private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewMo
             Text("Fotos", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
             Text("Hasta $MAX_PHOTOS · ${MAX_PHOTOS - state.photos.size} restantes", style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
         }
-        val tiles: List<Int?> = state.photos + if (state.photos.size < MAX_PHOTOS) listOf(null) else emptyList()
+        val tiles: List<Uri?> = state.photos + if (state.photos.size < MAX_PHOTOS) listOf(null) else emptyList()
         tiles.chunked(3).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { seed ->
                     val m = Modifier.weight(1f).aspectRatio(1f)
                     if (seed == null) {
-                        AddPhotoTile(onClick = vm::addPhoto, modifier = m)
+                        AddPhotoTile(onClick = onAddPhotos, modifier = m)
                     } else {
                         val index = state.photos.indexOf(seed)
                         PhotoTile(seed, index, onRemove = { vm.removePhoto(seed) }, modifier = m)
@@ -242,11 +248,10 @@ private fun CategoryCard(category: Category, selected: Boolean, onClick: () -> U
 }
 
 @Composable
-private fun PhotoTile(seed: Int, index: Int, onRemove: () -> Unit, modifier: Modifier) {
+private fun PhotoTile(seed: Uri, index: Int, onRemove: () -> Unit, modifier: Modifier) {
     Box(modifier.clip(HuellaShapes.Card)) {
-        // ponytail: random picsum photo instead of a real picker (image upload is out of scope this phase).
         PetImage(
-            imageUrl = randomPhotoUrl("post$seed"),
+            imageUrl = seed.toString(),
             tone = PhotoTones[index.coerceIn(0, PhotoTones.lastIndex)],
             modifier = Modifier.fillMaxSize(),
             contentDescription = "Foto ${index + 1}",
