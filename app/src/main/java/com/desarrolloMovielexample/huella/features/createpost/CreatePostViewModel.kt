@@ -2,6 +2,7 @@ package com.desarrolloMovielexample.huella.features.createpost
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.PublicationDraft
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
@@ -20,8 +21,7 @@ const val MAX_PHOTOS = 5
 data class CreatePostUiState(
     val step: Int = 1,
     val category: Category = Category.ADOPCION,
-    val photos: List<Int> = listOf(1, 2),          // photo seeds (random picsum image per seed)
-    val nextPhotoSeed: Int = 3,
+    val photos: List<Uri> = emptyList(),
     val species: String = "Perro",
     val breed: String = "",
     val size: String = "Mediano",
@@ -64,10 +64,10 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
     val breedSuggestions: List<String> get() = repo.breedSuggestions
 
     fun onCategory(c: Category) = _uiState.update { it.copy(category = c, eventDateError = null) }
-    fun addPhoto() = _uiState.update {
-        if (it.photos.size >= MAX_PHOTOS) it else it.copy(photos = it.photos + it.nextPhotoSeed, nextPhotoSeed = it.nextPhotoSeed + 1)
+    fun addPhotos(uris: List<Uri>) = _uiState.update {
+        it.copy(photos = (it.photos + uris).distinct().take(MAX_PHOTOS))
     }
-    fun removePhoto(seed: Int) = _uiState.update { it.copy(photos = it.photos - seed) }
+    fun removePhoto(uri: Uri) = _uiState.update { it.copy(photos = it.photos - uri) }
     fun onSpecies(v: String) = _uiState.update { it.copy(species = v) }
     fun onBreed(v: String) = _uiState.update { it.copy(breed = v, breedError = null) }
     fun onSize(v: String) = _uiState.update { it.copy(size = v) }
@@ -123,13 +123,17 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             // ponytail: `location` is not in PublicationDraft yet (no maps this phase); add it with the map picker.
-            val result = repo.createPublication(
+            val result = runCatching {
+                val imageUrls = s.photos.map { SupabaseRepository.uploadPublicationImage(it) }
+                repo.createPublication(
                 PublicationDraft(
                     category = s.category, title = s.title, description = s.description, species = s.species,
                     breed = s.breed, size = s.size, vaccinated = s.vaccinated, sterilized = s.sterilized,
                     age = s.age, sex = s.sex, city = s.city, eventDate = s.eventDate.takeIf { s.needsDate },
+                    imageUrl = imageUrls.firstOrNull(),
                 ),
-            )
+            ).getOrThrow()
+            }
             result.onSuccess { _uiState.update { it.copy(isLoading = false, published = true) } }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
