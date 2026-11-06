@@ -6,14 +6,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
@@ -22,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,8 +29,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,28 +64,52 @@ import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-/** Lost & found publications for the "Buscar" tab. */
+/** ViewModel para el mapa: incluye perdidos, encontrados, veterinaria/jornadas y hogar temporal. */
 class MapViewModel(repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     val publications: StateFlow<List<Publication>> = repo.publications
-        .map { list -> list.filter { it.category.isLostFound } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repo.publications.value.filter { it.category.isLostFound })
+        .map { list ->
+            list.filter {
+                it.category.isLostFound || it.category == Category.VETERINARIA || it.category == Category.TEMPORAL
+            }
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            repo.publications.value.filter {
+                it.category.isLostFound || it.category == Category.VETERINARIA || it.category == Category.TEMPORAL
+            }
+        )
 }
 
-/** Pin positions from the design (390x844 frame), pointing at feed ids. */
-private data class MapMarker(val x: Float, val y: Float, val category: Category, val publicationId: String)
-
-private val markers = listOf(
-    MapMarker(168f, 300f, Category.PERDIDOS, "8"),
-    MapMarker(240f, 380f, Category.ENCONTRADOS, "3"),
-    MapMarker(96f, 420f, Category.PERDIDOS, "2"),
-    MapMarker(290f, 250f, Category.ENCONTRADOS, "3"),
-    MapMarker(130f, 210f, Category.PERDIDOS, "8"),
-)
+/** Devuelve las coordenadas geográficas de la publicación o un punto aproximado de su ciudad. */
+private fun Publication.toLatLng(): LatLng {
+    if (lat != 0.0 && lon != 0.0) return LatLng(lat, lon)
+    val hash = id.hashCode()
+    val deltaLat = (hash % 100) * 0.0003
+    val deltaLon = (hash % 80) * 0.0003
+    return when {
+        city.contains("Bogot", ignoreCase = true) -> LatLng(4.6533 + deltaLat, -74.0633 + deltaLon)
+        city.contains("Cali", ignoreCase = true) -> LatLng(3.4372 + deltaLat, -76.5443 + deltaLon)
+        city.contains("Barranquilla", ignoreCase = true) -> LatLng(11.0041 + deltaLat, -74.8070 + deltaLon)
+        else -> LatLng(6.2442 + deltaLat, -75.5812 + deltaLon) // Medellín por defecto
+    }
+}
 
 private val MapGround = Color(0xFFE8EFE9)
 
@@ -97,8 +123,29 @@ fun MapScreen(
     var showMap by rememberSaveable { mutableStateOf(true) }
     var showLost by rememberSaveable { mutableStateOf(true) }
     var showFound by rememberSaveable { mutableStateOf(true) }
-    val visible = { c: Category -> (c == Category.PERDIDOS && showLost) || (c == Category.ENCONTRADOS && showFound) }
+    var showVet by rememberSaveable { mutableStateOf(true) }
+
+    val visible = { c: Category ->
+        (c == Category.PERDIDOS && showLost) ||
+        (c == Category.ENCONTRADOS && showFound) ||
+        (c == Category.VETERINARIA && showVet) ||
+        (c == Category.TEMPORAL && showFound)
+    }
     val posts = all.filter { visible(it.category) }
+
+    // Coordenada inicial (por ejemplo Medellín o la primera publicación activa)
+    val firstCoords = remember(posts) { posts.firstOrNull()?.toLatLng() ?: LatLng(6.2442, -75.5812) }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(firstCoords, 13.5f)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    // Centrar cámara si cambian las publicaciones
+    LaunchedEffect(firstCoords) {
+        cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(firstCoords, 13.5f))
+    }
 
     Box(
         Modifier
@@ -106,20 +153,53 @@ fun MapScreen(
             .background(MapGround),
     ) {
         if (showMap) {
-            // ponytail: static map placeholder; real tiles/markers arrive with the maps phase.
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                MapBackground(Modifier.fillMaxSize())
-                markers.filter { visible(it.category) }.forEach { m ->
-                    MapPin(
-                        category = m.category,
-                        modifier = Modifier
-                            .offset(x = maxWidth * (m.x / 390f) - 22.dp, y = maxHeight * (m.y / 844f) - 44.dp)
-                            .clickable { onOpenPublication(m.publicationId) },
+            // Google Map interactivo con los punteros de los eventos y reportes
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings(
+                    zoomControlsEnabled = false,
+                    myLocationButtonEnabled = false,
+                    mapToolbarEnabled = true,
+                    compassEnabled = true,
+                ),
+                properties = MapProperties(
+                    isMyLocationEnabled = false,
+                ),
+            ) {
+                posts.forEachIndexed { index, post ->
+                    val coords = post.toLatLng()
+                    val markerHue = when (post.category) {
+                        Category.PERDIDOS -> BitmapDescriptorFactory.HUE_RED
+                        Category.ENCONTRADOS -> BitmapDescriptorFactory.HUE_AZURE
+                        Category.VETERINARIA -> BitmapDescriptorFactory.HUE_GREEN
+                        Category.TEMPORAL -> BitmapDescriptorFactory.HUE_VIOLET
+                        Category.ADOPCION -> BitmapDescriptorFactory.HUE_ORANGE
+                    }
+
+                    val snippetInfo = post.eventDate ?: post.place ?: post.neighborhood
+
+                    Marker(
+                        state = MarkerState(position = coords),
+                        title = post.title,
+                        snippet = snippetInfo,
+                        icon = BitmapDescriptorFactory.defaultMarker(markerHue),
+                        onClick = {
+                            coroutineScope.launch {
+                                cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(coords, 14.5f))
+                                listState.animateScrollToItem(index)
+                            }
+                            false
+                        },
+                        onInfoWindowClick = {
+                            onOpenPublication(post.id)
+                        },
                     )
                 }
             }
         }
 
+        // Interfaz superior y controles
         Column(Modifier.fillMaxSize()) {
             Row(
                 Modifier
@@ -150,9 +230,21 @@ fun MapScreen(
                     ToggleSegment("Mapa", R.drawable.icon_accion_mapa, selected = showMap, Modifier.weight(1f)) { showMap = true }
                 }
             }
-            Row(Modifier.padding(horizontal = 20.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                LegendChip("Perdidos", HuellaColors.CatPerdidos, showLost) { showLost = !showLost }
-                LegendChip("Encontrados", HuellaColors.CatEncontrados, showFound) { showFound = !showFound }
+
+            // Chips de filtrado por tipo de evento o reporte
+            LazyRow(
+                Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item {
+                    LegendChip("Perdidos", HuellaColors.CatPerdidos, showLost) { showLost = !showLost }
+                }
+                item {
+                    LegendChip("Encontrados", HuellaColors.CatEncontrados, showFound) { showFound = !showFound }
+                }
+                item {
+                    LegendChip("Jornadas y Eventos", HuellaColors.CatVeterinaria, showVet) { showVet = !showVet }
+                }
             }
 
             if (showMap) {
@@ -169,11 +261,22 @@ fun MapScreen(
                             .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(2.dp)),
                     )
                     LazyRow(
+                        state = listState,
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(posts, key = { it.id }) { p ->
-                            PublicationRowCard(p, onClick = { onOpenPublication(p.id) }, modifier = Modifier.width(330.dp))
+                            PublicationRowCard(
+                                publication = p,
+                                onClick = {
+                                    val target = p.toLatLng()
+                                    coroutineScope.launch {
+                                        cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(target, 15f))
+                                    }
+                                    onOpenPublication(p.id)
+                                },
+                                modifier = Modifier.width(330.dp),
+                            )
                         }
                     }
                 }
@@ -235,7 +338,7 @@ private fun LegendChip(text: String, dot: Color, active: Boolean, onClick: () ->
     }
 }
 
-/** Category pin (filled category icon with a white halo), 44dp, anchored at its bottom center by the caller. */
+/** Category pin para vistas previas estáticas y detalle de publicación. */
 @Composable
 internal fun MapPin(category: Category, modifier: Modifier = Modifier, size: androidx.compose.ui.unit.Dp = 44.dp) {
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
@@ -244,7 +347,7 @@ internal fun MapPin(category: Category, modifier: Modifier = Modifier, size: and
     }
 }
 
-/** Static "city map" drawn with Compose: green-grey ground, parks, a river and a rotated street grid. */
+/** Fondo estático de mapa usado por el detalle de publicación y previews. */
 @Composable
 internal fun MapBackground(modifier: Modifier = Modifier) {
     Canvas(modifier.background(MapGround)) {
