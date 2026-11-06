@@ -19,6 +19,7 @@ fun buildConfigString(value: String): String =
 
 val supabaseUrl = readEnvValue("SUPABASE_URL").trimEnd('/')
 val supabasePublishableKey = readEnvValue("SUPABASE_PUBLISHABLE_KEY")
+val mapsApiKey = readEnvValue("MAPS_API_KEY").ifBlank { "" }
 
 android {
     namespace = "com.desarrolloMovielexample.huella"
@@ -36,6 +37,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", buildConfigString(supabasePublishableKey))
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -78,6 +80,10 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation(libs.gson)
     implementation(libs.okhttp.logging)
+
+    // Google Maps & Maps Compose
+    implementation(libs.play.services.maps)
+    implementation(libs.maps.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
