@@ -364,6 +364,13 @@ object FakeRepository : HuellaRepository {
         }
     }
 
+    override suspend fun handleAuthCallback(uri: android.net.Uri): Result<User> {
+        delay(LATENCY)
+        val user = users.value.first()
+        _currentUser.value = user
+        return Result.success(user)
+    }
+
     override suspend fun register(name: String, email: String, city: String, password: String): Result<User> {
         delay(LATENCY)
         val key = email.trim().lowercase()

@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,8 +21,21 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         SupabaseSession.initialize(applicationContext)
         SupabaseRepository.initialize(applicationContext)
+
+        // Leer el deep link entrante (correo de confirmación o reset de contraseña).
+        // huella://auth/confirm?token_hash=XXX&type=signup|recovery
+        val deepLinkUri = intent?.data
+
         setContent {
-            HuellaTheme { AppNavigation() }
+            HuellaTheme { AppNavigation(deepLinkUri = deepLinkUri) }
         }
+    }
+
+    /** El sistema puede re-entregar el Intent si la app ya está abierta. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Reiniciar con el nuevo deep link relanzando la actividad limpiamente.
+        setIntent(intent)
+        recreate()
     }
 }
