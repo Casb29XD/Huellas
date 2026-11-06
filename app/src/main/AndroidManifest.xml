@@ -22,8 +22,24 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                Deep link para los correos de Supabase Auth:
+                  · Confirmación de registro  → huella://auth/confirm?token_hash=…&type=signup
+                  · Reset de contraseña       → huella://auth/confirm?token_hash=…&type=recovery
+                Configura la misma URL en Supabase Dashboard → Authentication → URL Configuration:
+                  Site URL            : huella://auth
+                  Redirect URLs       : huella://auth/confirm
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="huella"
+                    android:host="auth" />
             </intent-filter>
         </activity>
     </application>

@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -19,6 +21,7 @@ import androidx.navigation.navArgument
 import com.desarrolloMovielexample.huella.core.components.BottomBarItem
 import com.desarrolloMovielexample.huella.core.components.HuellaBottomBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordScreen
 import com.desarrolloMovielexample.huella.features.auth.LoginScreen
 import com.desarrolloMovielexample.huella.features.auth.OnboardingScreen
@@ -68,9 +71,43 @@ private fun NavHostController.navigateClearingStack(route: String) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AppNavigation(navController: NavHostController = rememberNavController()) {
+fun AppNavigation(
+    navController: NavHostController = rememberNavController(),
+    deepLinkUri: Uri? = null,
+) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentTab = tabFor(backStackEntry?.destination?.route)
+
+    // Manejar deep links de Supabase Auth al iniciar la app.
+    // Al confirmar correo: inicia sesión automáticamente y va directo a Home.
+    // Al recuperar contraseña: abre la pantalla de restablecer contraseña.
+    LaunchedEffect(deepLinkUri) {
+        if (deepLinkUri == null) return@LaunchedEffect
+        val fragmentType = deepLinkUri.fragment?.split("&")
+            ?.firstOrNull { it.startsWith("type=") }
+            ?.substringAfter("=")
+        val type = deepLinkUri.getQueryParameter("type") ?: fragmentType
+
+        when (type) {
+            "recovery" -> {
+                navController.navigate(Routes.ForgotPassword.route) {
+                    popUpTo(Routes.Splash.route) { inclusive = true }
+                }
+            }
+            else -> {
+                val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
+                if (authResult.isSuccess) {
+                    navController.navigate(Routes.Home.route) {
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Routes.Login.route) {
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         containerColor = HuellaColors.Background,
