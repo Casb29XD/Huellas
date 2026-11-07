@@ -33,7 +33,7 @@ class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository)
     fun logout() = repo.logout()
 
     fun deleteAccount(onSuccess: () -> Unit) {
-        androidx.lifecycle.viewModelScope.launch {
+        viewModelScope.launch {
             repo.deleteAccount()
                 .onSuccess {
                     _messages.send("Cuenta eliminada exitosamente")

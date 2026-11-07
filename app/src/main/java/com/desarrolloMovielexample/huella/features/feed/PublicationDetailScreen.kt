@@ -48,6 +48,7 @@ import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -160,8 +161,8 @@ fun PublicationDetailScreen(
             if (showDeleteConfirm) {
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { showDeleteConfirm = false },
-                    title = { Text("¿Eliminar publicación?") },
-                    text = { Text("Esta acción eliminará la publicación definitivamente.") },
+                    title = { Text("ï¿½Eliminar publicaciï¿½n?") },
+                    text = { Text("Esta acciï¿½n eliminarï¿½ la publicaciï¿½n definitivamente.") },
                     confirmButton = {
                         androidx.compose.material3.TextButton(onClick = {
                             showDeleteConfirm = false
@@ -677,35 +678,6 @@ private fun AuthorCard(pub: Publication, onOpenAuthor: (String) -> Unit) {
 }
 
 @Composable
-            if (state.isAuthorOrMod) {
-                Row(
-                    Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
-                    PillButton("Eliminar", onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
-                }
-            }
-            if (showDeleteConfirm) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { showDeleteConfirm = false },
-                    title = { Text("¿Eliminar publicación?") },
-                    text = { Text("Esta acción eliminará la publicación definitivamente.") },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = {
-                            showDeleteConfirm = false
-                            viewModel.deleteCurrentPublication(onSuccess = onBack)
-                        }) {
-                            Text("Eliminar", color = HuellaColors.ErrorDark)
-                        }
-                    },
-                    dismissButton = {
-                        androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) {
-                            Text("Cancelar")
-                        }
-                    }
-                )
-            }
 private fun ActionBar(
     pub: Publication,
     requestSent: Boolean,
