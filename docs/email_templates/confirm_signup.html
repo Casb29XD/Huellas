@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirma tu cuenta en Huella</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #FAFAF7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1F2A24;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #FAFAF7; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <!-- Tarjeta principal -->
+        <table role="presentation" width="100%" style="max-width: 540px; background-color: #FFFFFF; border-radius: 20px; box-shadow: 0 4px 20px rgba(31, 42, 36, 0.06); border: 1px solid #ECEEEA; overflow: hidden;" cellspacing="0" cellpadding="0">
+          
+          <!-- Encabezado con color de marca Huella -->
+          <tr>
+            <td style="background-color: #2E7D5B; padding: 36px 30px; text-align: center;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="center">
+                    <!-- Icono / Logo Huella -->
+                    <div style="display: inline-block; width: 54px; height: 54px; line-height: 54px; background-color: rgba(255, 255, 255, 0.2); border-radius: 50%; font-size: 28px; text-align: center;">
+                      🐾
+                    </div>
+                    <h1 style="color: #FFFFFF; font-size: 26px; font-weight: 700; margin: 12px 0 0 0; letter-spacing: -0.5px;">Huella</h1>
+                    <p style="color: #DCEBE2; font-size: 14px; margin: 4px 0 0 0; font-weight: 500;">Comunidad de rescate y adopción responsable</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Cuerpo del mensaje -->
+          <tr>
+            <td style="padding: 36px 32px 28px 32px;">
+              <h2 style="font-size: 20px; color: #1F2A24; margin: 0 0 14px 0; font-weight: 700;">¡Te damos la bienvenida!</h2>
+              <p style="font-size: 15px; line-height: 23px; color: #3F4A44; margin: 0 0 24px 0;">
+                Gracias por registrarte en <strong>Huella</strong>. Estamos construyendo una red segura y colaborativa para ayudar a mascotas a encontrar un hogar para siempre.
+              </p>
+              <p style="font-size: 15px; line-height: 23px; color: #3F4A44; margin: 0 0 32px 0;">
+                Para verificar tu dirección de correo y activar tu cuenta, haz clic en el siguiente botón:
+              </p>
+
+              <!-- Botón CTA -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 32px;">
+                <tr>
+                  <td align="center">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; background-color: #2E7D5B; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 38px; border-radius: 999px; box-shadow: 0 3px 10px rgba(46, 125, 91, 0.35);">
+                      Confirmar mi cuenta
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Caja informativa secundaria -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #F1F5F2; border-radius: 12px; padding: 14px 18px; margin-bottom: 24px; border-left: 4px solid #2E7D5B;">
+                <tr>
+                  <td style="font-size: 13px; color: #5F6A63; line-height: 19px;">
+                    💡 <strong>Consejo:</strong> Si estás abriendo este correo desde tu teléfono, el enlace te llevará directo a la aplicación para que comiences de inmediato.
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size: 13px; line-height: 19px; color: #8A8F88; margin: 0;">
+                Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:<br>
+                <a href="{{ .ConfirmationURL }}" style="color: #2E7D5B; word-break: break-all; font-size: 12px;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Separador -->
+          <tr>
+            <td style="padding: 0 32px;">
+              <div style="border-top: 1px solid #ECEEEA;"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; text-align: center; background-color: #FAFAF7;">
+              <p style="font-size: 12px; line-height: 18px; color: #8A8F88; margin: 0 0 8px 0;">
+                Si tú no creaste esta cuenta, puedes ignorar este mensaje con tranquilidad.
+              </p>
+              <p style="font-size: 12px; color: #8A8F88; margin: 0;">
+                © 2026 Huella App · Por el bienestar de nuestras mascotas
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
