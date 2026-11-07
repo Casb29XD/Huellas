@@ -131,7 +131,7 @@ Prueban la lógica defensiva, reglas de negocio atómicas y validaciones antes d
 ---
 
 ### 3.3. Pruebas de Endpoints y Red (`SupabaseEndpointsMockTest`)
-Simulan las llamadas HTTP REST y procedimientos remotos (RPC) hacia el backend utilizando un doble de prueba ([`MockSupabaseApiService`](file:///d:/Uni/moviles/proyecto/Huellas/app/src/test/java/com/desarrolloMovielexample/huella/data/remote/MockSupabaseApiService.kt)) implementado sobre la misma interfaz Retrofit del proyecto:
+Simulan las llamadas HTTP REST y procedimientos remotos (RPC) hacia el backend utilizando un doble de prueba ([`MockSupabaseApiService`]) implementado sobre la misma interfaz Retrofit del proyecto:
 
 1. **`testAuthSignInSuccess` y `testAuthSignInFailure`**:
    - Simula el endpoint `/auth/v1/token?grant_type=password`.
