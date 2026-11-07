@@ -58,13 +58,13 @@ fun DetailedStatsSection(stats: ProfileStats, modifier: Modifier = Modifier) {
             StatPill(
                 count = stats.finishedCount,
                 label = "Finalizadas",
-                containerColor = HuellaColors.SuccessContainer,
-                contentColor = HuellaColors.SuccessDark,
+                containerColor = HuellaColors.PrimaryContainer,
+                contentColor = HuellaColors.PrimaryDark,
                 modifier = Modifier.weight(1f)
             )
             StatPill(
                 count = stats.pendingCount,
-                label = "En revisión",
+                label = "En revisiï¿½n",
                 containerColor = HuellaColors.WarningContainer,
                 contentColor = HuellaColors.WarningDark,
                 modifier = Modifier.weight(1f)

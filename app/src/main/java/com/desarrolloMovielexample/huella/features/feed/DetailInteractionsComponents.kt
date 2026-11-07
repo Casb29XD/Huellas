@@ -1,4 +1,4 @@
-﻿package com.desarrolloMovielexample.huella.features.feed
+package com.desarrolloMovielexample.huella.features.feed
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -165,7 +165,7 @@ fun CommentsSection(
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Avatar(comment.author.name, comment.author.initials, size = 34.dp)
+                        Avatar(initials = comment.author.initials, level = comment.author.level, size = 34.dp)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(comment.author.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 13.sp), color = HuellaColors.TextPrimary)

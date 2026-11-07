@@ -65,9 +65,8 @@ fun NotificationsScreen(
             NotificationType.NEW_REQUEST -> onOpenRequests(1)
             NotificationType.REQUEST_ACCEPTED -> onOpenChat(n.targetId ?: "c1")
             NotificationType.POST_APPROVED, NotificationType.POST_REJECTED -> n.targetId?.let(onOpenPublication)
-        NotificationType.NEW_COMMENT -> HuellaIcon(R.drawable.icon_attr_descripcion, tint = HuellaColors.Primary, size = 24.dp)
-        NotificationType.NEW_VOTE -> HuellaIcon(R.drawable.icon_accion_aprobar, tint = HuellaColors.Primary, size = 24.dp)
-        NotificationType.BADGE_EARNED -> HuellaIcon(R.drawable.icon_badge_post, tint = HuellaColors.Primary, size = 24.dp)
+            NotificationType.NEW_COMMENT, NotificationType.NEW_VOTE -> n.targetId?.let(onOpenPublication)
+            NotificationType.BADGE_EARNED -> onOpenLevels()
             NotificationType.LEVEL_UP -> onOpenLevels()
         }
     }
@@ -77,7 +76,7 @@ fun NotificationsScreen(
         containerColor = HuellaColors.Background,
         topBar = {
             HuellaTopBar("Notificaciones", Modifier.statusBarsPadding(), onBack = onBack) {
-                if (!state.isEmpty) HuellaTextButton("Marcar leídas", viewModel::markAllRead)
+                if (!state.isEmpty) HuellaTextButton("Marcar le├¡das", viewModel::markAllRead)
             }
         },
     ) { inner ->
@@ -91,7 +90,7 @@ fun NotificationsScreen(
             ) {
                 EmptyState(
                     illustration = R.drawable.illus_empty_inbox,
-                    title = "Todo tranquilo por aquí",
+                    title = "Todo tranquilo por aqu├¡",
                     text = "Te avisaremos cuando alguien se interese en tus publicaciones o cuando subas de nivel.",
                     illustrationSize = 230.dp,
                 )
@@ -109,8 +108,7 @@ fun NotificationsScreen(
                 item(key = day) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         GroupCaption(day)
-                                onClick = {
-                                    viewModel.markAsRead(item.id)
+                        items.forEach { n -> NotificationCard(n, onClick = { viewModel.markAsRead(n.id); open(n) }) }
                     }
                 }
             }
@@ -123,17 +121,17 @@ private fun iconFor(type: NotificationType): Int = when (type) {
     NotificationType.REQUEST_ACCEPTED -> R.drawable.icon_accion_solicitud_enviada
     NotificationType.POST_APPROVED -> R.drawable.icon_estado_aprobada
     NotificationType.POST_REJECTED -> R.drawable.icon_estado_rechazada
-        NotificationType.NEW_COMMENT -> HuellaIcon(R.drawable.icon_attr_descripcion, tint = HuellaColors.Primary, size = 24.dp)
-        NotificationType.NEW_VOTE -> HuellaIcon(R.drawable.icon_accion_aprobar, tint = HuellaColors.Primary, size = 24.dp)
-        NotificationType.BADGE_EARNED -> HuellaIcon(R.drawable.icon_badge_post, tint = HuellaColors.Primary, size = 24.dp)
+    NotificationType.NEW_COMMENT -> R.drawable.icon_accion_mensaje
+    NotificationType.NEW_VOTE -> R.drawable.icon_accion_aprobar
+    NotificationType.BADGE_EARNED -> R.drawable.icon_animal_otro
     NotificationType.LEVEL_UP -> R.drawable.icon_animal_otro
 }
 
 private fun colorFor(type: NotificationType): Color = when (type) {
     NotificationType.POST_REJECTED -> HuellaColors.Error
-        NotificationType.NEW_COMMENT -> HuellaIcon(R.drawable.icon_attr_descripcion, tint = HuellaColors.Primary, size = 24.dp)
-        NotificationType.NEW_VOTE -> HuellaIcon(R.drawable.icon_accion_aprobar, tint = HuellaColors.Primary, size = 24.dp)
-        NotificationType.BADGE_EARNED -> HuellaIcon(R.drawable.icon_badge_post, tint = HuellaColors.Primary, size = 24.dp)
+    NotificationType.NEW_COMMENT -> HuellaColors.Primary
+    NotificationType.NEW_VOTE -> HuellaColors.Primary
+    NotificationType.BADGE_EARNED -> HuellaColors.LevelProtector
     NotificationType.LEVEL_UP -> HuellaColors.LevelProtector
     else -> HuellaColors.Primary
 }
@@ -179,7 +177,7 @@ private fun NotificationCard(n: AppNotification, onClick: () -> Unit) {
     }
 }
 
-/** Confetti pieces of the "¡Subiste de nivel!" card (positions from the design, in dp). */
+/** Confetti pieces of the "┬íSubiste de nivel!" card (positions from the design, in dp). */
 private fun Modifier.confetti(): Modifier = drawBehind {
     fun piece(x: Float, y: Float, w: Float, h: Float, degrees: Float, color: Color, fromBottom: Boolean = false, round: Boolean = false) {
         val pw = w.dp.toPx()

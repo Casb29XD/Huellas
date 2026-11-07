@@ -1,8 +1,10 @@
-﻿package com.desarrolloMovielexample.huella.data.remote
+package com.desarrolloMovielexample.huella.data.remote
 
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import com.google.gson.JsonObject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
 
 /**
@@ -29,7 +31,7 @@ class MockSupabaseApiService : SupabaseApiService {
 
     override suspend fun signIn(body: JsonObject): Response<JsonObject> {
         if (shouldFailAuth) {
-            val errBody = okhttp3.ResponseBody.create(okhttp3.MediaType.parse("application/json"), "{\"message\":\"Credenciales invalidas\"}")
+            val errBody = "{\"message\":\"Credenciales invalidas\"}".toResponseBody("application/json".toMediaTypeOrNull())
             return Response.error(400, errBody)
         }
         val res = JsonObject().apply {
