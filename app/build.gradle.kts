@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 fun readEnvValue(name: String): String {
@@ -84,6 +85,7 @@ dependencies {
     // Google Maps & Maps Compose
     implementation(libs.play.services.maps)
     implementation(libs.maps.compose)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

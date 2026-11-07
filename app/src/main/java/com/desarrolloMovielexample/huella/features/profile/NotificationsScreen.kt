@@ -65,6 +65,9 @@ fun NotificationsScreen(
             NotificationType.NEW_REQUEST -> onOpenRequests(1)
             NotificationType.REQUEST_ACCEPTED -> onOpenChat(n.targetId ?: "c1")
             NotificationType.POST_APPROVED, NotificationType.POST_REJECTED -> n.targetId?.let(onOpenPublication)
+        NotificationType.NEW_COMMENT -> HuellaIcon(R.drawable.icon_attr_descripcion, tint = HuellaColors.Primary, size = 24.dp)
+        NotificationType.NEW_VOTE -> HuellaIcon(R.drawable.icon_accion_aprobar, tint = HuellaColors.Primary, size = 24.dp)
+        NotificationType.BADGE_EARNED -> HuellaIcon(R.drawable.icon_badge_post, tint = HuellaColors.Primary, size = 24.dp)
             NotificationType.LEVEL_UP -> onOpenLevels()
         }
     }
@@ -106,7 +109,8 @@ fun NotificationsScreen(
                 item(key = day) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         GroupCaption(day)
-                        items.forEach { n -> NotificationCard(n, onClick = { open(n) }) }
+                                onClick = {
+                                    viewModel.markAsRead(item.id)
                     }
                 }
             }
@@ -119,11 +123,17 @@ private fun iconFor(type: NotificationType): Int = when (type) {
     NotificationType.REQUEST_ACCEPTED -> R.drawable.icon_accion_solicitud_enviada
     NotificationType.POST_APPROVED -> R.drawable.icon_estado_aprobada
     NotificationType.POST_REJECTED -> R.drawable.icon_estado_rechazada
+        NotificationType.NEW_COMMENT -> HuellaIcon(R.drawable.icon_attr_descripcion, tint = HuellaColors.Primary, size = 24.dp)
+        NotificationType.NEW_VOTE -> HuellaIcon(R.drawable.icon_accion_aprobar, tint = HuellaColors.Primary, size = 24.dp)
+        NotificationType.BADGE_EARNED -> HuellaIcon(R.drawable.icon_badge_post, tint = HuellaColors.Primary, size = 24.dp)
     NotificationType.LEVEL_UP -> R.drawable.icon_animal_otro
 }
 
 private fun colorFor(type: NotificationType): Color = when (type) {
     NotificationType.POST_REJECTED -> HuellaColors.Error
+        NotificationType.NEW_COMMENT -> HuellaIcon(R.drawable.icon_attr_descripcion, tint = HuellaColors.Primary, size = 24.dp)
+        NotificationType.NEW_VOTE -> HuellaIcon(R.drawable.icon_accion_aprobar, tint = HuellaColors.Primary, size = 24.dp)
+        NotificationType.BADGE_EARNED -> HuellaIcon(R.drawable.icon_badge_post, tint = HuellaColors.Primary, size = 24.dp)
     NotificationType.LEVEL_UP -> HuellaColors.LevelProtector
     else -> HuellaColors.Primary
 }

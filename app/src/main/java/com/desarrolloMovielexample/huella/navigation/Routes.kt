@@ -1,53 +1,75 @@
 package com.desarrolloMovielexample.huella.navigation
 
-/** Every screen of the design. String routes; use createRoute(...) for the ones with arguments. */
-sealed class Routes(val route: String) {
+import kotlinx.serialization.Serializable
+
+/**
+ * Type-safe navigation routes using Kotlinx Serialization.
+ * Replaces the legacy String routes and navArgument bundle parsing.
+ */
+sealed interface Routes {
     // 01 Acceso
-    data object Splash : Routes("splash")
-    data object Onboarding : Routes("onboarding")
-    data object Login : Routes("login")
-    data object Register : Routes("register")
-    data object ForgotPassword : Routes("forgot_password")
+    @Serializable
+    data object Splash : Routes
+
+    @Serializable
+    data object Onboarding : Routes
+
+    @Serializable
+    data object Login : Routes
+
+    @Serializable
+    data object Register : Routes
+
+    @Serializable
+    data object ForgotPassword : Routes
 
     // 02 Inicio y detalle
-    data object Home : Routes("home")
-    /** "Buscar" tab: Lista/Mapa of perdidos y encontrados (design shows Buscar selected on these frames). */
-    data object Map : Routes("map")
-    data object Detail : Routes("detail/{id}") {
-        const val ARG = "id"
-        fun createRoute(id: String) = "detail/$id"
-    }
+    @Serializable
+    data object Home : Routes
 
-    // 03 Publicar
-    data object CreatePost : Routes("create_post")
-    data object PostSent : Routes("post_sent")
+    @Serializable
+    data object Map : Routes
+
+    @Serializable
+    data class Detail(val id: String) : Routes
+
+    // 03 Publicar / Editar
+    @Serializable
+    data class CreatePost(val editPublicationId: String? = null) : Routes
+
+    @Serializable
+    data object PostSent : Routes
 
     // 04 Solicitudes
-    data object Requests : Routes("requests?tab={tab}") {
-        const val ARG = "tab"
-        /** tab 0 = Enviadas, 1 = Recibidas */
-        fun createRoute(tab: Int = 0) = "requests?tab=$tab"
-    }
-    data object Chat : Routes("chat/{id}") {
-        const val ARG = "id"
-        fun createRoute(conversationId: String) = "chat/$conversationId"
-    }
+    @Serializable
+    data class Requests(val tab: Int = 0) : Routes
+
+    @Serializable
+    data class Chat(val id: String) : Routes
 
     // 05 Perfil
-    data object Profile : Routes("profile")
-    data object Levels : Routes("levels")
-    data object PublicProfile : Routes("public_profile/{id}") {
-        const val ARG = "id"
-        fun createRoute(userId: String) = "public_profile/$userId"
-    }
-    data object Notifications : Routes("notifications")
-    data object EditProfile : Routes("edit_profile")
-    data object Settings : Routes("settings")
+    @Serializable
+    data object Profile : Routes
+
+    @Serializable
+    data object Levels : Routes
+
+    @Serializable
+    data class PublicProfile(val id: String) : Routes
+
+    @Serializable
+    data object Notifications : Routes
+
+    @Serializable
+    data object EditProfile : Routes
+
+    @Serializable
+    data object Settings : Routes
 
     // 06 Moderación
-    data object Moderation : Routes("moderation")
-    data object ModerationDetail : Routes("moderation_detail/{id}") {
-        const val ARG = "id"
-        fun createRoute(itemId: String) = "moderation_detail/$itemId"
-    }
+    @Serializable
+    data object Moderation : Routes
+
+    @Serializable
+    data class ModerationDetail(val id: String) : Routes
 }

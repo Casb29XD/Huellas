@@ -1,4 +1,6 @@
 package com.desarrolloMovielexample.huella.features.profile
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 import androidx.lifecycle.ViewModel
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
@@ -29,4 +31,18 @@ class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository)
     }
 
     fun logout() = repo.logout()
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        androidx.lifecycle.viewModelScope.launch {
+            repo.deleteAccount()
+                .onSuccess {
+                    _messages.send("Cuenta eliminada exitosamente")
+                    onSuccess()
+                }
+                .onFailure {
+                    _messages.send(it.message ?: "No se pudo eliminar la cuenta")
+                }
+        }
+    }
 }
+

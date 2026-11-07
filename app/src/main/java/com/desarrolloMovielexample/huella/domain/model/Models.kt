@@ -30,8 +30,16 @@ enum class Level(
     }
 }
 
+enum class Role(val label: String) {
+    USUARIO("Usuario"),
+    MODERADOR("Moderador")
+}
+
 /** Moderation status of a publication. */
 enum class PostStatus(val label: String) { EN_REVISION("En revisión"), APROBADA("Aprobada"), RECHAZADA("Rechazada") }
+
+/** Lifecycle status of a publication (whether it is active or already adopted/resolved). */
+enum class LifecycleStatus(val label: String) { ACTIVA("Activa"), FINALIZADA("Finalizada") }
 
 enum class RequestStatus(val label: String) { PENDIENTE("Pendiente"), ACEPTADA("Aceptada"), RECHAZADA("Rechazada") }
 
@@ -63,6 +71,10 @@ data class Publication(
     val photoLabel: String = title,
     val author: Author,
     val status: PostStatus = PostStatus.APROBADA,
+    val lifecycle: LifecycleStatus = LifecycleStatus.ACTIVA,
+    val votesCount: Int = 0,
+    val userVote: Int = 0, // +1 (upvote), -1 (downvote), 0 (none)
+    val commentsCount: Int = 0,
     // Lost / found / vet extras
     val eventDate: String? = null,      // "Sáb 5 sep · 6:30 p. m." / "Dom 13 sep"
     val schedule: String? = null,       // "8:00 a. m. – 1:00 p. m."
@@ -72,6 +84,34 @@ data class Publication(
     val phone: String? = null,
     val lat: Double = 0.0,
     val lon: Double = 0.0,
+)
+
+data class Comment(
+    val id: String,
+    val publicationId: String,
+    val author: Author,
+    val text: String,
+    val timeAgo: String,
+    val isMine: Boolean = false,
+)
+
+enum class Badge(val id: String, val label: String, val description: String, val iconResName: String) {
+    PRIMER_POST("primer_post", "Pionero", "Creó su primera publicación", "icon_badge_post"),
+    ADOPCION_EXITOSA("adopcion", "Corazón Fiel", "Concretó su primera adopción", "icon_badge_adoption"),
+    HOGAR_TEMPORAL("temporal", "Hogar Cálido", "Brindó hogar temporal a una mascota", "icon_badge_foster"),
+    COMUNIDAD_ACTIVA("comunidad", "Voz Activa", "Participó en debates y comentarios", "icon_badge_comment"),
+    MODERADOR("mod", "Guardián de la Comunidad", "Miembro del equipo de moderación", "icon_badge_mod")
+}
+
+data class ProfileStats(
+    val activeCount: Int = 0,
+    val finishedCount: Int = 0,
+    val pendingCount: Int = 0,
+    val rejectedCount: Int = 0,
+    val adoptionsCount: Int = 0,
+    val fosterCount: Int = 0,
+    val commentsCount: Int = 0,
+    val votesReceived: Int = 0,
 )
 
 data class User(
@@ -84,12 +124,16 @@ data class User(
     val points: Int,
     val initials: String,
     val memberSince: String = "2024",
-    val publicationsCount: Int = 0,
-    val adoptionsCount: Int = 0,
-    val fosterCount: Int = 0,
-    val activeCount: Int = 0,
-    val isModerator: Boolean = false,
+    val role: Role = Role.USUARIO,
+    val stats: ProfileStats = ProfileStats(),
+    val badges: List<Badge> = emptyList(),
 ) {
+    val isModerator: Boolean get() = role == Role.MODERADOR
+    val publicationsCount: Int get() = stats.activeCount + stats.finishedCount
+    val adoptionsCount: Int get() = stats.adoptionsCount
+    val fosterCount: Int get() = stats.fosterCount
+    val activeCount: Int get() = stats.activeCount
+
     val level: Level get() = Level.forPoints(points)
     val nextLevel: Level? get() = level.next
     val pointsToNext: Int get() = nextLevel?.let { it.minPoints - points } ?: 0
@@ -139,7 +183,16 @@ data class ChatMessage(
     val time: String,
 )
 
-enum class NotificationType { NEW_REQUEST, REQUEST_ACCEPTED, POST_APPROVED, POST_REJECTED, LEVEL_UP }
+enum class NotificationType { 
+    NEW_REQUEST, 
+    REQUEST_ACCEPTED, 
+    POST_APPROVED, 
+    POST_REJECTED, 
+    LEVEL_UP,
+    NEW_COMMENT,
+    NEW_VOTE,
+    BADGE_EARNED
+}
 
 data class AppNotification(
     val id: String,

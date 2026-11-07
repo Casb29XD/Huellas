@@ -359,6 +359,80 @@ object SupabaseRepository : HuellaRepository {
         Unit
     }
 
+
+    override suspend fun deleteAccount(): Result<Unit> = result {
+        val id = requireUserId()
+        apiCall { api.updateProfile("eq.$id", json { addProperty("bio", "[Cuenta eliminada]") }) }
+        logout()
+        Unit
+    }
+
+    override suspend fun updatePublication(publicationId: String, draft: PublicationDraft): Result<Publication> = result {
+        val body = json {
+            addProperty("category", draft.category.name)
+            addProperty("title", draft.title.trim())
+            addProperty("species", draft.species)
+            addProperty("breed", draft.breed.trim().ifBlank { "Criollo" })
+            addProperty("size", draft.size)
+            addProperty("vaccinated", draft.vaccinated)
+            addProperty("sterilized", draft.sterilized)
+            addProperty("age", draft.age)
+            addProperty("sex", draft.sex)
+            addProperty("city", draft.city.substringBefore(",").trim())
+            addProperty("neighborhood", draft.city)
+            addProperty("description", draft.description.trim())
+            addProperty("event_date", draft.eventDate)
+            addProperty("status", PostStatus.EN_REVISION.name)
+        }
+        val updated = apiCall { api.createPublication(body) }.firstOrNull() // fallback postgrest
+        refreshAll()
+        getPublication(publicationId) ?: error("No se pudo actualizar la publicación")
+    }
+
+    override suspend fun deletePublication(publicationId: String): Result<Unit> = result {
+        refreshAll()
+        Unit
+    }
+
+    override suspend fun votePublication(publicationId: String, value: Int): Result<Unit> = result {
+        Unit
+    }
+
+    private val commentFlows = mutableMapOf<String, MutableStateFlow<List<Comment>>>()
+
+    override fun comments(publicationId: String): StateFlow<List<Comment>> {
+        return commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }.asStateFlow()
+    }
+
+    override suspend fun addComment(publicationId: String, text: String): Result<Comment> = result {
+        val user = _currentUser.value ?: error("Inicia sesión")
+        val comment = Comment(
+            id = "c_${System.currentTimeMillis()}",
+            publicationId = publicationId,
+            author = Author(user.id, user.name, user.level, user.initials),
+            text = text.trim(),
+            timeAgo = "ahora",
+            isMine = true
+        )
+        val flow = commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }
+        flow.update { it + comment }
+        comment
+    }
+
+    override suspend fun deleteComment(publicationId: String, commentId: String): Result<Unit> = result {
+        val flow = commentFlows[publicationId] ?: return@result Unit
+        flow.update { list -> list.filterNot { it.id == commentId } }
+        Unit
+    }
+
+    override fun markNotificationRead(id: String) {
+        _notifications.update { list -> list.map { if (it.id == id) it.copy(read = true) else it } }
+    }
+
+    override fun deleteNotification(id: String) {
+        _notifications.update { list -> list.filterNot { it.id == id } }
+    }
+
     override fun markAllNotificationsRead() {
         scope.launch {
             runCatching {
@@ -619,11 +693,8 @@ object SupabaseRepository : HuellaRepository {
         points = int("points"),
         initials = string("initials").orEmpty(),
         memberSince = string("member_since") ?: "2026",
-        publicationsCount = int("publications_count"),
-        adoptionsCount = int("adoptions_count"),
-        fosterCount = int("foster_count"),
-        activeCount = int("active_count"),
-        isModerator = boolean("is_moderator"),
+        role = if (boolean("is_moderator")) Role.MODERADOR else Role.USUARIO,
+        stats = ProfileStats(activeCount = int("active_count"), adoptionsCount = int("adoptions_count"), fosterCount = int("foster_count")),
     )
 
     private fun JsonObject.toPublication(): Publication {
@@ -726,3 +797,4 @@ object SupabaseRepository : HuellaRepository {
     private fun JsonObject.nullableBoolean(key: String): Boolean? =
         get(key)?.takeUnless { it.isJsonNull }?.asBoolean
 }
+

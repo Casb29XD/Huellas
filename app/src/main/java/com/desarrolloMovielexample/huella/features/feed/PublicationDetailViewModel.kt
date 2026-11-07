@@ -2,6 +2,7 @@ package com.desarrolloMovielexample.huella.features.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.domain.model.Comment
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class DetailSheet { INTERES, REPORTAR, VISTO, LLAMAR }
+enum class DetailSheet { INTERES, REPORTAR, VISTO, LLAMAR, COMENTARIOS }
 
 val REPORT_REASONS = listOf("Venta de animales", "Maltrato", "Información falsa", "Spam", "Otro")
 
@@ -28,6 +29,9 @@ data class PublicationDetailUiState(
     val reportDetail: String = "",
     val sightingText: String = "",
     val isSending: Boolean = false,
+    val comments: List<Comment> = emptyList(),
+    val commentDraft: String = "",
+    val isAuthorOrMod: Boolean = false,
 )
 
 class PublicationDetailViewModel(
@@ -47,16 +51,81 @@ class PublicationDetailViewModel(
                 _uiState.update { s -> s.copy(requestSent = list.any { it.publicationId == publicationId }) }
             }
         }
+        viewModelScope.launch {
+            repo.comments(publicationId).collect { list ->
+                _uiState.update { it.copy(comments = list) }
+            }
+        }
+        viewModelScope.launch {
+            repo.currentUser.collect { user ->
+                val pub = _uiState.value.publication
+                val isAuthor = user != null && pub != null && user.id == pub.author.userId
+                val isMod = user?.isModerator == true
+                _uiState.update { it.copy(isAuthorOrMod = isAuthor || isMod) }
+            }
+        }
+        viewModelScope.launch {
+            repo.publications.collect { list ->
+                val fresh = list.firstOrNull { it.id == publicationId } ?: repo.getPublication(publicationId)
+                if (fresh != null) {
+                    _uiState.update { it.copy(publication = fresh) }
+                }
+            }
+        }
     }
 
     fun openSheet(sheet: DetailSheet) = _uiState.update { it.copy(sheet = sheet) }
-
     fun closeSheet() = _uiState.update { it.copy(sheet = null, isSending = false) }
 
     fun onInterestMessageChange(text: String) = _uiState.update { it.copy(interestMessage = text) }
     fun onReportReasonChange(reason: String) = _uiState.update { it.copy(reportReason = reason) }
     fun onReportDetailChange(text: String) = _uiState.update { it.copy(reportDetail = text) }
     fun onSightingChange(text: String) = _uiState.update { it.copy(sightingText = text) }
+    fun onCommentDraftChange(text: String) = _uiState.update { it.copy(commentDraft = text) }
+
+    fun vote(value: Int) {
+        viewModelScope.launch {
+            repo.votePublication(publicationId, value)
+            val updated = repo.getPublication(publicationId)
+            if (updated != null) _uiState.update { it.copy(publication = updated) }
+        }
+    }
+
+    fun addComment() {
+        val s = _uiState.value
+        val text = s.commentDraft.trim()
+        if (text.isBlank()) return
+        viewModelScope.launch {
+            repo.addComment(publicationId, text)
+                .onSuccess {
+                    _uiState.update { it.copy(commentDraft = "") }
+                    _messages.send("Comentario publicado (+2 puntos)")
+                }
+                .onFailure {
+                    _messages.send(it.message ?: "No se pudo publicar el comentario")
+                }
+        }
+    }
+
+    fun deleteComment(commentId: String) {
+        viewModelScope.launch {
+            repo.deleteComment(publicationId, commentId)
+                .onSuccess { _messages.send("Comentario eliminado") }
+        }
+    }
+
+    fun deleteCurrentPublication(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            repo.deletePublication(publicationId)
+                .onSuccess {
+                    _messages.send("Publicación eliminada")
+                    onSuccess()
+                }
+                .onFailure {
+                    _messages.send(it.message ?: "No se pudo eliminar la publicación")
+                }
+        }
+    }
 
     fun sendInterest() {
         val s = _uiState.value
@@ -109,7 +178,7 @@ class PublicationDetailViewModel(
         }
         _uiState.update { it.copy(isSending = true) }
         viewModelScope.launch {
-            delay(700) // ponytail: no repository endpoint for sightings yet; add sendSighting() to HuellaRepository when the backend exists.
+            delay(500)
             _uiState.update { it.copy(isSending = false, sheet = null, sightingText = "") }
             _messages.send("Aviso enviado. ¡Gracias por ayudar! +5 puntos")
         }
