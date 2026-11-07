@@ -1,4 +1,4 @@
-package com.desarrolloMovielexample.huella.features.profile
+﻿package com.desarrolloMovielexample.huella.features.profile
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -128,8 +129,6 @@ fun SettingsScreen(
                         onLoggedOut()
                     }
                     .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(Icons.Outlined.Logout, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
                 Text(
@@ -137,6 +136,49 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
                     color = HuellaColors.ErrorDark,
+                )
+            }
+
+            var showDeleteDialog by remember { mutableStateOf(false) }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .outlinedCard()
+                    .clickable { showDeleteDialog = true }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
+                Text(
+                    "Eliminar mi cuenta",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
+                    color = HuellaColors.ErrorDark,
+                )
+            }
+
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("¿Eliminar tu cuenta?") },
+                    text = { Text("Esta acción es irreversible. Se eliminarán tus publicaciones, solicitudes y datos.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteDialog = false
+                                viewModel.deleteAccount(onSuccess = onLoggedOut)
+                            }
+                        ) {
+                            Text("Eliminar definitivamente", color = HuellaColors.ErrorDark)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
                 )
             }
             Text(

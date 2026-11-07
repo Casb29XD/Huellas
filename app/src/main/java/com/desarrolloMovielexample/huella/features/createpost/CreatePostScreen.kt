@@ -90,6 +90,7 @@ private val PhotoTones = listOf(Color(0xFFD8E8DD), Color(0xFFE8DAD6), Color(0xFF
 
 @Composable
 fun CreatePostScreen(
+    editPublicationId: String? = null,
     onBack: () -> Unit,
     onPublished: () -> Unit,
     viewModel: CreatePostViewModel = viewModel(),

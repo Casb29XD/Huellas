@@ -1,7 +1,6 @@
 package com.desarrolloMovielexample.huella.data.remote
 
 import com.desarrolloMovielexample.huella.BuildConfig
-import com.desarrolloMovielexample.huella.data.remote.api.PokeApiService
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -9,12 +8,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-/** Retrofit clients for Supabase Auth/PostgREST and the public PokéAPI catalog. */
+/** Retrofit client for Supabase Auth and PostgREST. */
 object RetrofitClient {
-    private const val POKE_API_BASE_URL = "https://pokeapi.co/api/v2/"
-
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        // Never log bodies: auth responses contain access and refresh tokens.
         level = HttpLoggingInterceptor.Level.BASIC
         redactHeader("apikey")
         redactHeader("Authorization")
@@ -44,18 +40,4 @@ object RetrofitClient {
 
     val supabaseApi: SupabaseApiService =
         supabaseRetrofit.create(SupabaseApiService::class.java)
-
-    private val pokeClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
-
-    private val pokeRetrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(POKE_API_BASE_URL)
-        .client(pokeClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    val pokeApiService: PokeApiService = pokeRetrofit.create(PokeApiService::class.java)
 }

@@ -97,6 +97,8 @@ fun ProfileScreen(
             }
             ProfileHeader(user, onOpenLevels)
             PointsCard(user, onOpenLevels, Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp))
+            DetailedStatsSection(user.stats, Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp))
+            BadgesSection(user.badges, Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp))
             StatsRow(
                 listOf(
                     user.publicationsCount.toString() to "Publicaciones",
@@ -134,7 +136,9 @@ fun ProfileScreen(
                 } else {
                     PointsHistory(state.history)
                 }
-                if (user.isModerator) ModerationEntry(onOpenModeration, Modifier.padding(top = 6.dp))
+                if (user.role == com.desarrolloMovielexample.huella.domain.model.Role.MODERADOR) {
+                    ModerationEntry(onOpenModeration, Modifier.padding(top = 6.dp))
+                }
             }
         }
     }

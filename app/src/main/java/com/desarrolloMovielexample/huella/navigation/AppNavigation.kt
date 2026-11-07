@@ -11,13 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.desarrolloMovielexample.huella.core.components.BottomBarItem
 import com.desarrolloMovielexample.huella.core.components.HuellaBottomBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
@@ -43,26 +44,29 @@ import com.desarrolloMovielexample.huella.features.profile.SettingsScreen
 import com.desarrolloMovielexample.huella.features.requests.ChatScreen
 import com.desarrolloMovielexample.huella.features.requests.RequestsScreen
 
-/** Bottom-bar tab for each top-level route pattern (bar hidden elsewhere). */
-private fun tabFor(route: String?): BottomBarItem? = when (route) {
-    Routes.Home.route -> BottomBarItem.INICIO
-    Routes.Map.route -> BottomBarItem.BUSCAR
-    Routes.Requests.route -> BottomBarItem.SOLICITUDES
-    Routes.Profile.route -> BottomBarItem.PERFIL
-    else -> null
+/** Bottom-bar tab for each top-level route (bar hidden elsewhere). */
+private fun tabForDestination(destination: androidx.navigation.NavDestination?): BottomBarItem? {
+    if (destination == null) return null
+    return when {
+        destination.hierarchy.any { it.hasRoute<Routes.Home>() } -> BottomBarItem.INICIO
+        destination.hierarchy.any { it.hasRoute<Routes.Map>() } -> BottomBarItem.BUSCAR
+        destination.hierarchy.any { it.hasRoute<Routes.Requests>() } -> BottomBarItem.SOLICITUDES
+        destination.hierarchy.any { it.hasRoute<Routes.Profile>() } -> BottomBarItem.PERFIL
+        else -> null
+    }
 }
 
 /** Switch between top-level tabs keeping one copy of each in the back stack. */
-private fun NavHostController.navigateToTab(route: String) {
+private fun NavHostController.navigateToTab(route: Any) {
     navigate(route) {
-        popUpTo(Routes.Home.route) { saveState = true }
+        popUpTo<Routes.Home> { saveState = true }
         launchSingleTop = true
         restoreState = true
     }
 }
 
 /** Clear the whole back stack and go to [route] (login -> home, logout -> login). */
-private fun NavHostController.navigateClearingStack(route: String) {
+private fun NavHostController.navigateClearingStack(route: Any) {
     navigate(route) {
         popUpTo(graph.id) { inclusive = true }
         launchSingleTop = true
@@ -76,11 +80,9 @@ fun AppNavigation(
     deepLinkUri: Uri? = null,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentTab = tabFor(backStackEntry?.destination?.route)
+    val currentTab = tabForDestination(backStackEntry?.destination)
 
     // Manejar deep links de Supabase Auth al iniciar la app.
-    // Al confirmar correo: inicia sesión automáticamente y va directo a Home.
-    // Al recuperar contraseña: abre la pantalla de restablecer contraseña.
     LaunchedEffect(deepLinkUri) {
         if (deepLinkUri == null) return@LaunchedEffect
         val fragmentType = deepLinkUri.fragment?.split("&")
@@ -90,19 +92,19 @@ fun AppNavigation(
 
         when (type) {
             "recovery" -> {
-                navController.navigate(Routes.ForgotPassword.route) {
-                    popUpTo(Routes.Splash.route) { inclusive = true }
+                navController.navigate(Routes.ForgotPassword) {
+                    popUpTo<Routes.Splash> { inclusive = true }
                 }
             }
             else -> {
                 val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
                 if (authResult.isSuccess) {
-                    navController.navigate(Routes.Home.route) {
-                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    navController.navigate(Routes.Home) {
+                        popUpTo<Routes.Splash> { inclusive = true }
                     }
                 } else {
-                    navController.navigate(Routes.Login.route) {
-                        popUpTo(Routes.Splash.route) { inclusive = true }
+                    navController.navigate(Routes.Login) {
+                        popUpTo<Routes.Splash> { inclusive = true }
                     }
                 }
             }
@@ -111,7 +113,6 @@ fun AppNavigation(
 
     Scaffold(
         containerColor = HuellaColors.Background,
-        // Screens handle their own status-bar insets through their own Scaffold.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (currentTab != null) {
@@ -119,11 +120,11 @@ fun AppNavigation(
                     selected = currentTab,
                     onItemClick = { item ->
                         when (item) {
-                            BottomBarItem.INICIO -> navController.navigateToTab(Routes.Home.route)
-                            BottomBarItem.BUSCAR -> navController.navigateToTab(Routes.Map.route)
-                            BottomBarItem.PUBLICAR -> navController.navigate(Routes.CreatePost.route)
-                            BottomBarItem.SOLICITUDES -> navController.navigateToTab(Routes.Requests.createRoute(0))
-                            BottomBarItem.PERFIL -> navController.navigateToTab(Routes.Profile.route)
+                            BottomBarItem.INICIO -> navController.navigateToTab(Routes.Home)
+                            BottomBarItem.BUSCAR -> navController.navigateToTab(Routes.Map)
+                            BottomBarItem.PUBLICAR -> navController.navigate(Routes.CreatePost())
+                            BottomBarItem.SOLICITUDES -> navController.navigateToTab(Routes.Requests(0))
+                            BottomBarItem.PERFIL -> navController.navigateToTab(Routes.Profile)
                         }
                     },
                 )
@@ -132,182 +133,173 @@ fun AppNavigation(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.Splash.route,
+            startDestination = Routes.Splash,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding),
         ) {
             // ---------- 01 Acceso ----------
-            composable(Routes.Splash.route) {
+            composable<Routes.Splash> {
                 SplashScreen(
                     onFinished = {
-                        navController.navigate(Routes.Onboarding.route) {
-                            popUpTo(Routes.Splash.route) { inclusive = true }
+                        navController.navigate(Routes.Onboarding) {
+                            popUpTo<Routes.Splash> { inclusive = true }
                         }
                     },
                 )
             }
-            composable(Routes.Onboarding.route) {
+            composable<Routes.Onboarding> {
                 OnboardingScreen(
                     onFinish = {
-                        navController.navigate(Routes.Login.route) {
-                            popUpTo(Routes.Onboarding.route) { inclusive = true }
+                        navController.navigate(Routes.Login) {
+                            popUpTo<Routes.Onboarding> { inclusive = true }
                         }
                     },
                 )
             }
-            composable(Routes.Login.route) {
+            composable<Routes.Login> {
                 LoginScreen(
-                    onLoginSuccess = { navController.navigateClearingStack(Routes.Home.route) },
-                    onRegister = { navController.navigate(Routes.Register.route) },
-                    onForgotPassword = { navController.navigate(Routes.ForgotPassword.route) },
+                    onLoginSuccess = { navController.navigateClearingStack(Routes.Home) },
+                    onRegister = { navController.navigate(Routes.Register) },
+                    onForgotPassword = { navController.navigate(Routes.ForgotPassword) },
                 )
             }
-            composable(Routes.Register.route) {
+            composable<Routes.Register> {
                 RegisterScreen(
                     onBack = { navController.popBackStack() },
-                    onRegistered = { navController.navigateClearingStack(Routes.Home.route) },
+                    onRegistered = { navController.navigateClearingStack(Routes.Home) },
                 )
             }
-            composable(Routes.ForgotPassword.route) {
+            composable<Routes.ForgotPassword> {
                 ForgotPasswordScreen(onBack = { navController.popBackStack() })
             }
 
             // ---------- 02 Inicio y detalle ----------
-            composable(Routes.Home.route) {
+            composable<Routes.Home> {
                 HomeScreen(
-                    onOpenPublication = { id -> navController.navigate(Routes.Detail.createRoute(id)) },
-                    onOpenMap = { navController.navigateToTab(Routes.Map.route) },
-                    onOpenNotifications = { navController.navigate(Routes.Notifications.route) },
-                    onOpenProfile = { navController.navigateToTab(Routes.Profile.route) },
-                    onCreatePost = { navController.navigate(Routes.CreatePost.route) },
+                    onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
+                    onOpenMap = { navController.navigateToTab(Routes.Map) },
+                    onOpenNotifications = { navController.navigate(Routes.Notifications) },
+                    onOpenProfile = { navController.navigateToTab(Routes.Profile) },
+                    onCreatePost = { navController.navigate(Routes.CreatePost()) },
                 )
             }
-            composable(Routes.Map.route) {
+            composable<Routes.Map> {
                 MapScreen(
-                    onBack = { navController.navigateToTab(Routes.Home.route) },
-                    onOpenPublication = { id -> navController.navigate(Routes.Detail.createRoute(id)) },
+                    onBack = { navController.navigateToTab(Routes.Home) },
+                    onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
                 )
             }
-            composable(
-                Routes.Detail.route,
-                arguments = listOf(navArgument(Routes.Detail.ARG) { type = NavType.StringType }),
-            ) { entry ->
+            composable<Routes.Detail> { entry ->
+                val detailRoute = entry.toRoute<Routes.Detail>()
                 PublicationDetailScreen(
-                    publicationId = entry.arguments?.getString(Routes.Detail.ARG).orEmpty(),
+                    publicationId = detailRoute.id,
                     onBack = { navController.popBackStack() },
-                    onOpenAuthor = { userId -> navController.navigate(Routes.PublicProfile.createRoute(userId)) },
-                    onOpenMap = { navController.navigateToTab(Routes.Map.route) },
+                    onOpenAuthor = { userId -> navController.navigate(Routes.PublicProfile(userId)) },
+                    onOpenMap = { navController.navigateToTab(Routes.Map) },
+                    onEditPublication = { id -> navController.navigate(Routes.CreatePost(id)) }
                 )
             }
 
-            // ---------- 03 Publicar ----------
-            composable(Routes.CreatePost.route) {
+            // ---------- 03 Publicar / Editar ----------
+            composable<Routes.CreatePost> { entry ->
+                val route = entry.toRoute<Routes.CreatePost>()
                 CreatePostScreen(
+                    editPublicationId = route.editPublicationId,
                     onBack = { navController.popBackStack() },
                     onPublished = {
-                        navController.navigate(Routes.PostSent.route) {
-                            popUpTo(Routes.CreatePost.route) { inclusive = true }
+                        navController.navigate(Routes.PostSent) {
+                            popUpTo<Routes.CreatePost> { inclusive = true }
                         }
                     },
                 )
             }
-            composable(Routes.PostSent.route) {
+            composable<Routes.PostSent> {
                 PostSentScreen(
-                    // Pop PostSent first so navigateToTab doesn't save it into Home's tab state
-                    // (restoreState would bring it back on the next "Inicio").
                     onViewMyPublications = {
                         navController.popBackStack()
-                        navController.navigateToTab(Routes.Profile.route)
+                        navController.navigateToTab(Routes.Profile)
                     },
-                    onGoHome = { navController.popBackStack(Routes.Home.route, inclusive = false) },
+                    onGoHome = { navController.popBackStack<Routes.Home>(inclusive = false) },
                 )
             }
 
             // ---------- 04 Solicitudes ----------
-            composable(
-                Routes.Requests.route,
-                arguments = listOf(navArgument(Routes.Requests.ARG) { type = NavType.IntType; defaultValue = 0 }),
-            ) { entry ->
+            composable<Routes.Requests> { entry ->
+                val route = entry.toRoute<Routes.Requests>()
                 RequestsScreen(
-                    initialTab = entry.arguments?.getInt(Routes.Requests.ARG) ?: 0,
-                    onOpenPublication = { id -> navController.navigate(Routes.Detail.createRoute(id)) },
-                    onOpenChat = { id -> navController.navigate(Routes.Chat.createRoute(id)) },
-                    onExplore = { navController.navigateToTab(Routes.Home.route) },
+                    initialTab = route.tab,
+                    onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
+                    onOpenChat = { id -> navController.navigate(Routes.Chat(id)) },
+                    onExplore = { navController.navigateToTab(Routes.Home) },
                 )
             }
-            composable(
-                Routes.Chat.route,
-                arguments = listOf(navArgument(Routes.Chat.ARG) { type = NavType.StringType }),
-            ) { entry ->
+            composable<Routes.Chat> { entry ->
+                val route = entry.toRoute<Routes.Chat>()
                 ChatScreen(
-                    conversationId = entry.arguments?.getString(Routes.Chat.ARG).orEmpty(),
+                    conversationId = route.id,
                     onBack = { navController.popBackStack() },
                 )
             }
 
             // ---------- 05 Perfil ----------
-            composable(Routes.Profile.route) {
+            composable<Routes.Profile> {
                 ProfileScreen(
-                    onEditProfile = { navController.navigate(Routes.EditProfile.route) },
-                    onSettings = { navController.navigate(Routes.Settings.route) },
-                    onOpenLevels = { navController.navigate(Routes.Levels.route) },
-                    onOpenPublication = { id -> navController.navigate(Routes.Detail.createRoute(id)) },
-                    onOpenModeration = { navController.navigate(Routes.Moderation.route) },
+                    onEditProfile = { navController.navigate(Routes.EditProfile) },
+                    onSettings = { navController.navigate(Routes.Settings) },
+                    onOpenLevels = { navController.navigate(Routes.Levels) },
+                    onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
+                    onOpenModeration = { navController.navigate(Routes.Moderation) },
                 )
             }
-            composable(Routes.Levels.route) {
+            composable<Routes.Levels> {
                 LevelsScreen(onBack = { navController.popBackStack() })
             }
-            composable(
-                Routes.PublicProfile.route,
-                arguments = listOf(navArgument(Routes.PublicProfile.ARG) { type = NavType.StringType }),
-            ) { entry ->
+            composable<Routes.PublicProfile> { entry ->
+                val route = entry.toRoute<Routes.PublicProfile>()
                 PublicProfileScreen(
-                    userId = entry.arguments?.getString(Routes.PublicProfile.ARG).orEmpty(),
+                    userId = route.id,
                     onBack = { navController.popBackStack() },
-                    onOpenPublication = { id -> navController.navigate(Routes.Detail.createRoute(id)) },
-                    onContact = { conversationId -> navController.navigate(Routes.Chat.createRoute(conversationId)) },
+                    onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
+                    onContact = { conversationId -> navController.navigate(Routes.Chat(conversationId)) },
                 )
             }
-            composable(Routes.Notifications.route) {
+            composable<Routes.Notifications> {
                 NotificationsScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenRequests = { tab -> navController.navigateToTab(Routes.Requests.createRoute(tab)) },
-                    onOpenChat = { id -> navController.navigate(Routes.Chat.createRoute(id)) },
-                    onOpenPublication = { id -> navController.navigate(Routes.Detail.createRoute(id)) },
-                    onOpenLevels = { navController.navigate(Routes.Levels.route) },
+                    onOpenRequests = { tab -> navController.navigateToTab(Routes.Requests(tab)) },
+                    onOpenChat = { id -> navController.navigate(Routes.Chat(id)) },
+                    onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
+                    onOpenLevels = { navController.navigate(Routes.Levels) },
                 )
             }
-            composable(Routes.EditProfile.route) {
+            composable<Routes.EditProfile> {
                 EditProfileScreen(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
                 )
             }
-            composable(Routes.Settings.route) {
+            composable<Routes.Settings> {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
-                    onEditProfile = { navController.navigate(Routes.EditProfile.route) },
-                    onChangePassword = { navController.navigate(Routes.ForgotPassword.route) },
-                    onLoggedOut = { navController.navigateClearingStack(Routes.Login.route) },
+                    onEditProfile = { navController.navigate(Routes.EditProfile) },
+                    onChangePassword = { navController.navigate(Routes.ForgotPassword) },
+                    onLoggedOut = { navController.navigateClearingStack(Routes.Login) },
                 )
             }
 
             // ---------- 06 Moderación ----------
-            composable(Routes.Moderation.route) {
+            composable<Routes.Moderation> {
                 ModerationScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenItem = { id -> navController.navigate(Routes.ModerationDetail.createRoute(id)) },
+                    onOpenItem = { id -> navController.navigate(Routes.ModerationDetail(id)) },
                 )
             }
-            composable(
-                Routes.ModerationDetail.route,
-                arguments = listOf(navArgument(Routes.ModerationDetail.ARG) { type = NavType.StringType }),
-            ) { entry ->
+            composable<Routes.ModerationDetail> { entry ->
+                val route = entry.toRoute<Routes.ModerationDetail>()
                 ModerationDetailScreen(
-                    itemId = entry.arguments?.getString(Routes.ModerationDetail.ARG).orEmpty(),
+                    itemId = route.id,
                     onBack = { navController.popBackStack() },
                     onDone = { navController.popBackStack() },
                 )

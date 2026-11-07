@@ -98,10 +98,12 @@ fun PublicationDetailScreen(
     onBack: () -> Unit,
     onOpenAuthor: (String) -> Unit,
     onOpenMap: () -> Unit,
+    onEditPublication: (String) -> Unit = {},
     viewModel: PublicationDetailViewModel = viewModel(key = "detail_$publicationId") { PublicationDetailViewModel(publicationId) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val screenHost = remember { SnackbarHostState() }
+    var showDeleteConfirm by remember { androidx.compose.runtime.mutableStateOf(false) }
     val sheetHost = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel) {
@@ -146,6 +148,35 @@ fun PublicationDetailScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { HuellaSnackbarHost(screenHost) },
         bottomBar = {
+            if (state.isAuthorOrMod) {
+                Row(
+                    Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
+                    PillButton("Eliminar", onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
+                }
+            }
+            if (showDeleteConfirm) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = { Text("¿Eliminar publicación?") },
+                    text = { Text("Esta acción eliminará la publicación definitivamente.") },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            showDeleteConfirm = false
+                            viewModel.deleteCurrentPublication(onSuccess = onBack)
+                        }) {
+                            Text("Eliminar", color = HuellaColors.ErrorDark)
+                        }
+                    },
+                    dismissButton = {
+                        androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
             ActionBar(
                 pub = pub,
                 requestSent = state.requestSent,
@@ -218,7 +249,20 @@ fun PublicationDetailScreen(
                         Text(pub.neighborhood, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextSecondary)
                     }
                 }
+                VotesAndCommentsRow(
+                    publication = pub,
+                    onVote = viewModel::vote,
+                    onOpenComments = { viewModel.openSheet(DetailSheet.COMENTARIOS) }
+                )
                 AuthorCard(pub, onOpenAuthor)
+                CommentsSection(
+                    comments = state.comments,
+                    draft = state.commentDraft,
+                    onDraftChange = viewModel::onCommentDraftChange,
+                    onSend = viewModel::addComment,
+                    onDeleteComment = viewModel::deleteComment,
+                    canDeleteAny = state.isAuthorOrMod
+                )
             }
         }
     }
@@ -331,6 +375,19 @@ fun PublicationDetailScreen(
             }
         }
 
+        DetailSheet.COMENTARIOS -> HuellaBottomSheet(onDismiss = viewModel::closeSheet) {
+            SheetBody(sheetHost) {
+                SheetTitle("Comentarios", viewModel::closeSheet)
+                CommentsSection(
+                    comments = state.comments,
+                    draft = state.commentDraft,
+                    onDraftChange = viewModel::onCommentDraftChange,
+                    onSend = viewModel::addComment,
+                    onDeleteComment = viewModel::deleteComment,
+                    canDeleteAny = state.isAuthorOrMod
+                )
+            }
+        }
         DetailSheet.LLAMAR -> CallDialog(
             name = pub.author.name,
             phone = pub.phone ?: "Sin telÃ©fono registrado",
@@ -620,6 +677,35 @@ private fun AuthorCard(pub: Publication, onOpenAuthor: (String) -> Unit) {
 }
 
 @Composable
+            if (state.isAuthorOrMod) {
+                Row(
+                    Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
+                    PillButton("Eliminar", onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
+                }
+            }
+            if (showDeleteConfirm) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = { Text("¿Eliminar publicación?") },
+                    text = { Text("Esta acción eliminará la publicación definitivamente.") },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            showDeleteConfirm = false
+                            viewModel.deleteCurrentPublication(onSuccess = onBack)
+                        }) {
+                            Text("Eliminar", color = HuellaColors.ErrorDark)
+                        }
+                    },
+                    dismissButton = {
+                        androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
 private fun ActionBar(
     pub: Publication,
     requestSent: Boolean,
@@ -759,3 +845,4 @@ fun PublicationDetailScreenPreview() {
         )
     }
 }
+

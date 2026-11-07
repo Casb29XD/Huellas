@@ -31,6 +31,15 @@ class NotificationsViewModel(private val repo: HuellaRepository = SupabaseReposi
     private val _messages = Channel<String>(Channel.BUFFERED)
     val messages: Flow<String> = _messages.receiveAsFlow()
 
+    fun markAsRead(id: String) {
+        repo.markNotificationRead(id)
+    }
+
+    fun deleteNotification(id: String) {
+        repo.deleteNotification(id)
+        _messages.trySend("Notificación eliminada")
+    }
+
     fun markAllRead() {
         if (!uiState.value.hasUnread) {
             _messages.trySend("No tienes notificaciones sin leer")
