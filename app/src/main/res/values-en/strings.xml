@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Huella</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_push">Push notifications</string>
+    <string name="settings_push_summary">Requests, moderation and levels</string>
+    <string name="settings_email_digest">Email summary</string>
+    <string name="settings_email_digest_summary">Weekly updates about pets near you</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_edit_profile">Edit profile</string>
+    <string name="settings_change_password">Change password</string>
+    <string name="settings_terms">Terms and adoption policy</string>
+    <string name="settings_language_section">App</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system_summary">Use your device language</string>
+    <string name="settings_logout">Sign out</string>
+    <string name="settings_language_dialog_title">App language</string>
+    <string name="language_system">Automatic (device language)</string>
+    <string name="language_spanish">Spanish</string>
+    <string name="language_english">English</string>
+    <string name="settings_footer">Huella 1.0 · Made in Colombia</string>
+</resources>
