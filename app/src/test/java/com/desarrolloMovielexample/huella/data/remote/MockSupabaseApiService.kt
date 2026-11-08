@@ -1,7 +1,9 @@
 package com.desarrolloMovielexample.huella.data.remote
 
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -81,9 +83,15 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(mockProfiles)
     }
 
-    override suspend fun updateProfile(userId: String, body: JsonObject, prefer: String): Response<List<JsonObject>> {
-        return Response.success(listOf(body))
+    override suspend fun updateProfile(userId: String, body: JsonObject, prefer: String): Response<Unit> {
+        return Response.success(Unit)
     }
+
+    override suspend fun updateAuthUser(body: JsonObject): Response<JsonObject> = Response.success(body)
+
+    override suspend fun getMyProfile(body: JsonObject): Response<List<JsonObject>> = Response.success(mockProfiles.take(1))
+
+    override suspend fun getContactPhone(body: JsonObject): Response<JsonElement> = Response.success(JsonPrimitive("3000000000"))
 
     override suspend fun getPublications(
         select: String,
