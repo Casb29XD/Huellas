@@ -133,7 +133,7 @@ fun PublicationCard(
             Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(publication.title, style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+            Text(publication.title, style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -193,7 +193,7 @@ fun PublicationRowCard(
                     publication.title,
                     style = MaterialTheme.typography.titleSmall,
                     color = HuellaColors.TextPrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )

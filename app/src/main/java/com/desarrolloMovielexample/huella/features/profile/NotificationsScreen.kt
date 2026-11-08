@@ -162,7 +162,7 @@ private fun NotificationCard(n: AppNotification, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
                     color = HuellaColors.TextPrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )

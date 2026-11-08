@@ -211,7 +211,7 @@ private fun ReceivedGroupCard(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
                     color = HuellaColors.TextPrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
