@@ -77,6 +77,15 @@ BEGIN
     RETURN NEXT ok(to_regclass('public.publications_author_id_idx') IS NOT NULL, 'índice en publications.author_id');
     RETURN NEXT ok(to_regclass('public.chat_messages_conversation_created_idx') IS NOT NULL, 'índice en chat_messages.conversation_id');
     RETURN NEXT ok(to_regclass('public.notifications_user_created_idx') IS NOT NULL, 'índice en notifications.user_id');
+    -- Ítem 19: toda FK de public tiene un índice que empieza por su columna (las RLS y los ON DELETE CASCADE lo usan).
+    RETURN NEXT is((SELECT count(*)::int FROM pg_constraint c
+        WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+          AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1])),
+        0, 'toda FK de public tiene índice');
+    -- Ítem 21: "Hoy" ya no es un valor por defecto que envejece.
+    RETURN NEXT is((SELECT column_default FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'notifications' AND column_name = 'group_label'),
+        NULL, 'notifications.group_label sin default');
 END;
 $$;
 
