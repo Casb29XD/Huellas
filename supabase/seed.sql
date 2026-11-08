@@ -1,16 +1,16 @@
 -- ============================================================================
--- HUELLA APP - DATOS DE PRUEBA Y USUARIO ADMINISTRADOR / SUPERVISOR
+-- HUELLA APP - DATOS DE PRUEBA (SOLO DESARROLLO LOCAL)
 -- ============================================================================
--- INSTRUCCIONES DE USO:
---   1. Abre el SQL Editor en tu proyecto de Supabase.
---   2. Ejecuta primero supabase_schema.sql si aún no lo has hecho.
---   3. Ejecuta supabase_migrations/20261103_moderation_rpc.sql.
---   4. Ejecuta ESTE archivo (20261106_seed_data.sql).
+-- NUNCA en producción ni en el proyecto hosted compartido.
+-- Crea usuarios con contraseñas públicas (incluido un moderador) directamente en
+-- auth.users. Solo lo carga `supabase db reset` sobre el stack local
+-- ([db.seed] en supabase/config.toml). En un proyecto real los moderadores se
+-- crean desde el dashboard y se promueven con service_role.
 --
--- CREDENCIALES DEL ADMINISTRADOR:
---   Email   : admin@huella.app
---   Password: Admin1234!
---   Rol     : is_moderator = TRUE (supervisor/moderador de contenidos)
+-- Cuentas locales (contraseña = Nombre1234!): admin@huella.app (moderador),
+-- laura@ejemplo.com, carlos@ejemplo.com, sofia@ejemplo.com.
+-- Es re-ejecutable: los perfiles usan ON CONFLICT DO UPDATE porque el trigger
+-- on_auth_user_created ya creó la fila al insertar en auth.users.
 -- ============================================================================
 
 -- ============================================================================
@@ -83,10 +83,11 @@ INSERT INTO public.profiles (
   1500, 'HEROE', 'AH', '2026',
   TRUE, 0, 0, 0, 0
 ) ON CONFLICT (id) DO UPDATE SET
-  is_moderator = TRUE,
-  level        = 'HEROE',
-  points       = 1500,
-  bio          = EXCLUDED.bio;
+  name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
+  bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
+  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
+  foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
 -- -------------------------------------------------------------------------
 -- 1.2 Crear usuario de prueba 1 — Protector
@@ -126,7 +127,12 @@ INSERT INTO public.profiles (
   'Amante de los animales. He rescatado 3 perros y 2 gatos desde que descubrí Huella.',
   120, 'PROTECTOR', 'LG', '2026',
   FALSE, 4, 2, 1, 2
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
+  bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
+  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
+  foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
 -- -------------------------------------------------------------------------
 -- 1.3 Crear usuario de prueba 2 — Guardián
@@ -166,7 +172,12 @@ INSERT INTO public.profiles (
   'Veterinario voluntario. Organizo jornadas de vacunación en el barrio.',
   350, 'GUARDIAN', 'CR', '2026',
   FALSE, 8, 5, 3, 3
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
+  bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
+  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
+  foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
 -- -------------------------------------------------------------------------
 -- 1.4 Crear usuario de prueba 3 — Amigo Animal (nuevo)
@@ -206,7 +217,12 @@ INSERT INTO public.profiles (
   'Recién llegué a Huella. Busco adoptar mi primera mascota.',
   10, 'AMIGO_ANIMAL', 'SM', '2026',
   FALSE, 1, 0, 0, 1
-) ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
+  bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
+  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
+  foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
 -- ============================================================================
 -- PASO 2 · Publicaciones de prueba
