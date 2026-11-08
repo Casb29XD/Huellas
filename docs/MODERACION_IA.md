@@ -47,6 +47,12 @@ Local: copia `supabase/functions/.env.example` a `supabase/functions/.env` (igno
 `verdict` ∈ `APROBAR | RECHAZAR | REVISAR`, `risk` ∈ [0,1], `suggested_reason` ∈ `Venta de animales | Contenido falso |
 Fotos inadecuadas | Duplicado | Otro` (null si aprueba). La función normaliza la respuesta del modelo para que nunca viole los CHECK.
 
+Prompt injection: el JSON de la publicación viaja entre `<<<PUBLICACION>>>` y `<<<FIN>>>` (el system prompt dice que
+ese bloque es dato, nunca instrucción) y se quitan del texto del usuario las rachas de `<`/`>`. La respuesta se valida
+(`verdict` del enum, `risk` en [0,1], máx. 5 `reasons` de 200 caracteres) y una heurística local (`$` con cifra,
+"se vende", "vendo", "precio", "cuotas", "entrego por") sube `risk` a 0.8, añade un motivo y cambia APROBAR por REVISAR
+aunque el modelo apruebe. Lógica pura en `review.ts`, probada con `deno test supabase/functions/moderate-ai/`.
+
 Qué evalúa el prompt: venta de animales, contenido falso o estafas, fotos inadecuadas, duplicados y maltrato.
 Para detectar duplicados envía también las últimas 10 publicaciones del mismo autor.
 Limitación: `deepseek-chat` no ve imágenes; solo recibe la URL y la etiqueta de la foto, así que "Fotos inadecuadas"
