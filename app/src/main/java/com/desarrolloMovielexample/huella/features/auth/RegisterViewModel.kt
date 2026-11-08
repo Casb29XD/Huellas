@@ -2,9 +2,13 @@ package com.desarrolloMovielexample.huella.features.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.utils.MIN_PASSWORD_LENGTH
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.utils.isValidEmail
 import com.desarrolloMovielexample.huella.core.utils.isValidPassword
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
@@ -25,11 +29,11 @@ data class RegisterUiState(
     val passwordVisible: Boolean = false,
     val acceptedTerms: Boolean = false,
     val cities: List<String> = emptyList(),
-    val nameError: String? = null,
-    val emailError: String? = null,
-    val cityError: String? = null,
-    val passwordError: String? = null,
-    val confirmError: String? = null,
+    val nameError: UiText? = null,
+    val emailError: UiText? = null,
+    val cityError: UiText? = null,
+    val passwordError: UiText? = null,
+    val confirmError: UiText? = null,
     val termsError: Boolean = false,
     val isLoading: Boolean = false,
     val registered: Boolean = false,
@@ -39,8 +43,8 @@ class RegisterViewModel(private val repo: HuellaRepository = SupabaseRepository)
     private val _uiState = MutableStateFlow(RegisterUiState(cities = repo.cities, city = repo.cities.firstOrNull().orEmpty()))
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun onNameChange(v: String) = _uiState.update { it.copy(name = v, nameError = null) }
     fun onEmailChange(v: String) = _uiState.update { it.copy(email = v, emailError = null) }
@@ -53,17 +57,17 @@ class RegisterViewModel(private val repo: HuellaRepository = SupabaseRepository)
     fun register() {
         val s = _uiState.value
         if (s.isLoading) return
-        val nameError = if (s.name.isBlank()) "El nombre es obligatorio" else null
+        val nameError = if (s.name.isBlank()) uiText(R.string.error_name_required) else null
         val emailError = when {
-            s.email.isBlank() -> "El correo electrónico es obligatorio"
-            !isValidEmail(s.email) -> "Ingresa un correo electrónico válido (ej. usuario@correo.com)"
+            s.email.isBlank() -> uiText(R.string.error_email_required)
+            !isValidEmail(s.email) -> uiText(R.string.error_email_invalid_example)
             else -> null
         }
-        val cityError = if (s.city.isBlank()) "Selecciona tu ciudad" else null
-        val passwordError = if (!isValidPassword(s.password)) "La contraseña debe tener al menos $MIN_PASSWORD_LENGTH caracteres" else null
+        val cityError = if (s.city.isBlank()) uiText(R.string.error_city_required) else null
+        val passwordError = if (!isValidPassword(s.password)) uiText(R.string.error_password_min, MIN_PASSWORD_LENGTH) else null
         val confirmError = when {
-            s.confirmPassword.isEmpty() -> "Debes confirmar tu contraseña"
-            s.confirmPassword != s.password -> "Las contraseñas no coinciden"
+            s.confirmPassword.isEmpty() -> uiText(R.string.error_confirm_password)
+            s.confirmPassword != s.password -> uiText(R.string.error_passwords_mismatch)
             else -> null
         }
         val fieldsOk = listOf(nameError, emailError, cityError, passwordError, confirmError).all { it == null }
@@ -74,19 +78,19 @@ class RegisterViewModel(private val repo: HuellaRepository = SupabaseRepository)
             )
         }
         when {
-            !fieldsOk -> { _messages.trySend("Revisa los datos ingresados en el formulario"); return }
-            !s.acceptedTerms -> { _messages.trySend("Debes aceptar los términos y condiciones"); return }
+            !fieldsOk -> { _messages.trySend(uiText(R.string.msg_check_form)); return }
+            !s.acceptedTerms -> { _messages.trySend(uiText(R.string.register_terms_required)); return }
         }
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             repo.register(s.name.trim(), s.email.trim(), s.city, s.password)
                 .onSuccess {
-                    _messages.trySend("¡Cuenta creada! Bienvenido a Huella")
+                    _messages.trySend(uiText(R.string.msg_account_created))
                     _uiState.update { it.copy(isLoading = false, registered = true) }
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _messages.trySend(e.message ?: "No pudimos crear tu cuenta")
+                    _messages.trySend(e.toUiText(R.string.error_register))
                 }
         }
     }

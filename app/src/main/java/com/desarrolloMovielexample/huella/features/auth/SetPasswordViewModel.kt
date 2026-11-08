@@ -2,8 +2,12 @@ package com.desarrolloMovielexample.huella.features.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.utils.MIN_PASSWORD_LENGTH
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.utils.isValidPassword
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
@@ -19,8 +23,8 @@ data class SetPasswordUiState(
     val password: String = "",
     val confirmPassword: String = "",
     val passwordVisible: Boolean = false,
-    val passwordError: String? = null,
-    val confirmError: String? = null,
+    val passwordError: UiText? = null,
+    val confirmError: UiText? = null,
     val isLoading: Boolean = false,
     val saved: Boolean = false,
 )
@@ -30,8 +34,8 @@ class SetPasswordViewModel(private val repo: HuellaRepository = SupabaseReposito
     private val _uiState = MutableStateFlow(SetPasswordUiState())
     val uiState: StateFlow<SetPasswordUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun onPasswordChange(v: String) = _uiState.update { it.copy(password = v, passwordError = null) }
     fun onConfirmChange(v: String) = _uiState.update { it.copy(confirmPassword = v, confirmError = null) }
@@ -41,10 +45,10 @@ class SetPasswordViewModel(private val repo: HuellaRepository = SupabaseReposito
         val s = _uiState.value
         if (s.isLoading) return
         // Mismas reglas que el registro.
-        val passwordError = if (!isValidPassword(s.password)) "La contraseña debe tener al menos $MIN_PASSWORD_LENGTH caracteres" else null
+        val passwordError = if (!isValidPassword(s.password)) uiText(R.string.error_password_min, MIN_PASSWORD_LENGTH) else null
         val confirmError = when {
-            s.confirmPassword.isEmpty() -> "Debes confirmar tu contraseña"
-            s.confirmPassword != s.password -> "Las contraseñas no coinciden"
+            s.confirmPassword.isEmpty() -> uiText(R.string.error_confirm_password)
+            s.confirmPassword != s.password -> uiText(R.string.error_passwords_mismatch)
             else -> null
         }
         if (passwordError != null || confirmError != null) {
@@ -57,11 +61,11 @@ class SetPasswordViewModel(private val repo: HuellaRepository = SupabaseReposito
             repo.updatePassword(s.password)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, saved = true) }
-                    _messages.send("Contraseña actualizada")
+                    _messages.send(uiText(R.string.msg_password_updated))
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _messages.send(e.message ?: "No pudimos guardar la contraseña")
+                    _messages.send(e.toUiText(R.string.error_save_password))
                 }
         }
     }

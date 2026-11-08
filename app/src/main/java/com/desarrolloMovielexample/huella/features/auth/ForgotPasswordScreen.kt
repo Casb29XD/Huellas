@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +35,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
+import com.desarrolloMovielexample.huella.core.utils.asString
 
 /** Not in the design: same visual language as "Iniciar sesión" (logo header, 52dp fields, green pill). */
 @Composable
@@ -60,12 +62,12 @@ fun ForgotPasswordScreen(
             ) {
                 EmptyState(
                     illustration = R.drawable.illus_message_sent,
-                    title = "Revisa tu correo",
-                    text = "Enviamos un enlace a ${state.email.trim()} para que crees una nueva contraseña. Si no lo ves, revisa la carpeta de spam.",
+                    title = stringResource(R.string.forgot_sent_title),
+                    text = stringResource(R.string.forgot_sent_text, state.email.trim()),
                     illustrationSize = 220.dp,
-                    actionText = "Volver a iniciar sesión",
+                    actionText = stringResource(R.string.forgot_back_to_login),
                     onAction = onBack,
-                    secondaryActionText = "Usar otro correo",
+                    secondaryActionText = stringResource(R.string.forgot_other_email),
                     onSecondaryAction = viewModel::editEmail,
                     modifier = Modifier.padding(vertical = 24.dp),
                 )
@@ -81,15 +83,15 @@ fun ForgotPasswordScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 AuthHeader(
-                    "Recupera tu contraseña",
-                    "Escribe el correo de tu cuenta y te enviaremos un enlace para crear una nueva.",
+                    stringResource(R.string.forgot_title),
+                    stringResource(R.string.forgot_subtitle),
                 )
                 HuellaTextField(
                     value = state.email,
                     onValueChange = viewModel::onEmailChange,
-                    label = "Correo",
-                    placeholder = "mariana@correo.com",
-                    error = state.emailError,
+                    label = stringResource(R.string.field_email),
+                    placeholder = stringResource(R.string.field_email_placeholder),
+                    error = state.emailError?.asString(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Send),
                     keyboardActions = KeyboardActions(onSend = {
                         focusManager.clearFocus()
@@ -98,7 +100,7 @@ fun ForgotPasswordScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 PrimaryButton(
-                    text = "Enviar enlace",
+                    text = stringResource(R.string.forgot_send),
                     onClick = {
                         focusManager.clearFocus()
                         viewModel.sendLink()
@@ -107,7 +109,7 @@ fun ForgotPasswordScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 HuellaTextButton(
-                    text = "Volver a iniciar sesión",
+                    text = stringResource(R.string.forgot_back_to_login),
                     onClick = onBack,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )

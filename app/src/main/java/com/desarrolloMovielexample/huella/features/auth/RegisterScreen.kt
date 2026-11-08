@@ -21,10 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.HuellaDropdownField
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextField
@@ -56,6 +58,7 @@ import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
+import com.desarrolloMovielexample.huella.core.utils.asString
 import kotlinx.coroutines.flow.filter
 
 @Composable
@@ -77,7 +80,7 @@ fun RegisterScreen(
     val passwordTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
 
     Scaffold(
-        topBar = { HuellaTopBar(title = "Crear cuenta", onBack = onBack) },
+        topBar = { HuellaTopBar(title = stringResource(R.string.register_title), onBack = onBack) },
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
     ) { innerPadding ->
@@ -93,18 +96,18 @@ fun RegisterScreen(
             HuellaTextField(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
-                label = "Nombre",
-                placeholder = "Mariana López",
-                error = state.nameError,
+                label = stringResource(R.string.field_name),
+                placeholder = stringResource(R.string.field_name_placeholder),
+                error = state.nameError?.asString(),
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
             )
             HuellaTextField(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
-                label = "Correo",
-                placeholder = "mariana@correo.com",
-                error = state.emailError,
+                label = stringResource(R.string.field_email),
+                placeholder = stringResource(R.string.field_email_placeholder),
+                error = state.emailError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -112,16 +115,16 @@ fun RegisterScreen(
                 value = state.city,
                 options = state.cities,
                 onSelect = viewModel::onCityChange,
-                label = "Ciudad",
-                error = state.cityError,
+                label = stringResource(R.string.field_city),
+                error = state.cityError?.asString(),
                 modifier = Modifier.fillMaxWidth(),
             )
             HuellaTextField(
                 value = state.password,
                 onValueChange = viewModel::onPasswordChange,
-                label = "Contraseña",
-                placeholder = "Mínimo 8 caracteres",
-                error = state.passwordError,
+                label = stringResource(R.string.field_password),
+                placeholder = stringResource(R.string.field_password_min),
+                error = state.passwordError?.asString(),
                 visualTransformation = passwordTransformation,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                 trailingIcon = { PasswordVisibilityToggle(state.passwordVisible, viewModel::togglePasswordVisibility) },
@@ -130,9 +133,9 @@ fun RegisterScreen(
             HuellaTextField(
                 value = state.confirmPassword,
                 onValueChange = viewModel::onConfirmChange,
-                label = "Confirmar contraseña",
-                placeholder = "Repite tu contraseña",
-                error = state.confirmError,
+                label = stringResource(R.string.field_confirm_password),
+                placeholder = stringResource(R.string.field_confirm_placeholder),
+                error = state.confirmError?.asString(),
                 visualTransformation = passwordTransformation,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth(),
@@ -140,7 +143,7 @@ fun RegisterScreen(
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 TermsCheckbox(checked = state.acceptedTerms, isError = state.termsError, onToggle = viewModel::toggleTerms)
                 Text(
-                    "Leer términos y condiciones",
+                    stringResource(R.string.register_read_terms),
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
                     color = HuellaColors.Primary,
                     modifier = Modifier
@@ -148,11 +151,11 @@ fun RegisterScreen(
                         .clickable(onClick = onOpenTerms),
                 )
                 if (state.termsError) {
-                    Text("Debes aceptar los términos y condiciones", style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+                    Text(stringResource(R.string.register_terms_required), style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
                 }
             }
             PrimaryButton(
-                text = "Crear cuenta",
+                text = stringResource(R.string.register_title),
                 onClick = {
                     focusManager.clearFocus()
                     viewModel.register()
@@ -189,11 +192,13 @@ private fun TermsCheckbox(checked: Boolean, isError: Boolean, onToggle: () -> Un
         ) {
             if (checked) Icon(Icons.Outlined.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
         }
+        val accept = stringResource(R.string.register_terms_accept)
+        val noSale = stringResource(R.string.register_terms_no_sale)
         Text(
             buildAnnotatedString {
-                append("Acepto los términos y condiciones. ")
+                append(accept)
                 withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = HuellaColors.TextPrimary)) {
-                    append("Entiendo que está prohibida la venta de animales.")
+                    append(noSale)
                 }
             },
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 19.5.sp),
