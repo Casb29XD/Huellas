@@ -8,6 +8,7 @@ object SupabaseSession {
     private const val ACCESS_TOKEN = "access_token"
     private const val USER_ID = "user_id"
     private const val REFRESH_TOKEN = "refresh_token"
+    private const val CODE_VERIFIER = "pkce_code_verifier"
 
     @Volatile
     var accessToken: String? = null
@@ -21,11 +22,25 @@ object SupabaseSession {
     var refreshToken: String? = null
         private set
 
+    /** PKCE: verifier del último registro/recuperación; el ?code= del correo no sirve sin él. */
+    @Volatile
+    var codeVerifier: String? = null
+        private set
+
     fun initialize(context: Context) {
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         accessToken = prefs.getString(ACCESS_TOKEN, null)
         userId = prefs.getString(USER_ID, null)
         refreshToken = prefs.getString(REFRESH_TOKEN, null)
+        codeVerifier = prefs.getString(CODE_VERIFIER, null)
+    }
+
+    fun saveCodeVerifier(context: Context, verifier: String?) {
+        codeVerifier = verifier
+        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putString(CODE_VERIFIER, verifier)
+            .apply()
     }
 
     fun save(context: Context, token: String, id: String, refresh: String? = refreshToken) {
@@ -40,6 +55,7 @@ object SupabaseSession {
             .apply()
     }
 
+    /** Cierra la sesión; conserva el code verifier para que un enlace de correo pendiente siga sirviendo. */
     fun clear(context: Context? = null) {
         accessToken = null
         userId = null
@@ -47,7 +63,9 @@ object SupabaseSession {
         context?.applicationContext
             ?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             ?.edit()
-            ?.clear()
+            ?.remove(ACCESS_TOKEN)
+            ?.remove(USER_ID)
+            ?.remove(REFRESH_TOKEN)
             ?.apply()
     }
 }

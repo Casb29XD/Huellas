@@ -36,20 +36,23 @@ interface SupabaseApiService {
     @POST("auth/v1/token?grant_type=refresh_token")
     suspend fun refreshSession(@Body body: JsonObject): Response<JsonObject>
 
+    /** El body lleva code_challenge/code_challenge_method (PKCE); redirect_to es el deep link del correo. */
     @POST("auth/v1/signup")
-    suspend fun signUp(@Body body: JsonObject): Response<JsonObject>
+    suspend fun signUp(@Body body: JsonObject, @Query("redirect_to") redirectTo: String? = null): Response<JsonObject>
 
     @POST("auth/v1/recover")
-    suspend fun recoverPassword(@Body body: JsonObject): Response<JsonObject>
+    suspend fun recoverPassword(@Body body: JsonObject, @Query("redirect_to") redirectTo: String? = null): Response<JsonObject>
+
+    /** Canjea el ?code= del deep link por una sesión: {auth_code, code_verifier}. */
+    @POST("auth/v1/token?grant_type=pkce")
+    suspend fun exchangeCodeForSession(@Body body: JsonObject): Response<JsonObject>
 
     @GET("auth/v1/user")
     suspend fun getUser(@Header("Authorization") bearerToken: String): Response<JsonObject>
 
-    @GET("auth/v1/verify")
-    suspend fun verifyOtp(
-        @Query("token_hash") tokenHash: String,
-        @Query("type") type: String,
-    ): Response<JsonObject>
+    /** Enlaces antiguos con token_hash: POST /verify devuelve la sesión (GET /verify solo redirige). */
+    @POST("auth/v1/verify")
+    suspend fun verifyOtp(@Body body: JsonObject): Response<JsonObject>
 
     /** Cambia email o contraseña del usuario autenticado (Supabase envía la confirmación del email nuevo). */
     @PUT("auth/v1/user")

@@ -52,7 +52,9 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(res)
     }
 
-    override suspend fun signUp(body: JsonObject): Response<JsonObject> {
+    override suspend fun exchangeCodeForSession(body: JsonObject): Response<JsonObject> = verifyOtp(body)
+
+    override suspend fun signUp(body: JsonObject, redirectTo: String?): Response<JsonObject> {
         val res = JsonObject().apply {
             addProperty("access_token", "signup_mock_token")
             addProperty("refresh_token", "signup_refresh_token")
@@ -61,7 +63,7 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(res)
     }
 
-    override suspend fun recoverPassword(body: JsonObject): Response<JsonObject> {
+    override suspend fun recoverPassword(body: JsonObject, redirectTo: String?): Response<JsonObject> {
         return Response.success(JsonObject())
     }
 
@@ -70,7 +72,7 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(res)
     }
 
-    override suspend fun verifyOtp(tokenHash: String, type: String): Response<JsonObject> {
+    override suspend fun verifyOtp(body: JsonObject): Response<JsonObject> {
         val res = JsonObject().apply {
             addProperty("access_token", "otp_mock_token")
             addProperty("refresh_token", "otp_refresh_token")
