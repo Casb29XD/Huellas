@@ -325,6 +325,11 @@ fun AppNavigation(
                     onDone = { navController.popBackStack() },
                 )
             }
+
+            // F4: Terms
+            composable<Routes.Terms> {
+                com.desarrolloMovielexample.huella.features.legal.TermsScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

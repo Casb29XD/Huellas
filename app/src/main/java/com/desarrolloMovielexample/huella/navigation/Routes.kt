@@ -76,4 +76,8 @@ sealed interface Routes {
 
     @Serializable
     data class ModerationDetail(val id: String) : Routes
+
+    // F4: Terms
+    @Serializable
+    data object Terms : Routes
 }
