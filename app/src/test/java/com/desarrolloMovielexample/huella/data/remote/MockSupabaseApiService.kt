@@ -110,6 +110,20 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(listOf(body))
     }
 
+    override suspend fun updatePublication(id: String, body: JsonObject, select: String, prefer: String): Response<List<JsonObject>> {
+        val row = mockPublications.firstOrNull { it.get("id")?.asString == id.removePrefix("eq.") }
+            ?: return Response.success(emptyList())
+        body.entrySet().forEach { (k, v) -> row.add(k, v) }
+        row.addProperty("status", "EN_REVISION")
+        return Response.success(listOf(row))
+    }
+
+    override suspend fun deletePublication(id: String, select: String, prefer: String): Response<List<JsonObject>> {
+        val removed = mockPublications.filter { it.get("id")?.asString == id.removePrefix("eq.") }
+        mockPublications.removeAll(removed)
+        return Response.success(removed)
+    }
+
     override suspend fun moderatePublication(body: JsonObject): Response<Unit> {
         lastModeratedPayload = body
         val pubId = body.get("p_publication_id")?.asString

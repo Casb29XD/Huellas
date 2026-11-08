@@ -3,6 +3,7 @@ package com.desarrolloMovielexample.huella.data.remote.api
 import com.google.gson.JsonObject
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
@@ -78,6 +79,22 @@ interface SupabaseApiService {
     @POST("rest/v1/publications")
     suspend fun createPublication(
         @Body body: JsonObject,
+        @Header("Prefer") prefer: String = "return=representation",
+    ): Response<List<JsonObject>>
+
+    @PATCH("rest/v1/publications")
+    suspend fun updatePublication(
+        @Query("id") id: String,
+        @Body body: JsonObject,
+        @Query("select") select: String = "*,profiles!publications_author_id_fkey(id,name,level,initials)",
+        @Header("Prefer") prefer: String = "return=representation",
+    ): Response<List<JsonObject>>
+
+    /** return=representation: si RLS no deja borrar, la lista vuelve vacía en vez de fallar en silencio. */
+    @DELETE("rest/v1/publications")
+    suspend fun deletePublication(
+        @Query("id") id: String,
+        @Query("select") select: String = "id",
         @Header("Prefer") prefer: String = "return=representation",
     ): Response<List<JsonObject>>
 
