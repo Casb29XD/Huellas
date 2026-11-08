@@ -29,12 +29,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -166,7 +164,9 @@ private fun FeedList(
     onOpenNotifications: () -> Unit,
     onOpenProfile: () -> Unit,
 ) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 90.dp)) {
+    // The bottom bar height is already reserved by AppNavigation's Scaffold (NavHost padded by innerPadding);
+    // 24dp is the same end spacing every list under the bar uses (Requests, Profile, Map list).
+    LazyColumn(Modifier.fillMaxSize().testTag("feed_list"), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
             Row(
                 Modifier
@@ -243,8 +243,10 @@ private fun FeedList(
         }
         item {
             val n = state.publications.size
+            // ponytail: the user's city is not in HomeUiState yet; only the city filter is known here.
+            val near = state.filters.city?.substringBefore(",")?.let { " cerca de $it" }.orEmpty()
             Text(
-                "$n ${if (n == 1) "publicación" else "publicaciones"} cerca de Medellín",
+                "$n ${if (n == 1) "publicación" else "publicaciones"}$near",
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.TextTertiary,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 10.dp),
