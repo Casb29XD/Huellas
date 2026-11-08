@@ -270,7 +270,7 @@ private fun PointsHistory(history: List<PointsEntry>) {
                     Icon(Icons.Outlined.Add, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(entry.what, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+                    Text(pointsActionLabel(entry.what), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
                     Text(entry.whenLabel, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
                 }
                 Text(

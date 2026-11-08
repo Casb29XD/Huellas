@@ -393,7 +393,7 @@
     <string name="action_reject">Reject</string>
     <string name="action_accept">Accept</string>
     <string name="request_accepted_title">Request accepted</string>
-    <string name="request_accepted_text">Do you want to close this post? Adoption status isn\'t recorded yet and points aren\'t awarded automatically.</string>
+    <string name="request_accepted_text">Close this post? It will be marked as a completed adoption and you will earn 50 points.</string>
     <string name="request_close_post">Close post</string>
     <string name="request_keep_open">Keep open</string>
     <string name="msg_request_rejected">Request from %1$s rejected</string>
@@ -459,4 +459,9 @@
         <item quantity="one">%1$d rejected</item>
         <item quantity="other">%1$d rejected</item>
     </plurals>
+    <string name="points_action_create">Create a post</string>
+    <string name="points_action_approved">Post approved</string>
+    <string name="points_action_comment">Comment on a post</string>
+    <string name="points_action_sighting">Report a sighting</string>
+    <string name="points_action_adoption">Adoption completed</string>
 </resources>

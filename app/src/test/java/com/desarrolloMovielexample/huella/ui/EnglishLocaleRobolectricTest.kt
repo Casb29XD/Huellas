@@ -1,7 +1,9 @@
 package com.desarrolloMovielexample.huella.ui
 
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -14,6 +16,9 @@ import com.desarrolloMovielexample.huella.features.auth.LoginScreen
 import com.desarrolloMovielexample.huella.features.auth.LoginViewModel
 import com.desarrolloMovielexample.huella.features.feed.HomeScreen
 import com.desarrolloMovielexample.huella.features.feed.HomeViewModel
+import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
+import com.desarrolloMovielexample.huella.features.profile.LevelsScreen
+import com.desarrolloMovielexample.huella.features.profile.LevelsViewModel
 import com.desarrolloMovielexample.huella.features.profile.SettingsScreen
 import com.desarrolloMovielexample.huella.features.profile.SettingsViewModel
 import org.junit.Rule
@@ -80,5 +85,16 @@ class EnglishLocaleRobolectricTest {
         compose.onNodeWithText("Delete account").performScrollTo().assertExists()
         compose.onNodeWithText("Sign out").performScrollTo().assertExists()
         compose.onNodeWithContentDescription("Back").assertExists()
+    }
+
+    @Test
+    fun `niveles en ingles con todas las acciones que otorga el servidor (item 15)`() {
+        compose.setContent {
+            HuellaTheme(darkTheme = false) { LevelsScreen(onBack = {}, viewModel = LevelsViewModel(SupabaseRepository)) }
+        }
+        listOf("Create a post", "Post approved", "Comment on a post", "Report a sighting", "Adoption completed").forEach {
+            compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(it))
+            compose.onNodeWithText(it).assertExists()
+        }
     }
 }

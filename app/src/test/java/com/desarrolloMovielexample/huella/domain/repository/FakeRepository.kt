@@ -255,7 +255,8 @@ object FakeRepository : HuellaRepository {
         PointsAction("Crear una publicación", 5),
         PointsAction("Publicación aprobada", 10),
         PointsAction("Adopción concretada", 50),
-        PointsAction("Comentar en la comunidad", 2),
+        PointsAction("Comentar una publicación", 2),
+        PointsAction("Reportar un avistamiento", 5),
     )
 
     override val cities = listOf("Medellín, Antioquia", "Envigado, Antioquia", "Bogotá, Cundinamarca", "Cali, Valle del Cauca", "Barranquilla, Atlántico")
