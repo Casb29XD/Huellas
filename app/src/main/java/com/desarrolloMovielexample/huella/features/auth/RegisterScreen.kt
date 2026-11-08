@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
@@ -31,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -53,23 +56,23 @@ import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
 
 @Composable
 fun RegisterScreen(
     onBack: () -> Unit,
     onRegistered: () -> Unit,
     viewModel: RegisterViewModel = viewModel(),
+    onOpenTerms: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
-    CollectSnackbarMessages(viewModel.messages, snackbarHostState)
+    // Validation problems are shown under each field (and the terms box); the snackbar only carries the rest.
+    val messages = remember(viewModel) { viewModel.messages.filter { !viewModel.uiState.value.hasInlineErrors } }
+    CollectSnackbarMessages(messages, snackbarHostState)
     LaunchedEffect(state.registered) {
-        if (state.registered) {
-            delay(700) // ponytail: let the success snackbar be seen before the stack is cleared
-            onRegistered()
-        }
+        if (state.registered) onRegistered()
     }
     val passwordTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
 
@@ -134,7 +137,20 @@ fun RegisterScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth(),
             )
-            TermsCheckbox(checked = state.acceptedTerms, isError = state.termsError, onToggle = viewModel::toggleTerms)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                TermsCheckbox(checked = state.acceptedTerms, isError = state.termsError, onToggle = viewModel::toggleTerms)
+                Text(
+                    "Leer términos y condiciones",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+                    color = HuellaColors.Primary,
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .clickable(onClick = onOpenTerms),
+                )
+                if (state.termsError) {
+                    Text("Debes aceptar los términos y condiciones", style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+                }
+            }
             PrimaryButton(
                 text = "Crear cuenta",
                 onClick = {
@@ -157,7 +173,7 @@ private fun TermsCheckbox(checked: Boolean, isError: Boolean, onToggle: () -> Un
             .fillMaxWidth()
             .background(Color.White, HuellaShapes.Card)
             .border(1.dp, if (isError) HuellaColors.Error else HuellaColors.OutlineVariant, HuellaShapes.Card)
-            .clickable(onClick = onToggle)
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
@@ -186,6 +202,9 @@ private fun TermsCheckbox(checked: Boolean, isError: Boolean, onToggle: () -> Un
         )
     }
 }
+
+private val RegisterUiState.hasInlineErrors: Boolean
+    get() = termsError || listOfNotNull(nameError, emailError, cityError, passwordError, confirmError).isNotEmpty()
 
 @Preview(showBackground = true)
 @Composable
