@@ -431,8 +431,8 @@ object SupabaseRepository : HuellaRepository {
 
 
     override suspend fun deleteAccount(): Result<Unit> = result {
-        val id = requireUserId()
-        apiCall { api.updateProfile("eq.$id", json { addProperty("bio", "[Cuenta eliminada]") }) }
+        requireUserId()
+        apiCall { api.deleteMyAccount() }
         logout()
         Unit
     }
