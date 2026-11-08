@@ -944,7 +944,13 @@ object SupabaseRepository : HuellaRepository {
 
     private fun level(value: String?) = runCatching { Level.valueOf(value.orEmpty()) }.getOrDefault(Level.AMIGO_ANIMAL)
     private fun requestStatus(value: String?) = runCatching { RequestStatus.valueOf(value.orEmpty()) }.getOrDefault(RequestStatus.PENDIENTE)
-    private fun notificationType(value: String?) = runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
+    // ponytail: el enum del servidor ya trae SIGHTING y REQUEST_REJECTED, pero NotificationsScreen (fuera de esta capa)
+    // tiene un `when` exhaustivo sin esas ramas. Se muestran con el tipo de icono/destino más cercano hasta añadirlas.
+    private fun notificationType(value: String?) = when (value) {
+        "SIGHTING" -> NotificationType.NEW_COMMENT          // abre la publicación (target_id)
+        "REQUEST_REJECTED" -> NotificationType.POST_REJECTED // icono de rechazo, abre la publicación
+        else -> runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
+    }
 
     private fun relativeTime(value: String?): String {
         val time = parseSupabaseDate(value) ?: return "hoy"
