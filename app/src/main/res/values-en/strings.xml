@@ -13,7 +13,7 @@
     <string name="language_system">Automatic (device language)</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_english">English</string>
-    <string name="settings_footer">Huella 1.0 · Made in Colombia</string>
+    <string name="settings_footer">%1$s %2$s · Made in Colombia</string>
     <string name="category_adoption">Adoption</string>
     <string name="category_lost">Lost</string>
     <string name="category_found">Found</string>

@@ -91,4 +91,13 @@ class RepoHygieneTest {
         val onboarding = file("app/src/main/java/com/desarrolloMovielexample/huella/features/auth/OnboardingScreen.kt")
         listOf("illus_location", "illus_cool_guy").forEach { assertFalse(it, it in onboarding) }
     }
+
+    @Test
+    fun `item 60 - una sola marca y version del build en el pie`() {
+        for (path in listOf("app/src/main/res/values/strings.xml", "app/src/main/res/values-en/strings.xml")) {
+            val strings = file(path)
+            assertTrue(path, "<string name=\"app_name\">Huella</string>" in strings)
+            assertFalse("versión fija en $path", "Huella 1.0" in strings)
+        }
+    }
 }
