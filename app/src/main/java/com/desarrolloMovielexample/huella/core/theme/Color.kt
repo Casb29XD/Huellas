@@ -39,7 +39,8 @@ object HuellaColors {
     val TextPrimary get() = pick(Color(0xFF1F2A24), Color(0xFFE6ECE7))
     val TextBody get() = pick(Color(0xFF3F4A44), Color(0xFFCCD4CE))
     val TextSecondary get() = pick(Color(0xFF5F6A63), Color(0xFFA9B3AC))
-    val TextTertiary get() = pick(Color(0xFF8A8F88), Color(0xFF8C968F))
+    // Claro: 0xFF686E67 da 5.0:1 sobre Background (antes 8A8F88, 3.16:1); WCAG AA pide 4.5:1 en texto pequeño (ítem 58).
+    val TextTertiary get() = pick(Color(0xFF686E67), Color(0xFF8C968F))
 
     // Lines
     val Outline get() = pick(Color(0xFFC7CBC6), Color(0xFF4A534D))
