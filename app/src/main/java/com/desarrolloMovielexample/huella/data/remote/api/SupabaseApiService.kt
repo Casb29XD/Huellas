@@ -196,12 +196,12 @@ interface SupabaseApiService {
     @POST("rest/v1/adoption_requests")
     suspend fun createAdoptionRequest(@Body body: JsonObject): Response<Unit>
 
-    @PATCH("rest/v1/adoption_requests")
-    suspend fun updateAdoptionRequest(
-        @Query("id") requestId: String,
-        @Body body: JsonObject,
-        @Header("Prefer") prefer: String = "return=minimal",
-    ): Response<Unit>
+    /**
+     * Solo el autor de la publicación: cambia el estado, notifica al solicitante y, si acepta, crea o
+     * devuelve la conversación entre ambos (su id; null al rechazar).
+     */
+    @POST("rest/v1/rpc/respond_to_request")
+    suspend fun respondToRequest(@Body body: JsonObject): Response<JsonElement>
 
     @GET("rest/v1/conversations")
     suspend fun getConversations(

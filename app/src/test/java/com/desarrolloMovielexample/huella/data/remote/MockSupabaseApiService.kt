@@ -202,9 +202,7 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(Unit)
     }
 
-    override suspend fun updateAdoptionRequest(requestId: String, body: JsonObject, prefer: String): Response<Unit> {
-        return Response.success(Unit)
-    }
+    override suspend fun respondToRequest(body: JsonObject): Response<JsonElement> = Response.success(JsonPrimitive("conv_mock_1"))
 
     override suspend fun getConversations(select: String, order: String): Response<List<JsonObject>> {
         return Response.success(mockConversations)
