@@ -22,8 +22,9 @@ export function userMessage(pub: unknown, others: unknown[]): string {
   return `<<<PUBLICACION>>>\n${data}\n<<<FIN>>>`;
 }
 
-// Señales de venta: precio con $, "se vende", "vendo", "precio", "cuotas", "entrego por".
-const SALE = /\$\s?\d|\bse\s+vende\b|\bvendo\b|\bprecio\b|\bcuotas?\b|\bentrego\s+por\b/i;
+// Señales de venta: precio con $, "se vende", "venta", "vendo", "precio", "mil pesos", "COP", "cuotas", "entrego por".
+// Los \b evitan falsos positivos como "ventana" o "vendaje".
+const SALE = /\$\s?\d|\bse\s+vende\b|\bventa\b|\bvendo\b|\bprecio\b|\bmil\s+pesos\b|\bcop\b|\bcuotas?\b|\bentrego\s+por\b/i;
 export const HEURISTIC_REASON = "Heurística local: posible venta (precio, \"se vende\" o $)";
 
 export type Review = { verdict: string; risk: number; reasons: string[]; suggested_reason: string | null };
@@ -31,7 +32,8 @@ export type Review = { verdict: string; risk: number; reasons: string[]; suggest
 /** Normaliza la salida del modelo al esquema de publication_ai_reviews y aplica la heurística local de venta. */
 export function normalizeReview(out: Record<string, unknown>, pub: { title?: unknown; description?: unknown }): Review {
   let verdict = VERDICTS.includes(out.verdict as string) ? out.verdict as string : "REVISAR";
-  let risk = Math.min(1, Math.max(0, Number(out.risk) || 0));
+  // Sin risk numérico no hay evidencia de que sea seguro: 0.5 (duda), no 0.
+  let risk = typeof out.risk === "number" && Number.isFinite(out.risk) ? Math.min(1, Math.max(0, out.risk)) : 0.5;
   const reasons = Array.isArray(out.reasons) ? out.reasons.map((r) => String(r).slice(0, 200)).slice(0, 5) : [];
   let suggested = REASONS.includes(out.suggested_reason as string) ? out.suggested_reason as string : null;
 

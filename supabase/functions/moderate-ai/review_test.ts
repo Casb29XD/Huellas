@@ -35,3 +35,20 @@ Deno.test("sin señales de venta un APROBAR queda igual y sin motivo sugerido", 
   const r = normalizeReview({ verdict: "APROBAR", risk: 0.1, reasons: [], suggested_reason: "Otro" }, { title: "Perrita", description: "En adopción responsable" });
   assertEquals(r, { verdict: "APROBAR", risk: 0.1, reasons: [], suggested_reason: null });
 });
+
+Deno.test("risk ausente o inválido queda en 0.5, no en 0", () => {
+  const pub = { title: "Gato", description: "Busca hogar" };
+  for (const risk of [undefined, null, "bajo", NaN, "0.1"]) {
+    assertEquals(normalizeReview({ verdict: "REVISAR", risk }, pub).risk, 0.5, `risk=${String(risk)}`);
+  }
+  assertEquals(normalizeReview({ verdict: "APROBAR", risk: 0 }, pub).risk, 0);
+});
+
+Deno.test("la heurística cubre venta, vendo, mil pesos, COP, $ con cifras y precio", () => {
+  for (const description of ["Gatitos en venta", "VENDO cachorro", "Solo 300 mil pesos", "150.000 COP", "a $ 200.000", "Precio a convenir"]) {
+    assertEquals(normalizeReview({ verdict: "APROBAR", risk: 0 }, { title: "x", description }).reasons[0], HEURISTIC_REASON, description);
+  }
+  for (const description of ["Duerme junto a la ventana", "Le pusimos vendaje", "Necesita copa de agua", "Cuesta $ pero no dice cuánto"]) {
+    assertEquals(normalizeReview({ verdict: "APROBAR", risk: 0.1 }, { title: "x", description }).verdict, "APROBAR", description);
+  }
+});

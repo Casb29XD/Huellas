@@ -29,8 +29,9 @@ Deno.serve(async (req) => {
     return json(400, { status: "error", message: "Falta publication_id" });
   }
 
+  // Sin datos de contacto (phone): el modelo no los necesita para moderar.
   const { data: pub, error: pubError } = await admin.from("publications")
-    .select("id, author_id, category, title, species, breed, size, age, sex, city, neighborhood, description, image_url, photo_label, phone, place, services, status, created_at")
+    .select("id, author_id, category, title, species, breed, size, age, sex, city, neighborhood, description, image_url, photo_label, place, services, status, created_at")
     .eq("id", publicationId).maybeSingle();
   if (pubError || !pub) return json(404, { status: "error", message: "Publicación no encontrada" });
 
