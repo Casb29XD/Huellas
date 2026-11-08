@@ -91,8 +91,8 @@ BEGIN
 END;
 $$;
 
--- ¿Se borró la foto? Sin Vault, purge_pet_images borra la fila; con Vault, encola el DELETE a la Storage API
--- (fila + binario) y la fila sigue hasta que pg_net lo envía tras el COMMIT.
+-- ¿Se borró la foto? Desde 20261109350100 purge_pet_images siempre borra la fila (con Vault además encola el
+-- DELETE a la Storage API); se acepta también el DELETE encolado (comportamiento de 20261109330000).
 CREATE OR REPLACE FUNCTION tests.tap_image_purged(p_name TEXT) RETURNS BOOLEAN
 LANGUAGE sql AS $$
     SELECT NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'pet-images' AND name = p_name)
@@ -132,7 +132,7 @@ BEGIN
     RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE name LIKE a || '/%'), 2, 'el dueño lista su carpeta');
     RESET ROLE;
 
-    -- (a) Con Vault: borrar la publicación pide a la Storage API borrar el archivo (no la fila por SQL).
+    -- (a) Con Vault: borrar la publicación pide a la Storage API borrar el archivo.
     PERFORM tests.tap_vault();
     INSERT INTO public.publications (id, author_id, title, species, breed, size, city, description, status, image_url)
     VALUES (p, a, 'tap', 'Perro', 'Criollo', 'Mediano', 'Medellín', 'tap', 'APROBADA',
@@ -145,8 +145,8 @@ BEGIN
                               AND convert_from(body, 'UTF8')::jsonb -> 'prefixes' = jsonb_build_array(a || '/tap.jpg')
                               AND headers ->> 'Authorization' LIKE 'Bearer %'),
         'borrar la publicación encola DELETE /storage/v1/object/pet-images con la foto');
-    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE name = a || '/tap.jpg'), 1,
-        'la fila no se borra por SQL: la Storage API borra fila y binario');
+    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE name = a || '/tap.jpg'), 0,
+        'además la fila se borra en la misma transacción (fail-closed, 20261109350100)');
 
     -- delete_my_account encola el borrado de toda la carpeta.
     INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-images', b || '/1.jpg'), ('pet-images', b || '/2.png');
