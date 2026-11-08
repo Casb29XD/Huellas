@@ -39,13 +39,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.Avatar
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
-import com.desarrolloMovielexample.huella.core.components.HuellaSwitch
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
@@ -64,7 +62,6 @@ fun SettingsScreen(
     onOpenTerms: () -> Unit = {},
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var selectedLanguage by remember { mutableStateOf(AppLanguage.selected(context)) }
     var showLanguageDialog by remember { mutableStateOf(false) }
@@ -85,14 +82,7 @@ fun SettingsScreen(
                 .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                GroupCaption(stringResource(R.string.settings_notifications))
-                Column(Modifier.fillMaxWidth().outlinedCard()) {
-                    ToggleRow(stringResource(R.string.settings_push), stringResource(R.string.settings_push_summary), state.pushEnabled, viewModel::setPush)
-                    HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                    ToggleRow(stringResource(R.string.settings_email_digest), stringResource(R.string.settings_email_digest_summary), state.emailDigestEnabled, viewModel::setEmailDigest)
-                }
-            }
+            // ponytail: sin interruptores de push/correo hasta que existan esas notificaciones (ítem 57).
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 GroupCaption(stringResource(R.string.settings_language_section))
                 Column(Modifier.fillMaxWidth().outlinedCard()) {
@@ -280,23 +270,6 @@ fun SettingsScreenPreview() {
             onChangePassword = {},
             onLoggedOut = {},
         )
-    }
-}
-
-@Composable
-private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable { onChange(!checked) }
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
-        }
-        HuellaSwitch(checked = checked, onCheckedChange = onChange)
     }
 }
 

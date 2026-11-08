@@ -1,11 +1,6 @@
 <resources>
     <string name="app_name">Huella</string>
     <string name="settings_title">Ajustes</string>
-    <string name="settings_notifications">Notificaciones</string>
-    <string name="settings_push">Notificaciones push</string>
-    <string name="settings_push_summary">Solicitudes, moderación y niveles</string>
-    <string name="settings_email_digest">Resumen por correo</string>
-    <string name="settings_email_digest_summary">Semanal, con mascotas cerca de ti</string>
     <string name="settings_account">Cuenta</string>
     <string name="settings_edit_profile">Editar perfil</string>
     <string name="settings_change_password">Cambiar contraseña</string>
