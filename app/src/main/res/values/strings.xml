@@ -13,7 +13,7 @@
     <string name="language_system">Automático (idioma del dispositivo)</string>
     <string name="language_spanish">Español</string>
     <string name="language_english">English</string>
-    <string name="settings_footer">Huella 1.0 · Hecho en Colombia</string>
+    <string name="settings_footer">%1$s %2$s · Hecho en Colombia</string>
     <string name="category_adoption">Adopción</string>
     <string name="category_lost">Perdidos</string>
     <string name="category_found">Encontrados</string>

@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.desarrolloMovielexample.huella.BuildConfig
 import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.Avatar
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
@@ -192,7 +193,7 @@ fun SettingsScreen(
                 )
             }
             Text(
-                stringResource(R.string.settings_footer),
+                stringResource(R.string.settings_footer, stringResource(R.string.app_name), BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.TextTertiary,
                 textAlign = TextAlign.Center,

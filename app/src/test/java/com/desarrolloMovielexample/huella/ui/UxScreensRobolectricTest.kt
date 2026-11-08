@@ -136,6 +136,9 @@ class UxScreensRobolectricTest {
         }
         compose.onNodeWithText("ana@huella.test").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Eliminar cuenta").performScrollTo().assertIsDisplayed()
+        // Ítem 60: el pie lleva la versión real del build, no "1.0" fijo.
+        compose.onNodeWithText("Huella ${com.desarrolloMovielexample.huella.BuildConfig.VERSION_NAME} · Hecho en Colombia")
+            .performScrollTo().assertExists()
         // Ítem 57: sin interruptores que fingen push o resumen por correo.
         compose.onAllNodesWithText("Notificaciones push").assertCountEquals(0)
         compose.onAllNodesWithText("Resumen por correo").assertCountEquals(0)

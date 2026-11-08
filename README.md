@@ -1,5 +1,8 @@
 # Huella
 
+La marca es **Huella** (singular): nombre de la app (`app_name`), paquete, deep link `huella://` y textos.
+El repositorio se llama `Huellas` solo por historia.
+
 App Android (Kotlin + Jetpack Compose) de una red de adopción de mascotas en Colombia: adopción, perdidos y
 encontrados, hogar temporal y eventos veterinarios, con moderación previa de publicaciones, solicitudes de adopción,
 chat entre adoptante y publicador, notificaciones y gamificación por puntos y niveles. El backend es **Supabase**
