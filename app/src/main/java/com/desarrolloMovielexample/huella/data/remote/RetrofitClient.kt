@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.data.remote
 
+import com.desarrolloMovielexample.huella.BuildConfig
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -25,7 +26,8 @@ object RetrofitClient {
             val request = builder.build()
             chain.proceed(request)
         }
-        .addInterceptor(loggingInterceptor)
+        // Ítem 40: en release no se registran URLs (ids de usuario, filtros) en logcat.
+        .apply { if (BuildConfig.DEBUG) addInterceptor(loggingInterceptor) }
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
