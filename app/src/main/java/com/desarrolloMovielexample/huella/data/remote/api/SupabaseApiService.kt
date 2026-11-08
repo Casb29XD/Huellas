@@ -182,8 +182,13 @@ interface SupabaseApiService {
     @GET("rest/v1/reports")
     suspend fun getReportsForModeration(
         @Query("select") select: String = "*,publication:publications(*,profiles!publications_author_id_fkey(id,name,level,initials)),reporter:profiles!reports_reporter_id_fkey(name)",
+        @Query("status") status: String = "eq.ABIERTO",
         @Query("order") order: String = "created_at.desc",
     ): Response<List<JsonObject>>
+
+    /** Solo moderadores: marca el reporte RESUELTO. */
+    @POST("rest/v1/rpc/resolve_report")
+    suspend fun resolveReport(@Body body: JsonObject): Response<Unit>
 
     @GET("rest/v1/adoption_requests")
     suspend fun getRequests(

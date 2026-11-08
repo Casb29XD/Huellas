@@ -575,6 +575,15 @@ object FakeRepository : HuellaRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun resolveReport(reportId: String): Result<Unit> {
+        delay(LATENCY)
+        _moderationReports.update { list ->
+            list.map { item -> item.copy(reports = item.reports.filterNot { it.id == reportId }) }.filter { it.isReported }
+        }
+        _moderationStats.update { it.copy(reported = _moderationReports.value.size) }
+        return Result.success(Unit)
+    }
+
     private fun removeFromModeration(itemId: String) {
         _moderationQueue.update { list -> list.filterNot { it.id == itemId } }
         _moderationReports.update { list -> list.filterNot { it.id == itemId } }

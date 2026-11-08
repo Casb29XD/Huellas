@@ -84,6 +84,8 @@ interface HuellaRepository {
     fun getModerationItem(id: String): ModerationItem?
     suspend fun approve(itemId: String): Result<Unit>
     suspend fun reject(itemId: String, reason: String, comment: String): Result<Unit>
+    /** Cierra un reporte sin rechazar la publicación (Report.id). */
+    suspend fun resolveReport(reportId: String): Result<Unit>
 
     // Catalogs
     val cities: List<String>

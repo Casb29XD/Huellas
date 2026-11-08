@@ -189,7 +189,12 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(Unit)
     }
 
-    override suspend fun getReportsForModeration(select: String, order: String): Response<List<JsonObject>> {
+    override suspend fun resolveReport(body: JsonObject): Response<Unit> {
+        mockReports.removeAll { it.get("id")?.asString == body.get("p_report_id")?.asString }
+        return Response.success(Unit)
+    }
+
+    override suspend fun getReportsForModeration(select: String, status: String, order: String): Response<List<JsonObject>> {
         return Response.success(mockReports)
     }
 
