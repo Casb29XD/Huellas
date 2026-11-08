@@ -85,4 +85,10 @@ class RepoHygieneTest {
         }
         assertEquals(emptyList<String>(), offenders.map { it.name })
     }
+
+    @Test
+    fun `item 49 - el onboarding no usa ilustraciones ajenas al copy`() {
+        val onboarding = file("app/src/main/java/com/desarrolloMovielexample/huella/features/auth/OnboardingScreen.kt")
+        listOf("illus_location", "illus_cool_guy").forEach { assertFalse(it, it in onboarding) }
+    }
 }
