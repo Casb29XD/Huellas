@@ -19,6 +19,9 @@ import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -748,7 +751,7 @@ object SupabaseRepository : HuellaRepository {
     private fun notificationType(value: String?) = runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
 
     private fun relativeTime(value: String?): String {
-        val time = parseDate(value) ?: return "hoy"
+        val time = parseSupabaseDate(value) ?: return "hoy"
         val minutes = ((System.currentTimeMillis() - time) / 60_000L).coerceAtLeast(0)
         return when {
             minutes < 1 -> "ahora"
@@ -759,14 +762,10 @@ object SupabaseRepository : HuellaRepository {
     }
 
     private fun clockLabel(value: String?): String {
-        val date = parseDate(value) ?: return ""
+        val date = parseSupabaseDate(value) ?: return ""
         return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(date))
     }
 
-    private fun parseDate(value: String?): Long? = runCatching {
-        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(value?.substringBefore('.')?.removeSuffix("Z") ?: return null)
-            ?.time
-    }.getOrNull()
 
     private fun json(build: JsonObject.() -> Unit) = JsonObject().apply(build)
 
@@ -796,3 +795,15 @@ object SupabaseRepository : HuellaRepository {
         get(key)?.takeUnless { it.isJsonNull }?.asBoolean
 }
 
+/**
+ * Instante (epoch ms) de un timestamptz de Supabase: "2026-11-08T15:04:05.123456+00:00", con "Z",
+ * con offset corto "+00" o sin zona (se asume UTC). Nunca usa la zona del dispositivo (ítem 12).
+ */
+internal fun parseSupabaseDate(value: String?): Long? {
+    if (value.isNullOrBlank()) return null
+    var iso = value.trim().replace(' ', 'T')
+    if (Regex("[+-]\\d{2}$").containsMatchIn(iso)) iso += ":00"
+    return runCatching { OffsetDateTime.parse(iso).toInstant().toEpochMilli() }
+        .recoverCatching { LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC).toEpochMilli() }
+        .getOrNull()
+}
