@@ -126,7 +126,7 @@ fun ChatScreen(
                                 // ponytail: device without dialer, nothing to open.
                             }
                         }) {
-                            HuellaIcon(R.drawable.icon_accion_llamar, tint = HuellaColors.Primary, size = 31.dp)
+                            HuellaIcon(R.drawable.icon_accion_llamar, tint = HuellaColors.Primary, size = 31.dp, contentDescription = stringResource(R.string.action_call))
                         }
                     }
                 }

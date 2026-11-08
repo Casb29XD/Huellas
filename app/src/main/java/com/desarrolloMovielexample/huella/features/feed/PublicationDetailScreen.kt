@@ -223,7 +223,7 @@ fun PublicationDetailScreen(
                                 .fillMaxWidth()
                                 .height(140.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable(onClick = onOpenMap),
+                                .clickable(onClickLabel = stringResource(R.string.home_view_map), onClick = onOpenMap),
                             contentAlignment = Alignment.Center,
                         ) {
                             MapBackground(Modifier.fillMaxSize())

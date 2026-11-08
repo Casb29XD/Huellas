@@ -39,8 +39,14 @@ import com.desarrolloMovielexample.huella.domain.model.RequestStatus
 
 /** Tinted PNG icon from res/drawable (design icons are alpha masks, e.g. R.drawable.icon_animal_perro). */
 @Composable
-fun HuellaIcon(@DrawableRes res: Int, modifier: Modifier = Modifier, tint: Color = HuellaColors.TextSecondary, size: Dp = 24.dp) {
-    Icon(painterResource(res), contentDescription = null, tint = tint, modifier = modifier.size(size))
+fun HuellaIcon(
+    @DrawableRes res: Int,
+    modifier: Modifier = Modifier,
+    tint: Color = HuellaColors.TextSecondary,
+    size: Dp = 24.dp,
+    contentDescription: String? = null,
+) {
+    Icon(painterResource(res), contentDescription = contentDescription, tint = tint, modifier = modifier.size(size))
 }
 
 /** "Chip de categoría": solid category color, white 12/500 text. [small] = 10sp version used on compact cards. */
