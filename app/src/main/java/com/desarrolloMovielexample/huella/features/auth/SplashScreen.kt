@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -103,22 +102,8 @@ fun SplashScreen(
                 color = Color.White.copy(alpha = 0.85f),
             )
         }
-        Row(
-            Modifier
-                .align(Alignment.CenterHorizontally)
-                .height(120.dp)
-                .padding(bottom = 40.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            repeat(3) { i ->
-                Box(
-                    Modifier
-                        .size(6.dp)
-                        .background(if (i == 2) HuellaColors.Secondary else Color.White.copy(alpha = 0.35f), CircleShape),
-                )
-            }
-        }
+        // Same bottom space the pagination dots used to take, so the logo stays where it was.
+        Spacer(Modifier.height(120.dp))
     }
 }
 

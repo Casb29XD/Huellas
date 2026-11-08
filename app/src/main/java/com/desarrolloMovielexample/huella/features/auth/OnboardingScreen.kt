@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -84,14 +85,19 @@ fun OnboardingScreen(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.End,
         ) {
-            Text(
-                "Omitir",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
-                color = HuellaColors.Primary,
-                modifier = Modifier
+            Box(
+                Modifier
+                    .heightIn(min = 48.dp)
                     .clickable(onClick = onFinish)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            )
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "Omitir",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
+                    color = HuellaColors.Primary,
+                )
+            }
         }
 
         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { index ->
@@ -100,9 +106,11 @@ fun OnboardingScreen(
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Image(painterResource(page.illustration), contentDescription = null, modifier = Modifier.size(300.dp))
                 }
+                // Fixed height so the illustration does not jump between pages with 1- or 2-line titles.
                 Column(
                     Modifier
                         .fillMaxWidth()
+                        .height(170.dp)
                         .padding(horizontal = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
