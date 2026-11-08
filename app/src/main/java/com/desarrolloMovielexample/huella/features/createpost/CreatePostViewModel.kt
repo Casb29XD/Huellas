@@ -1,8 +1,13 @@
 package com.desarrolloMovielexample.huella.features.createpost
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.net.Uri
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.PublicationDraft
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
@@ -34,29 +39,32 @@ data class CreatePostUiState(
     val city: String = "Medellín, Antioquia",
     val location: String = "",
     val eventDate: String = "",
-    val breedError: String? = null,
-    val ageError: String? = null,
-    val titleError: String? = null,
-    val descriptionError: String? = null,
-    val eventDateError: String? = null,
+    val breedError: UiText? = null,
+    val ageError: UiText? = null,
+    val titleError: UiText? = null,
+    val descriptionError: UiText? = null,
+    val eventDateError: UiText? = null,
     val isLoading: Boolean = false,
     val published: Boolean = false,
 ) {
     val needsDate: Boolean get() = !category.isAdoption
-    val dateLabel: String
+    @get:StringRes
+    val dateLabel: Int
         get() = when (category) {
-            Category.VETERINARIA -> "Fecha de la jornada"
-            Category.PERDIDOS -> "Fecha de la pérdida"
-            else -> "Fecha del hallazgo"
+            Category.VETERINARIA -> R.string.create_date_vet
+            Category.PERDIDOS -> R.string.create_date_lost
+            else -> R.string.create_date_found
         }
-    val stepTitle: String get() = listOf("Categoría y fotos", "Datos de la mascota", "Descripción y ubicación")[step - 1]
+
+    @get:StringRes
+    val stepTitle: Int get() = listOf(R.string.create_step_1, R.string.create_step_2, R.string.create_step_3)[step - 1]
 }
 
 class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(CreatePostUiState())
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
     val messages = _messages.receiveAsFlow()
 
     val cities: List<String> get() = repo.cities
@@ -92,10 +100,10 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
     fun nextStep() {
         val s = _uiState.value
         val error = when (s.step) {
-            1 -> if (s.photos.isEmpty()) "Agrega al menos una foto" else null
+            1 -> if (s.photos.isEmpty()) uiText(R.string.error_photo_required) else null
             2 -> {
-                val breedErr = if (s.breed.isBlank()) "Escribe la raza aproximada" else null
-                val ageErr = if (s.age.isBlank()) "Escribe la edad aproximada" else null
+                val breedErr = if (s.breed.isBlank()) uiText(R.string.error_breed_required) else null
+                val ageErr = if (s.age.isBlank()) uiText(R.string.error_age_required) else null
                 _uiState.update { it.copy(breedError = breedErr, ageError = ageErr) }
                 breedErr ?: ageErr
             }
@@ -111,11 +119,21 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
     fun publish() {
         val s = _uiState.value
         if (s.isLoading) return
-        val titleErr = if (s.title.trim().length < 5) "El título debe tener al menos 5 caracteres" else null
-        val descErr = if (s.description.trim().length < 20) "La descripción debe tener al menos 20 caracteres" else null
-        val dateErr = if (s.needsDate && s.eventDate.isBlank()) "Indica la ${s.dateLabel.lowercase()}" else null
+        val titleErr = if (s.title.trim().length < 5) uiText(R.string.error_title_short) else null
+        val descErr = if (s.description.trim().length < 20) uiText(R.string.error_description_short) else null
+        val dateErr = if (s.needsDate && s.eventDate.isBlank()) {
+            uiText(
+                when (s.category) {
+                    Category.VETERINARIA -> R.string.error_date_vet
+                    Category.PERDIDOS -> R.string.error_date_lost
+                    else -> R.string.error_date_found
+                },
+            )
+        } else {
+            null
+        }
         _uiState.update { it.copy(titleError = titleErr, descriptionError = descErr, eventDateError = dateErr) }
-        val error = titleErr ?: descErr ?: dateErr ?: if (s.city.isBlank()) "Selecciona una ciudad" else null
+        val error = titleErr ?: descErr ?: dateErr ?: if (s.city.isBlank()) uiText(R.string.error_city_select) else null
         if (error != null) {
             _messages.trySend(error)
             return
@@ -137,7 +155,7 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
             result.onSuccess { _uiState.update { it.copy(isLoading = false, published = true) } }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _messages.trySend(e.message ?: "No pudimos enviar la publicación")
+                    _messages.trySend(e.toUiText(R.string.error_send_post))
                 }
         }
     }

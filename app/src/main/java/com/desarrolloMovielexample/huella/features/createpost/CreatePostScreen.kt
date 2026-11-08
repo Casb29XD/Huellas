@@ -43,7 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +56,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -77,10 +79,13 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PetImage
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
+import com.desarrolloMovielexample.huella.core.components.labelRes
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
+import com.desarrolloMovielexample.huella.core.utils.asString
 import com.desarrolloMovielexample.huella.domain.model.Category
 
 /** Photo tile tones from the design (#D8E8DD, #E8DAD6, #D8E0EC, #E4DCEC, #EEE3D2). */
@@ -100,12 +105,13 @@ fun CreatePostScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scroll = rememberScrollState()
 
+    val resources = LocalContext.current.resources
     LaunchedEffect(Unit) {
         viewModel.messages.collect { msg ->
             // Field errors are already shown inline under each field; the snackbar only carries the rest.
             val s = viewModel.uiState.value
             if (msg !in listOfNotNull(s.breedError, s.ageError, s.titleError, s.descriptionError, s.eventDateError)) {
-                snackbarHostState.showSnackbar(msg)
+                snackbarHostState.showSnackbar(msg.resolve(resources))
             }
         }
     }
@@ -123,14 +129,14 @@ fun CreatePostScreen(
                 HorizontalDivider(color = HuellaColors.Divider, thickness = 1.dp)
                 if (state.step < 3) {
                     ContinueButton(
-                        text = "Continuar",
+                        text = stringResource(R.string.action_continue),
                         onClick = viewModel::nextStep,
                         modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
                         trailingArrow = true,
                     )
                 } else {
                     PrimaryButton(
-                        text = "Publicar",
+                        text = stringResource(R.string.action_publish),
                         onClick = viewModel::publish,
                         loading = state.isLoading,
                         icon = Icons.Outlined.Publish,
@@ -142,8 +148,8 @@ fun CreatePostScreen(
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             HuellaTopBar(
-                title = state.stepTitle,
-                overline = "Nueva publicación · ${state.step}/3",
+                title = stringResource(state.stepTitle),
+                overline = stringResource(R.string.create_overline, state.step),
                 onBack = goBack,
             )
             val progress by animateFloatAsState(state.step / 3f, label = "progress")
@@ -203,7 +209,7 @@ private fun ContinueButton(text: String, onClick: () -> Unit, modifier: Modifier
 @Composable
 private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewModel, onAddPhotos: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("¿Qué quieres publicar?", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+        Text(stringResource(R.string.create_what), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
         // Equal-height rows; an odd last category (Veterinaria) spans the full row instead of sitting alone.
         Category.entries.chunked(2).forEach { row ->
             Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -215,8 +221,8 @@ private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewMo
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Fotos", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
-            Text("Hasta $MAX_PHOTOS · ${MAX_PHOTOS - state.photos.size} restantes", style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+            Text(stringResource(R.string.create_photos), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.create_photos_left, MAX_PHOTOS, MAX_PHOTOS - state.photos.size), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
         }
         val tiles: List<Uri?> = state.photos + if (state.photos.size < MAX_PHOTOS) listOf(null) else emptyList()
         tiles.chunked(3).forEach { row ->
@@ -250,7 +256,7 @@ private fun CategoryCard(category: Category, selected: Boolean, onClick: () -> U
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         HuellaIcon(categoryIcon(category, filled = selected), tint = category.color, size = 39.dp)
-        Text(category.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = HuellaColors.TextPrimary)
+        Text(stringResource(category.labelRes), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = HuellaColors.TextPrimary)
     }
 }
 
@@ -261,7 +267,7 @@ private fun PhotoTile(seed: Uri, index: Int, onRemove: () -> Unit, modifier: Mod
             imageUrl = seed.toString(),
             tone = PhotoTones[index.coerceIn(0, PhotoTones.lastIndex)],
             modifier = Modifier.fillMaxSize(),
-            contentDescription = "Foto ${index + 1}",
+            contentDescription = stringResource(R.string.create_photo_n, index + 1),
         )
         Box(
             Modifier
@@ -273,7 +279,7 @@ private fun PhotoTile(seed: Uri, index: Int, onRemove: () -> Unit, modifier: Mod
                 .clickable(onClick = onRemove),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Outlined.Close, contentDescription = "Quitar foto", tint = Color.White, modifier = Modifier.size(14.dp))
+            Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.create_remove_photo), tint = Color.White, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -299,7 +305,7 @@ private fun AddPhotoTile(onClick: () -> Unit, modifier: Modifier) {
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
         Icon(Icons.Outlined.AddAPhoto, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(28.dp))
-        Text("Agregar", style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
+        Text(stringResource(R.string.create_add_photo), style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
     }
 }
 
@@ -309,18 +315,18 @@ private fun AddPhotoTile(onClick: () -> Unit, modifier: Modifier) {
 @Composable
 private fun StepPetData(state: CreatePostUiState, vm: CreatePostViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FieldLabel("Tipo de animal")
+        FieldLabel(stringResource(R.string.filter_animal_type))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            vm.species.forEach { s -> HuellaFilterChip(s, selected = s == state.species, onClick = { vm.onSpecies(s) }) }
+            vm.species.forEach { s -> HuellaFilterChip(optionLabel(s), selected = s == state.species, onClick = { vm.onSpecies(s) }) }
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         HuellaTextField(
             value = state.breed,
             onValueChange = vm::onBreed,
-            label = "Raza aproximada",
-            placeholder = "Ej: Criollo",
-            error = state.breedError,
+            label = stringResource(R.string.detail_breed),
+            placeholder = stringResource(R.string.create_breed_placeholder),
+            error = state.breedError?.asString(),
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             vm.breedSuggestions.forEach { b ->
@@ -338,20 +344,20 @@ private fun StepPetData(state: CreatePostUiState, vm: CreatePostViewModel) {
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FieldLabel("Tamaño")
+        FieldLabel(stringResource(R.string.filter_size))
         PlainSegmented(listOf("Pequeño", "Mediano", "Grande"), state.size, vm::onSize)
     }
-    ToggleRow("Tiene vacunas", "Se mostrará la etiqueta “Vacunado”", state.vaccinated, vm::onVaccinated)
-    ToggleRow("Está castrado", "Se mostrará la etiqueta “Castrado”", state.sterilized, vm::onSterilized)
+    ToggleRow(stringResource(R.string.create_vaccinated), stringResource(R.string.create_vaccinated_hint), state.vaccinated, vm::onVaccinated)
+    ToggleRow(stringResource(R.string.create_sterilized), stringResource(R.string.create_sterilized_hint), state.sterilized, vm::onSterilized)
     HuellaTextField(
         value = state.age,
         onValueChange = vm::onAge,
-        label = "Edad aproximada",
-        placeholder = "Ej: 2 años",
-        error = state.ageError,
+        label = stringResource(R.string.create_age),
+        placeholder = stringResource(R.string.create_age_placeholder),
+        error = state.ageError?.asString(),
     )
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FieldLabel("Sexo")
+        FieldLabel(stringResource(R.string.detail_sex))
         PlainSegmented(listOf("Macho", "Hembra", "Desconocido"), state.sex, vm::onSex)
     }
 }
@@ -377,7 +383,7 @@ private fun PlainSegmented(options: List<String>, selected: String, onSelect: (S
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    option,
+                    optionLabel(option),
                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
                     color = if (on) HuellaColors.TextPrimary else HuellaColors.TextSecondary,
                 )
@@ -414,36 +420,36 @@ private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostV
     HuellaTextField(
         value = state.title,
         onValueChange = vm::onTitle,
-        label = "Título",
-        placeholder = "Ej: Luna busca un hogar tranquilo",
-        error = state.titleError,
+        label = stringResource(R.string.create_title),
+        placeholder = stringResource(R.string.create_title_placeholder),
+        error = state.titleError?.asString(),
     )
     HuellaTextField(
         value = state.description,
         onValueChange = vm::onDescription,
-        label = "Descripción",
-        placeholder = "Carácter, salud, historia, qué tipo de hogar necesita…",
-        error = state.descriptionError,
+        label = stringResource(R.string.detail_description),
+        placeholder = stringResource(R.string.create_description_placeholder),
+        error = state.descriptionError?.asString(),
         singleLine = false,
         minHeight = 120.dp,
     )
-    HuellaDropdownField(value = state.city, options = vm.cities, onSelect = vm::onCity, label = "Ciudad")
+    HuellaDropdownField(value = state.city, options = vm.cities, onSelect = vm::onCity, label = stringResource(R.string.field_city))
     // ponytail: no map this phase — plain text location field in place of the mini-map.
     HuellaTextField(
         value = state.location,
         onValueChange = vm::onLocation,
-        label = "Ubicación en el mapa",
-        labelTrailing = "Opcional",
-        placeholder = "Marcar ubicación (barrio o referencia)",
+        label = stringResource(R.string.create_map_location),
+        labelTrailing = stringResource(R.string.optional),
+        placeholder = stringResource(R.string.create_map_placeholder),
         leadingIcon = { Icon(Icons.Outlined.AddLocation, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp)) },
     )
     if (state.needsDate) {
         HuellaTextField(
             value = state.eventDate,
             onValueChange = vm::onEventDate,
-            label = state.dateLabel,
-            placeholder = "Sáb 5 sep 2026 · 6:30 p. m.",
-            error = state.eventDateError,
+            label = stringResource(state.dateLabel),
+            placeholder = stringResource(R.string.create_date_placeholder),
+            error = state.eventDateError?.asString(),
             trailingIcon = { HuellaIcon(R.drawable.icon_attr_fecha, tint = HuellaColors.TextSecondary, size = 29.dp) },
         )
     }
@@ -455,10 +461,12 @@ private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostV
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(Icons.Outlined.Gavel, contentDescription = null, tint = HuellaColors.WarningDark, modifier = Modifier.size(22.dp))
+        val rules = stringResource(R.string.create_rules)
+        val noSale = stringResource(R.string.create_rules_no_sale)
         Text(
             buildAnnotatedString {
-                append("Las publicaciones son revisadas por moderadores. ")
-                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append("Está prohibida la venta de animales.") }
+                append(rules)
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(noSale) }
             },
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 19.5.sp),
             color = Color(0xFF5C3D00),
