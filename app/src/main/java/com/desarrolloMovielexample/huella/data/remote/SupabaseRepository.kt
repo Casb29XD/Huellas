@@ -463,35 +463,96 @@ object SupabaseRepository : HuellaRepository {
         Unit
     }.onSuccess { quietly { refreshRequests() } }
 
+    /** Mismo botón otra vez = quitar el voto (igual que FakeRepository). */
     override suspend fun votePublication(publicationId: String, value: Int): Result<Unit> = result {
+        val userId = requireUserId()
+        require(value in -1..1) { "Voto inválido" }
+        val newVote = if (value == getPublication(publicationId)?.userVote) 0 else value
+        if (newVote == 0) {
+            apiCall { api.deleteVote("eq.$publicationId", "eq.$userId") }
+        } else {
+            apiCall { api.upsertVote(json {
+                addProperty("publication_id", publicationId)
+                addProperty("user_id", userId)
+                addProperty("value", newVote)
+            }) }
+        }
+        Unit
+    }.onSuccess { refreshPublication(publicationId) }
+
+    /** Relee votes_count, comments_count y el voto propio, y los aplica en las listas en caché. */
+    override suspend fun refreshPublication(publicationId: String): Result<Unit> = result {
+        val counts = apiCall { api.getPublicationCounts("eq.$publicationId") }.firstOrNull() ?: return@result Unit
+        val userId = SupabaseSession.userId
+        val myVote = if (userId == null) 0 else {
+            apiCall { api.getMyVote("eq.$publicationId", "eq.$userId") }.firstOrNull()?.int("value") ?: 0
+        }
+        val apply = { p: Publication ->
+            if (p.id != publicationId) p
+            else p.copy(votesCount = counts.int("votes_count"), commentsCount = counts.int("comments_count"), userVote = myVote)
+        }
+        _publications.update { it.map(apply) }
+        _myPublications.update { it.map(apply) }
         Unit
     }
 
     private val commentFlows = mutableMapOf<String, MutableStateFlow<List<Comment>>>()
 
     override fun comments(publicationId: String): StateFlow<List<Comment>> {
-        return commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }.asStateFlow()
+        val flow = commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }
+        scope.launch { quietly { flow.value = fetchComments(publicationId) } }
+        return flow.asStateFlow()
     }
 
     override suspend fun addComment(publicationId: String, text: String): Result<Comment> = result {
-        val user = _currentUser.value ?: error("Inicia sesión")
-        val comment = Comment(
-            id = "c_${System.currentTimeMillis()}",
-            publicationId = publicationId,
-            author = Author(user.id, user.name, user.level, user.initials),
-            text = text.trim(),
-            timeAgo = "ahora",
-            isMine = true
-        )
-        val flow = commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }
-        flow.update { it + comment }
-        comment
+        val authorId = requireUserId()
+        val created = apiCall { api.createComment(json {
+            addProperty("publication_id", publicationId)
+            addProperty("author_id", authorId)
+            addProperty("text", text.trim())
+        }) }.firstOrNull() ?: error("Supabase no devolvió el comentario")
+        created.toComment()
+    }.onSuccess { comment ->
+        commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }.update { it + comment }
+        quietly { commentFlows.getValue(publicationId).value = fetchComments(publicationId) }
+        refreshPublication(publicationId)
     }
 
     override suspend fun deleteComment(publicationId: String, commentId: String): Result<Unit> = result {
-        val flow = commentFlows[publicationId] ?: return@result Unit
-        flow.update { list -> list.filterNot { it.id == commentId } }
+        val deleted = apiCall { api.deleteComment("eq.$commentId") }
+        check(deleted.isNotEmpty()) { "No se pudo eliminar el comentario" }
+        commentFlows[publicationId]?.update { list -> list.filterNot { it.id == commentId } }
         Unit
+    }.onSuccess { refreshPublication(publicationId) }
+
+    override suspend fun reportSighting(publicationId: String, text: String): Result<Unit> = result {
+        requireUserId()
+        apiCall { api.reportSighting(json {
+            addProperty("p_publication_id", publicationId)
+            addProperty("p_text", text.trim())
+        }) }
+        Unit
+    }
+
+    private suspend fun fetchComments(publicationId: String): List<Comment> =
+        apiCall { api.getComments("eq.$publicationId") }.map { it.toComment() }
+
+    private fun JsonObject.toComment(): Comment {
+        val author = obj("author")
+        val authorId = string("author_id").orEmpty()
+        return Comment(
+            id = string("id").orEmpty(),
+            publicationId = string("publication_id").orEmpty(),
+            author = Author(
+                userId = authorId,
+                name = author?.string("name") ?: "Usuario Huella",
+                level = level(author?.string("level")),
+                initials = author?.string("initials").orEmpty(),
+            ),
+            text = string("text").orEmpty(),
+            timeAgo = relativeTime(string("created_at")),
+            isMine = authorId == SupabaseSession.userId,
+        )
     }
 
     override fun markNotificationRead(id: String) {
@@ -788,7 +849,9 @@ object SupabaseRepository : HuellaRepository {
         if (raw.isNullOrBlank()) return null
         return runCatching {
             val json = com.google.gson.JsonParser.parseString(raw).asJsonObject
-            json.string("message") ?: json.string("msg") ?: json.string("error_description")
+            // 23505: restricción UNIQUE (reporte o solicitud repetidos).
+            if (json.string("code") == "23505") "Ya lo habías enviado antes"
+            else json.string("message") ?: json.string("msg") ?: json.string("error_description")
         }.getOrNull()
     }
 
@@ -840,6 +903,8 @@ object SupabaseRepository : HuellaRepository {
             photoLabel = string("photo_label") ?: title,
             author = author,
             status = runCatching { PostStatus.valueOf(string("status").orEmpty()) }.getOrDefault(PostStatus.EN_REVISION),
+            votesCount = int("votes_count"),
+            commentsCount = int("comments_count"),
             eventDate = string("event_date"),
             schedule = string("schedule"),
             place = string("place"),

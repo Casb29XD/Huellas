@@ -50,7 +50,20 @@ class PublicProfileViewModel(private val repo: HuellaRepository = SupabaseReposi
         }
     }
 
+    /**
+     * No hay reportes de perfiles en el esquema: se reporta la publicación visible más reciente del usuario
+     * (llega a la cola de moderación con el motivo "Perfil reportado"). Sin publicaciones no hay qué reportar.
+     */
     fun report() {
-        _messages.trySend("Gracias, revisaremos este perfil")
+        val latest = _uiState.value.publications.firstOrNull()
+        if (latest == null) {
+            _messages.trySend("Este perfil no tiene publicaciones visibles para reportar")
+            return
+        }
+        viewModelScope.launch {
+            repo.reportPublication(latest.id, "Perfil reportado", "Reporte enviado desde el perfil público")
+                .onSuccess { _messages.send("Gracias. Un moderador revisará este perfil") }
+                .onFailure { e -> _messages.send(e.message ?: "No pudimos enviar el reporte") }
+        }
     }
 }
