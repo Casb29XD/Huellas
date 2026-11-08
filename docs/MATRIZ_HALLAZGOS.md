@@ -61,7 +61,7 @@ sin usuarios `@huella.test`, publicaciones de prueba ni objetos `e2e-*`. Todo í
 | 44 | Snackbars tapan el CTA | Resuelto | b66e5c1 d43644a 0b85310 af44f68 | `ModerationDetailViewModelTest` (error inline); `UxScreensRobolectricTest` (reportar sin motivo: error inline sin solaparse con el CTA) |
 | 45 | Títulos truncados a una línea | Resuelto | 3997c76 0b85310 | `VisualItemsRobolectricTest` (título de tarjeta a dos líneas) |
 | 46 | FAB naranja duplicado | Resuelto | bdfc2bd | `UxScreensRobolectricTest` (home sin FAB) |
-| 47 | Iconos repetidos y grillas desiguales | Resuelto | 5e3a826 | `VisualItemsRobolectricTest` (categorías de igual altura, Veterinaria a fila completa); `RepoHygieneTest` (icono propio de Castración) |
+| 47 | Iconos repetidos y grillas desiguales | Resuelto | 5e3a826 | `VisualItemsRobolectricTest` (categorías de igual altura, Veterinaria a fila completa); `RepoHygieneTest` (icono propio de Castración) · `icon_attr_castrado.xml` quedó con finales de línea CRLF (cosmético) |
 | 48 | Error de términos sin mensaje, placeholder, typo | Resuelto | d43644a | `UxScreensRobolectricTest`; `LoginScreenRobolectricTest` |
 | 49 | Splash con puntos, onboarding que salta | Resuelto | 6d5053f bf20643 | `VisualItemsRobolectricTest` (título del onboarding estable); `RepoHygieneTest` (sin ilustraciones ajenas al copy) |
 | 50 | Botones estrechos y áreas táctiles < 48 dp | Resuelto | 6d5053f 1c6b3bb | `VisualItemsRobolectricTest` (Omitir y Ver perfil de 48 dp) |
@@ -76,7 +76,7 @@ sin usuarios `@huella.test`, publicaciones de prueba ni objetos `e2e-*`. Todo í
 | 59 | Tema solo claro | Resuelto | 8fdd357 8c52bee | `DarkThemeRobolectricTest` (reglas del paso 3 legibles en oscuro); `ContrastTest` · El fondo de mapa estático es una ilustración decorativa y queda clara en ambos temas |
 | 60 | Inconsistencias de marca y copy | Resuelto | 40d2bf4 9d251c3 84c7efd | `RepoHygieneTest` (marca y versión); `UxScreensRobolectricTest` (pie con `VERSION_NAME`); `RelativeTimeTest` · Excepciones deliberadas: botón atrás circular sobre la foto del detalle (necesita contraste sobre la imagen) y hora `HH:mm` en el chat |
 | 61 | Google Sign-In "Próximamente" | Resuelto | d43644a | — |
-| 62 | Documentación desactualizada | Resuelto | aaaea84 947e1e2 (+ commits de esta matriz) | — |
+| 62 | Documentación desactualizada | Resuelto | aaaea84 947e1e2 5cd2266 86a4197 de9dac9 5834397 | — · Estado final en `docs/REPORTE_REMEDIACION.md` |
 | 63 | `.gitignore`, `.env.example`, cp1252 | Resuelto | 95629a6 e079499 | — |
 
 ## Revisión de seguridad de commits recientes
