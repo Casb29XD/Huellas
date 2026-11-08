@@ -385,17 +385,30 @@ object SupabaseRepository : HuellaRepository {
             addProperty("neighborhood", draft.city)
             addProperty("description", draft.description.trim())
             addProperty("event_date", draft.eventDate)
-            addProperty("status", PostStatus.EN_REVISION.name)
+            draft.imageUrl?.let { addProperty("image_url", it) }
         }
-        val updated = apiCall { api.createPublication(body) }.firstOrNull() // fallback postgrest
-        refreshAll()
-        getPublication(publicationId) ?: error("No se pudo actualizar la publicación")
+        // El servidor devuelve la fila editada de vuelta en EN_REVISION: el autor no elige el estado.
+        val updated = apiCall { api.updatePublication("eq.$publicationId", body) }.firstOrNull()
+            ?: error("No se pudo actualizar la publicación")
+        val publication = updated.toPublication()
+        _myPublications.update { list -> list.map { if (it.id == publicationId) publication else it } }
+        _publications.update { list ->
+            if (publication.status == PostStatus.APROBADA) list.map { if (it.id == publicationId) publication else it }
+            else list.filterNot { it.id == publicationId }
+        }
+        publication
     }
 
     override suspend fun deletePublication(publicationId: String): Result<Unit> = result {
-        refreshAll()
+        val deleted = apiCall { api.deletePublication("eq.$publicationId") }
+        check(deleted.isNotEmpty()) { "No se pudo eliminar la publicación" }
+        _publications.update { list -> list.filterNot { it.id == publicationId } }
+        _myPublications.update { list -> list.filterNot { it.id == publicationId } }
+        _moderationQueue.update { list -> list.filterNot { it.id == publicationId } }
+        _moderationReports.update { list -> list.filterNot { it.id == publicationId } }
+        commentFlows.remove(publicationId)
         Unit
-    }
+    }.onSuccess { quietly { refreshRequests() } }
 
     override suspend fun votePublication(publicationId: String, value: Int): Result<Unit> = result {
         Unit
