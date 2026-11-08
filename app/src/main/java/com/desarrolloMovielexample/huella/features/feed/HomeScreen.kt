@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -135,6 +136,7 @@ fun HomeScreen(
                     onOpenMap = onOpenMap,
                     onOpenNotifications = onOpenNotifications,
                     onOpenProfile = onOpenProfile,
+                    onLoadMore = viewModel::loadMore,
                 )
             }
         }
@@ -169,6 +171,7 @@ private fun FeedList(
     onOpenMap: () -> Unit,
     onOpenNotifications: () -> Unit,
     onOpenProfile: () -> Unit,
+    onLoadMore: () -> Unit,
 ) {
     // The bottom bar height is already reserved by AppNavigation's Scaffold (NavHost padded by innerPadding);
     // 24dp is the same end spacing every list under the bar uses (Requests, Profile, Map list).
@@ -272,6 +275,15 @@ private fun FeedList(
                 onClick = { onOpenPublication(p.id) },
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 14.dp).testTag("feed_card"),
             )
+        }
+        if (state.hasMore) {
+            // Pie de lista: al componerse (el usuario llegó al final) pide la página siguiente (ítem 32).
+            item(key = "feed_more") {
+                LaunchedEffect(state.isLoadingMore) { onLoadMore() } // se repite al terminar cada página mientras siga visible
+                Box(Modifier.fillMaxWidth().padding(16.dp).testTag("feed_more"), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(Modifier.size(24.dp), color = HuellaColors.Primary, strokeWidth = 2.dp)
+                }
+            }
         }
     }
 }

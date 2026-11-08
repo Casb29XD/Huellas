@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.domain.repository
 
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
+import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.ChatMessage
 import com.desarrolloMovielexample.huella.domain.model.Comment
 import com.desarrolloMovielexample.huella.domain.model.Conversation
@@ -38,6 +39,11 @@ interface HuellaRepository {
     // Publications
     val publications: StateFlow<List<Publication>>        // public feed
     val myPublications: StateFlow<List<Publication>>      // current user's posts (with status)
+    /**
+     * Feed paginado (ítem 32): reset=true carga la primera página con estos filtros de servidor; reset=false
+     * añade la siguiente página con los últimos filtros. Devuelve true si puede haber más páginas.
+     */
+    suspend fun loadFeed(category: Category?, species: String?, city: String?, reset: Boolean): Result<Boolean>
     fun getPublication(id: String): Publication?
     fun publicationsByAuthor(userId: String): List<Publication>
     suspend fun createPublication(draft: PublicationDraft): Result<Publication>

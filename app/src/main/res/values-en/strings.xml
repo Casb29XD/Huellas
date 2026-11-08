@@ -462,4 +462,5 @@
     <string name="points_action_comment">Comment on a post</string>
     <string name="points_action_sighting">Report a sighting</string>
     <string name="points_action_adoption">Adoption completed</string>
+    <string name="error_load_feed">Could not load the feed</string>
 </resources>

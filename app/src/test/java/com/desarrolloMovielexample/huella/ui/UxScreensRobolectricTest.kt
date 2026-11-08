@@ -49,7 +49,7 @@ class UxScreensRobolectricTest {
                 HomeScreen({}, {}, {}, {}, {}, viewModel = HomeViewModel(FakeRepository))
             }
         }
-        // HomeViewModel still simulates the first load with delay(600) on the main looper.
+        // HomeViewModel carga la primera página (FakeRepository.loadFeed) en el main looper.
         ShadowLooper.idleMainLooper(1, TimeUnit.SECONDS)
         compose.waitForIdle()
 

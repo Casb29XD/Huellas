@@ -92,6 +92,7 @@ interface SupabaseApiService {
         @Query("updated_at") updatedAfter: String? = null,
         @Query("order") order: String = "created_at.desc",
         @Query("limit") limit: Int = 100,
+        @Query("offset") offset: Int? = null,
     ): Response<List<JsonObject>>
 
     @POST("rest/v1/publications")
@@ -215,6 +216,10 @@ interface SupabaseApiService {
     suspend fun getConversations(
         @Query("select") select: String = "*,publications(title),participant_one_profile:profiles!conversations_participant_one_fkey(id,name,level,initials),participant_two_profile:profiles!conversations_participant_two_fkey(id,name,level,initials)",
         @Query("order") order: String = "updated_at.desc",
+        @Query("id") id: String? = null,
+        @Query("publication_id") publicationId: String? = null,
+        /** Filtro PostgREST or=(...), p. ej. el par de participantes en cualquier orden. */
+        @Query("or") or: String? = null,
     ): Response<List<JsonObject>>
 
     @POST("rest/v1/conversations")
