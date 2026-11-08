@@ -264,7 +264,7 @@ private fun FeedList(
             PublicationCard(
                 publication = p,
                 onClick = { onOpenPublication(p.id) },
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 14.dp),
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 14.dp).testTag("feed_card"),
             )
         }
     }
