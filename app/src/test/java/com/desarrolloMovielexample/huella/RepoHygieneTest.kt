@@ -70,4 +70,11 @@ class RepoHygieneTest {
         assertTrue("addInterceptor(loggingInterceptor) sin BuildConfig.DEBUG",
             client.lineSequence().first { "addInterceptor(loggingInterceptor)" in it }.contains("if (BuildConfig.DEBUG)"))
     }
+
+    @Test
+    fun `item 33 - sin permisos de ubicacion ni slider de distancia mientras no haya geolocalizacion`() {
+        val manifest = file("app/src/main/AndroidManifest.xml")
+        assertFalse("permiso de ubicación sin uso", "LOCATION" in manifest)
+        assertFalse("filtro de distancia decorativo", "distanceKm" in file("app/src/main/java/com/desarrolloMovielexample/huella/features/feed/HomeViewModel.kt"))
+    }
 }

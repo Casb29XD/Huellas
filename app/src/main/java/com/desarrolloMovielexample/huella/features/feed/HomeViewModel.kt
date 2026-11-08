@@ -30,7 +30,7 @@ data class FeedFilters(
     val onlyVaccinated: Boolean = false,
     val onlySterilized: Boolean = false,
     val city: String? = null,          // full name, e.g. "Medellín, Antioquia"
-    val distanceKm: Float = 10f,       // ponytail: shown only, no geo filtering until maps phase
+    // ponytail: sin filtro de distancia hasta que haya geolocalización real (ítem 33).
 ) {
     val isActive: Boolean get() = species != null || size != null || onlyVaccinated || onlySterilized || city != null
 }

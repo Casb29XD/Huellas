@@ -37,7 +37,7 @@ data class CreatePostUiState(
     val sex: String = "Hembra",
     val title: String = "",
     val description: String = "",
-    val city: String = "Medellín, Antioquia",
+    val city: String = "", // sin ciudad preseleccionada: la del perfil si coincide con el catálogo (ítem 33)
     val location: String = "",
     val eventDate: String = "",
     val breedError: UiText? = null,
@@ -64,7 +64,11 @@ data class CreatePostUiState(
 }
 
 class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
-    private val _uiState = MutableStateFlow(CreatePostUiState())
+    private val _uiState = MutableStateFlow(
+        CreatePostUiState(
+            city = repo.currentUser.value?.city?.let { c -> repo.cities.firstOrNull { it.substringBefore(",") == c.substringBefore(",") } }.orEmpty(),
+        ),
+    )
     val uiState: StateFlow<CreatePostUiState> = _uiState.asStateFlow()
 
     private val _messages = Channel<UiText>(Channel.BUFFERED)
