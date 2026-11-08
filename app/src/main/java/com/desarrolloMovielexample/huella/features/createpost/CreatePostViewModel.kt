@@ -20,7 +20,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-const val MAX_PHOTOS = 5
+// ponytail: publications.image_url guarda una sola foto (ítem 14); varias fotos piden image_urls TEXT[].
+const val MAX_PHOTOS = 1
 
 /** Defaults mirror the design prototype (`pub` initial state in index.html). */
 data class CreatePostUiState(
@@ -73,7 +74,7 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
 
     fun onCategory(c: Category) = _uiState.update { it.copy(category = c, eventDateError = null) }
     fun addPhotos(uris: List<Uri>) = _uiState.update {
-        it.copy(photos = (it.photos + uris).distinct().take(MAX_PHOTOS))
+        it.copy(photos = (uris + it.photos).distinct().take(MAX_PHOTOS)) // la nueva reemplaza a la anterior
     }
     fun removePhoto(uri: Uri) = _uiState.update { it.copy(photos = it.photos - uri) }
     fun onSpecies(v: String) = _uiState.update { it.copy(species = v) }
@@ -142,13 +143,13 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
         viewModelScope.launch {
             // ponytail: `location` is not in PublicationDraft yet (no maps this phase); add it with the map picker.
             val result = runCatching {
-                val imageUrls = s.photos.map { SupabaseRepository.uploadPublicationImage(it) }
+                val imageUrl = SupabaseRepository.uploadPublicationImage(s.photos.first())
                 repo.createPublication(
                 PublicationDraft(
                     category = s.category, title = s.title, description = s.description, species = s.species,
                     breed = s.breed, size = s.size, vaccinated = s.vaccinated, sterilized = s.sterilized,
                     age = s.age, sex = s.sex, city = s.city, eventDate = s.eventDate.takeIf { s.needsDate },
-                    imageUrl = imageUrls.firstOrNull(),
+                    imageUrl = imageUrl,
                 ),
             ).getOrThrow()
             }

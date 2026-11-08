@@ -265,8 +265,8 @@
     <string name="action_publish">Publicar</string>
     <string name="create_overline">Nueva publicación · %1$d/3</string>
     <string name="create_what">¿Qué quieres publicar?</string>
-    <string name="create_photos">Fotos</string>
-    <string name="create_photos_left">Hasta %1$d · %2$d restantes</string>
+    <string name="create_photos">Foto</string>
+    <string name="create_photos_hint">Una foto principal por publicación</string>
     <string name="create_photo_n">Foto %1$d</string>
     <string name="create_remove_photo">Quitar foto</string>
     <string name="create_add_photo">Agregar</string>
@@ -289,7 +289,7 @@
     <string name="create_date_vet">Fecha de la jornada</string>
     <string name="create_date_lost">Fecha de la pérdida</string>
     <string name="create_date_found">Fecha del hallazgo</string>
-    <string name="create_step_1">Categoría y fotos</string>
+    <string name="create_step_1">Categoría y foto</string>
     <string name="create_step_2">Datos de la mascota</string>
     <string name="create_step_3">Descripción y ubicación</string>
     <string name="error_photo_required">Agrega al menos una foto</string>
