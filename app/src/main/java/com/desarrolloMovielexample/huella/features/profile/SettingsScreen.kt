@@ -42,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.components.Avatar
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaSwitch
@@ -49,6 +50,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.utils.AppLanguage
+import com.desarrolloMovielexample.huella.domain.model.User
 
 @Suppress("DEPRECATION") // Icons.Outlined.Logout: the AutoMirrored variant is not needed for an LTR-only app.
 @Composable
@@ -58,7 +60,11 @@ fun SettingsScreen(
     onChangePassword: () -> Unit,
     onLoggedOut: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
+    user: User? = null,
+    onOpenTerms: () -> Unit = viewModel::onTerms,
+    onSetPassword: () -> Unit = onChangePassword,
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var selectedLanguage by remember { mutableStateOf(AppLanguage.selected(context)) }
@@ -107,16 +113,47 @@ fun SettingsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 GroupCaption(stringResource(R.string.settings_account))
                 Column(Modifier.fillMaxWidth().outlinedCard()) {
+                    if (user != null) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Avatar(user.initials, user.level, size = 40.dp)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(user.name, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+                                Text(user.email, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+                            }
+                        }
+                        HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
+                    }
                     LinkRow(stringResource(R.string.settings_edit_profile), onEditProfile) {
                         HuellaIcon(R.drawable.icon_nav_perfil, tint = HuellaColors.TextSecondary, size = 29.dp)
                     }
                     HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                    LinkRow(stringResource(R.string.settings_change_password), onChangePassword) {
+                    LinkRow(stringResource(R.string.settings_change_password), onSetPassword) {
                         HuellaIcon(R.drawable.icon_estado_cerrada, tint = HuellaColors.TextSecondary, size = 29.dp)
                     }
                     HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                    LinkRow(stringResource(R.string.settings_terms), viewModel::onTerms) {
+                    LinkRow(stringResource(R.string.settings_terms), onOpenTerms) {
                         Icon(Icons.Outlined.Gavel, contentDescription = null, tint = HuellaColors.TextSecondary, modifier = Modifier.size(22.dp))
+                    }
+                    HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { showDeleteDialog = true }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
+                        Text(
+                            "Eliminar cuenta",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
+                            color = HuellaColors.ErrorDark,
+                        )
                     }
                 }
             }
@@ -129,6 +166,8 @@ fun SettingsScreen(
                         onLoggedOut()
                     }
                     .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(Icons.Outlined.Logout, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
                 Text(
@@ -139,24 +178,6 @@ fun SettingsScreen(
                 )
             }
 
-            var showDeleteDialog by remember { mutableStateOf(false) }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .outlinedCard()
-                    .clickable { showDeleteDialog = true }
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
-                Text(
-                    "Eliminar mi cuenta",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
-                    color = HuellaColors.ErrorDark,
-                )
-            }
 
             if (showDeleteDialog) {
                 AlertDialog(

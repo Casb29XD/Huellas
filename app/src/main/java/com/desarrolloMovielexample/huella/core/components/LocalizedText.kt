@@ -43,6 +43,7 @@ private val englishCopy = mapOf(
     "Cancelar" to "Cancel",
     "Aceptar" to "Accept",
     "Eliminar" to "Delete",
+    "Eliminar cuenta" to "Delete account",
     "Guardar" to "Save",
     "Buscar mascotas, razas, ciudades" to "Search pets, breeds and cities",
     "Filtros" to "Filters",
