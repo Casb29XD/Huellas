@@ -8,6 +8,7 @@ import com.google.gson.JsonParser
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assume
 
@@ -67,11 +68,17 @@ object E2eEnv {
         apikey: String = key,
         contentType: String = "application/json",
         headers: Map<String, String> = emptyMap(),
-    ): Resp {
+    ): Resp = send(path, method, body?.toRequestBody(contentType.toMediaType()), token, apikey, headers)
+
+    /** POST binario (subidas a storage) con la publishable key y el token del usuario si se pasa. */
+    fun restBytes(path: String, bytes: ByteArray, contentType: String, token: String? = null): Resp =
+        send(path, "POST", bytes.toRequestBody(contentType.toMediaType()), token, key, emptyMap())
+
+    private fun send(path: String, method: String, body: RequestBody?, token: String?, apikey: String, headers: Map<String, String>): Resp {
         assumeConfigured()
         val req = Request.Builder()
             .url("$url/${path.trimStart('/')}")
-            .method(method, body?.toRequestBody(contentType.toMediaType()))
+            .method(method, body)
             .header("apikey", apikey)
             .apply { token?.let { header("Authorization", "Bearer $it") } }
             .apply { headers.forEach { (k, v) -> header(k, v) } }
