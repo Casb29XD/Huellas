@@ -1,20 +1,7 @@
 // moderate-ai: segunda opinión de IA (DeepSeek) para la cola de moderación. Ver docs/MODERACION_IA.md.
 // POST {"publication_id"} con el JWT de un moderador. Guarda el veredicto en publication_ai_reviews.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const VERDICTS = ["APROBAR", "RECHAZAR", "REVISAR"];
-const REASONS = ["Venta de animales", "Contenido falso", "Fotos inadecuadas", "Duplicado", "Otro"];
-
-const SYSTEM_PROMPT = `Eres moderador de "Huellas", una app colombiana de adopción, hogares temporales, mascotas perdidas/encontradas y servicios veterinarios.
-Evalúa la publicación que recibes según estas reglas:
-- Prohibida la venta de animales (precios, "se vende", cuotas, "entrego por X", razas a cambio de dinero).
-- Prohibido el contenido falso o engañoso (estafas, datos incoherentes, pedir dinero por adelantado).
-- Prohibidas las fotos inadecuadas (solo ves la URL y la etiqueta de la foto; si no puedes juzgarla, no la uses como motivo).
-- Prohibidos los duplicados (compara con las otras publicaciones del mismo autor que se incluyen).
-- Prohibido cualquier indicio de maltrato animal.
-Responde SOLO un objeto JSON con esta forma exacta:
-{"verdict":"APROBAR|RECHAZAR|REVISAR","risk":0.0,"reasons":["motivo breve en español"],"suggested_reason":"Venta de animales|Contenido falso|Fotos inadecuadas|Duplicado|Otro"}
-risk va de 0 (seguro) a 1 (viola las reglas). Usa REVISAR si dudas. suggested_reason es null si el veredicto es APROBAR.`;
+import { normalizeReview, SYSTEM_PROMPT, userMessage } from "./review.ts";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -73,7 +60,7 @@ Deno.serve(async (req) => {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: JSON.stringify({ publicacion: pub, otras_del_autor: others ?? [] }) },
+          { role: "user", content: userMessage(pub, others ?? []) },
         ],
       }),
     });
@@ -93,15 +80,11 @@ Deno.serve(async (req) => {
     return json(502, { status: "error", message: "DeepSeek devolvió JSON inválido" });
   }
 
-  // Normaliza para que nunca viole los CHECK de la tabla.
-  const verdict = VERDICTS.includes(out.verdict as string) ? out.verdict as string : "REVISAR";
-  const risk = Math.min(1, Math.max(0, Number(out.risk) || 0));
-  const reasons = Array.isArray(out.reasons) ? out.reasons.map(String).slice(0, 10) : [];
-  const suggested = verdict === "APROBAR" ? null
-    : REASONS.includes(out.suggested_reason as string) ? out.suggested_reason as string : "Otro";
+  // Normaliza al esquema (CHECK de la tabla) y aplica la heurística local de venta; sigue siendo solo sugerencia.
+  const { verdict, risk, reasons, suggested_reason } = normalizeReview(out, pub);
 
   const { data: review, error: insertError } = await admin.from("publication_ai_reviews")
-    .insert({ publication_id: pub.id, verdict, risk, reasons, suggested_reason: suggested, model })
+    .insert({ publication_id: pub.id, verdict, risk, reasons, suggested_reason, model })
     .select().single();
   if (insertError) return json(500, { status: "error", message: `No se guardó la revisión: ${insertError.message}` });
 
