@@ -344,12 +344,17 @@ object SupabaseRepository : HuellaRepository {
         Unit
     }.onSuccess { quietly { refreshRequests() } }
 
+    /** [applicantId] es el id de la solicitud (Applicant.id); las notificaciones las crea el servidor (ítem 7). */
     override suspend fun respondToRequest(applicantId: String, accept: Boolean): Result<Unit> = result {
-        apiCall { api.updateAdoptionRequest("eq.$applicantId", json {
-            addProperty("status", if (accept) RequestStatus.ACEPTADA.name else RequestStatus.RECHAZADA.name)
+        apiCall { api.respondToRequest(json {
+            addProperty("p_request_id", applicantId)
+            addProperty("p_accept", accept)
         }) }
         Unit
-    }.onSuccess { quietly { refreshRequests() } }
+    }.onSuccess {
+        quietly { refreshRequests() }
+        if (accept) quietly { refreshConversations() }
+    }
 
     override suspend fun closePublication(publicationId: String): Result<Unit> = result {
         requireUserId()
