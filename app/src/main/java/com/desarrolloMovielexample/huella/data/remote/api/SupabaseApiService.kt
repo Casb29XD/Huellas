@@ -113,6 +113,58 @@ interface SupabaseApiService {
         @Header("Prefer") prefer: String = "return=representation",
     ): Response<List<JsonObject>>
 
+    @GET("rest/v1/publications")
+    suspend fun getPublicationCounts(
+        @Query("id") id: String,
+        @Query("select") select: String = "votes_count,comments_count",
+    ): Response<List<JsonObject>>
+
+    @GET("rest/v1/comments")
+    suspend fun getComments(
+        @Query("publication_id") publicationId: String,
+        @Query("select") select: String = "*,author:profiles(id,name,level,initials)",
+        @Query("order") order: String = "created_at.asc",
+    ): Response<List<JsonObject>>
+
+    @POST("rest/v1/comments")
+    suspend fun createComment(
+        @Body body: JsonObject,
+        @Query("select") select: String = "*,author:profiles(id,name,level,initials)",
+        @Header("Prefer") prefer: String = "return=representation",
+    ): Response<List<JsonObject>>
+
+    @DELETE("rest/v1/comments")
+    suspend fun deleteComment(
+        @Query("id") id: String,
+        @Query("select") select: String = "id",
+        @Header("Prefer") prefer: String = "return=representation",
+    ): Response<List<JsonObject>>
+
+    /** Upsert del voto propio: la PK (publication_id, user_id) resuelve el conflicto. */
+    @POST("rest/v1/publication_votes")
+    suspend fun upsertVote(
+        @Body body: JsonObject,
+        @Query("on_conflict") onConflict: String = "publication_id,user_id",
+        @Header("Prefer") prefer: String = "resolution=merge-duplicates,return=minimal",
+    ): Response<Unit>
+
+    @DELETE("rest/v1/publication_votes")
+    suspend fun deleteVote(
+        @Query("publication_id") publicationId: String,
+        @Query("user_id") userId: String,
+    ): Response<Unit>
+
+    @GET("rest/v1/publication_votes")
+    suspend fun getMyVote(
+        @Query("publication_id") publicationId: String,
+        @Query("user_id") userId: String,
+        @Query("select") select: String = "value",
+    ): Response<List<JsonObject>>
+
+    /** Inserta el avistamiento, notifica SIGHTING al autor y suma +5 al reporter (servidor). */
+    @POST("rest/v1/rpc/report_sighting")
+    suspend fun reportSighting(@Body body: JsonObject): Response<Unit>
+
     @POST("rest/v1/rpc/moderate_publication")
     suspend fun moderatePublication(@Body body: JsonObject): Response<Unit>
 

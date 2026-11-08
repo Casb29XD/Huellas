@@ -457,6 +457,13 @@ object FakeRepository : HuellaRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun refreshPublication(publicationId: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun reportSighting(publicationId: String, text: String): Result<Unit> {
+        delay(LATENCY)
+        return if (text.isBlank()) Result.failure(IllegalArgumentException("Cuéntanos dónde y cuándo lo viste")) else Result.success(Unit)
+    }
+
     override suspend fun reportPublication(publicationId: String, reason: String, detail: String): Result<Unit> {
         delay(LATENCY)
         return if (reason.isBlank()) Result.failure(IllegalArgumentException("Selecciona un motivo")) else Result.success(Unit)

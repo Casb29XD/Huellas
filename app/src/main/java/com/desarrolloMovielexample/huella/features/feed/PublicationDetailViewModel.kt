@@ -7,7 +7,6 @@ import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +64,10 @@ class PublicationDetailViewModel(
             }
         }
         viewModelScope.launch {
+            repo.refreshPublication(publicationId)
+            repo.getPublication(publicationId)?.let { fresh -> _uiState.update { it.copy(publication = fresh) } }
+        }
+        viewModelScope.launch {
             repo.publications.collect { list ->
                 val fresh = list.firstOrNull { it.id == publicationId } ?: repo.getPublication(publicationId)
                 if (fresh != null) {
@@ -99,7 +102,7 @@ class PublicationDetailViewModel(
             repo.addComment(publicationId, text)
                 .onSuccess {
                     _uiState.update { it.copy(commentDraft = "") }
-                    _messages.send("Comentario publicado (+2 puntos)")
+                    _messages.send("Comentario publicado")
                 }
                 .onFailure {
                     _messages.send(it.message ?: "No se pudo publicar el comentario")
@@ -111,6 +114,7 @@ class PublicationDetailViewModel(
         viewModelScope.launch {
             repo.deleteComment(publicationId, commentId)
                 .onSuccess { _messages.send("Comentario eliminado") }
+                .onFailure { _messages.send(it.message ?: "No se pudo eliminar el comentario") }
         }
     }
 
@@ -178,9 +182,15 @@ class PublicationDetailViewModel(
         }
         _uiState.update { it.copy(isSending = true) }
         viewModelScope.launch {
-            delay(500)
-            _uiState.update { it.copy(isSending = false, sheet = null, sightingText = "") }
-            _messages.send("Aviso enviado. ¡Gracias por ayudar! +5 puntos")
+            repo.reportSighting(publicationId, s.sightingText)
+                .onSuccess {
+                    _uiState.update { it.copy(isSending = false, sheet = null, sightingText = "") }
+                    _messages.send("Aviso enviado al autor. ¡Gracias por ayudar!")
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isSending = false) }
+                    _messages.send(e.message ?: "No pudimos enviar el aviso")
+                }
         }
     }
 }

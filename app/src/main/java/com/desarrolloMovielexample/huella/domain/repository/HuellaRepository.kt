@@ -42,7 +42,11 @@ interface HuellaRepository {
     suspend fun updatePublication(publicationId: String, draft: PublicationDraft): Result<Publication>
     suspend fun deletePublication(publicationId: String): Result<Unit>
     suspend fun reportPublication(publicationId: String, reason: String, detail: String): Result<Unit>
-    suspend fun votePublication(publicationId: String, value: Int): Result<Unit> // 1 for up, -1 for down, 0 to revoke
+    suspend fun votePublication(publicationId: String, value: Int): Result<Unit> // 1 up, -1 down, 0 o el mismo voto otra vez = quitar
+    /** Relee contadores y el voto propio de una publicación. */
+    suspend fun refreshPublication(publicationId: String): Result<Unit>
+    /** "Lo he visto": avisa al autor de una publicación de perdidos/encontrados. */
+    suspend fun reportSighting(publicationId: String, text: String): Result<Unit>
 
     // Comments
     fun comments(publicationId: String): StateFlow<List<Comment>>

@@ -132,6 +132,38 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(removed)
     }
 
+    var mockComments: MutableList<JsonObject> = mutableListOf()
+    var mockVotes: MutableList<JsonObject> = mutableListOf()
+
+    override suspend fun getPublicationCounts(id: String, select: String): Response<List<JsonObject>> =
+        Response.success(mockPublications.filter { it.get("id")?.asString == id.removePrefix("eq.") })
+
+    override suspend fun getComments(publicationId: String, select: String, order: String): Response<List<JsonObject>> =
+        Response.success(mockComments.filter { it.get("publication_id")?.asString == publicationId.removePrefix("eq.") })
+
+    override suspend fun createComment(body: JsonObject, select: String, prefer: String): Response<List<JsonObject>> {
+        mockComments.add(body)
+        return Response.success(listOf(body))
+    }
+
+    override suspend fun deleteComment(id: String, select: String, prefer: String): Response<List<JsonObject>> {
+        val removed = mockComments.filter { it.get("id")?.asString == id.removePrefix("eq.") }
+        mockComments.removeAll(removed)
+        return Response.success(removed)
+    }
+
+    override suspend fun upsertVote(body: JsonObject, onConflict: String, prefer: String): Response<Unit> {
+        mockVotes.add(body)
+        return Response.success(Unit)
+    }
+
+    override suspend fun deleteVote(publicationId: String, userId: String): Response<Unit> = Response.success(Unit)
+
+    override suspend fun getMyVote(publicationId: String, userId: String, select: String): Response<List<JsonObject>> =
+        Response.success(mockVotes.takeLast(1))
+
+    override suspend fun reportSighting(body: JsonObject): Response<Unit> = Response.success(Unit)
+
     override suspend fun moderatePublication(body: JsonObject): Response<Unit> {
         lastModeratedPayload = body
         val pubId = body.get("p_publication_id")?.asString
