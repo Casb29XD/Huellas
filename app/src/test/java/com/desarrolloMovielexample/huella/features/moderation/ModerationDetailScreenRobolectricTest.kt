@@ -48,6 +48,6 @@ class ModerationDetailScreenRobolectricTest {
         show { null }
         compose.onNodeWithText("Analizar con IA").performScrollTo().performClick()
         compose.waitForIdle()
-        compose.onNodeWithText(AI_NOT_CONFIGURED).assertExists()
+        compose.onNodeWithText("La moderación con IA no está configurada (DEEPSEEK_API_KEY)").assertExists()
     }
 }

@@ -2,6 +2,10 @@ package com.desarrolloMovielexample.huella.features.moderation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.ModerationStats
 import com.desarrolloMovielexample.huella.domain.model.Report
@@ -29,7 +33,7 @@ data class ModerationUiState(
     val reported: List<ModerationItem> = emptyList(),
     val selectedTab: Int = 0,
     val isLoading: Boolean = true,
-    val loadError: String? = null,
+    val loadError: UiText? = null,
 ) {
     val visibleItems: List<ModerationItem> get() = if (selectedTab == 0) pending else reported
 }
@@ -37,9 +41,9 @@ data class ModerationUiState(
 class ModerationViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
     private val selectedTab = MutableStateFlow(0)
     private val isLoading = MutableStateFlow(true)
-    private val loadError = MutableStateFlow<String?>(null)
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val loadError = MutableStateFlow<UiText?>(null)
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     val uiState: StateFlow<ModerationUiState> =
         combine(
@@ -78,8 +82,9 @@ class ModerationViewModel(private val repo: HuellaRepository = SupabaseRepositor
                 .onSuccess { isLoading.value = false }
                 .onFailure { error ->
                     isLoading.value = false
-                    loadError.value = error.message ?: "No pudimos cargar la cola de moderación"
-                    _messages.send(loadError.value.orEmpty())
+                    val message = error.toUiText(R.string.error_load_moderation)
+                    loadError.value = message
+                    _messages.send(message)
                 }
         }
     }
@@ -89,7 +94,7 @@ class ModerationViewModel(private val repo: HuellaRepository = SupabaseRepositor
 
 val REJECT_REASONS = listOf("Venta de animales", "Contenido falso", "Fotos inadecuadas", "Duplicado", "Otro")
 
-const val AI_NOT_CONFIGURED = "La moderación con IA no está configurada (DEEPSEEK_API_KEY)"
+val AI_NOT_CONFIGURED: UiText = uiText(R.string.ai_not_configured)
 
 data class ModerationDetailUiState(
     val item: ModerationItem? = null,
@@ -98,14 +103,14 @@ data class ModerationDetailUiState(
     val rejectReason: String? = null,
     val rejectComment: String = "",
     val reasonError: Boolean = false,
-    val commentError: String? = null,
-    val rejectError: String? = null,
+    val commentError: UiText? = null,
+    val rejectError: UiText? = null,
     val isApproving: Boolean = false,
     val isRejecting: Boolean = false,
     val resolvingReportId: String? = null,
     val aiReview: AiReview? = null,
     val aiLoading: Boolean = false,
-    val aiMessage: String? = null,
+    val aiMessage: UiText? = null,
     val finished: Boolean = false,
 ) {
     val busy: Boolean get() = isApproving || isRejecting || finished
@@ -118,8 +123,8 @@ class ModerationDetailViewModel(
     private val _uiState = MutableStateFlow(ModerationDetailUiState())
     val uiState: StateFlow<ModerationDetailUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     /** Loads once; keeps the item after approve/reject removes it from the queue. */
     fun load(itemId: String) {
@@ -135,8 +140,8 @@ class ModerationDetailViewModel(
             val result = repo.approve(item.id)
             _uiState.update { it.copy(isApproving = false, finished = result.isSuccess) }
             _messages.send(
-                if (result.isSuccess) "Publicación aprobada. Ya es visible para todos."
-                else result.exceptionOrNull()?.message ?: "No pudimos aprobar la publicación",
+                if (result.isSuccess) uiText(R.string.msg_post_approved)
+                else result.exceptionOrNull()?.toUiText(R.string.error_approve) ?: uiText(R.string.error_approve),
             )
         }
     }
@@ -153,8 +158,8 @@ class ModerationDetailViewModel(
                 )
             }
             _messages.send(
-                if (result.isSuccess) "Reporte marcado como resuelto."
-                else result.exceptionOrNull()?.message ?: "No pudimos resolver el reporte",
+                if (result.isSuccess) uiText(R.string.msg_report_resolved)
+                else result.exceptionOrNull()?.toUiText(R.string.error_resolve_report) ?: uiText(R.string.error_resolve_report),
             )
         }
     }
@@ -176,7 +181,7 @@ class ModerationDetailViewModel(
                         state.copy(aiLoading = false, aiReview = review, aiMessage = if (review == null) AI_NOT_CONFIGURED else null)
                     },
                     onFailure = { e ->
-                        state.copy(aiLoading = false, aiMessage = e.message ?: "No pudimos analizar con IA")
+                        state.copy(aiLoading = false, aiMessage = e.toUiText(R.string.error_ai))
                     },
                 )
             }
@@ -220,7 +225,7 @@ class ModerationDetailViewModel(
             return
         }
         if (reason == "Otro" && state.rejectComment.isBlank()) {
-            _uiState.update { it.copy(commentError = "Cuéntale al autor el motivo del rechazo") }
+            _uiState.update { it.copy(commentError = uiText(R.string.error_reject_comment)) }
             return
         }
         viewModelScope.launch {
@@ -228,9 +233,9 @@ class ModerationDetailViewModel(
             val result = repo.reject(item.id, reason, state.rejectComment.trim())
             if (result.isSuccess) {
                 _uiState.update { it.copy(isRejecting = false, finished = true, showRejectSheet = false) }
-                _messages.send("Publicación rechazada. Notificamos al autor.")
+                _messages.send(uiText(R.string.msg_post_rejected))
             } else {
-                val msg = result.exceptionOrNull()?.message ?: "No pudimos rechazar la publicación"
+                val msg = result.exceptionOrNull()?.toUiText(R.string.error_reject) ?: uiText(R.string.error_reject)
                 _uiState.update { it.copy(isRejecting = false, rejectError = msg) }
             }
         }

@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.moderation
 
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.data.remote.AiReview
 import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +54,7 @@ class ModerationDetailViewModelTest {
         vm.analyzeWithAi()
         advanceUntilIdle()
         assertNull(vm.uiState.value.aiReview)
-        assertEquals("Solo moderadores", vm.uiState.value.aiMessage)
+        assertEquals(UiText.Raw("Solo moderadores"), vm.uiState.value.aiMessage)
         assertEquals(false, vm.uiState.value.aiLoading)
     }
 
