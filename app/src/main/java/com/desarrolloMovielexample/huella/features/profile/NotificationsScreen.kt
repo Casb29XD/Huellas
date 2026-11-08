@@ -63,9 +63,11 @@ fun NotificationsScreen(
     fun open(n: AppNotification) {
         when (n.type) {
             NotificationType.NEW_REQUEST -> onOpenRequests(1)
-            NotificationType.REQUEST_ACCEPTED -> onOpenChat(n.targetId ?: "c1")
-            NotificationType.POST_APPROVED, NotificationType.POST_REJECTED -> n.targetId?.let(onOpenPublication)
-            NotificationType.NEW_COMMENT, NotificationType.NEW_VOTE -> n.targetId?.let(onOpenPublication)
+            // target_id de REQUEST_ACCEPTED es el id de la conversación (respond_to_request).
+            NotificationType.REQUEST_ACCEPTED -> n.targetId?.let(onOpenChat)
+            NotificationType.POST_APPROVED, NotificationType.POST_REJECTED,
+            NotificationType.NEW_COMMENT, NotificationType.NEW_VOTE,
+            NotificationType.REQUEST_REJECTED, NotificationType.SIGHTING -> n.targetId?.let(onOpenPublication)
             NotificationType.BADGE_EARNED -> onOpenLevels()
             NotificationType.LEVEL_UP -> onOpenLevels()
         }
@@ -125,10 +127,12 @@ private fun iconFor(type: NotificationType): Int = when (type) {
     NotificationType.NEW_VOTE -> R.drawable.icon_accion_aprobar
     NotificationType.BADGE_EARNED -> R.drawable.icon_animal_otro
     NotificationType.LEVEL_UP -> R.drawable.icon_animal_otro
+    NotificationType.REQUEST_REJECTED -> R.drawable.icon_accion_rechazar
+    NotificationType.SIGHTING -> R.drawable.icon_attr_ubicacion
 }
 
 private fun colorFor(type: NotificationType): Color = when (type) {
-    NotificationType.POST_REJECTED -> HuellaColors.Error
+    NotificationType.POST_REJECTED, NotificationType.REQUEST_REJECTED -> HuellaColors.Error
     NotificationType.NEW_COMMENT -> HuellaColors.Primary
     NotificationType.NEW_VOTE -> HuellaColors.Primary
     NotificationType.BADGE_EARNED -> HuellaColors.LevelProtector

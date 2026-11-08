@@ -630,8 +630,6 @@ object SupabaseRepository : HuellaRepository {
         }
     }
 
-    // ponytail: el esquema no trae política DELETE en notifications; hasta que exista, PostgREST borra 0 filas
-    // sin error y la notificación vuelve en el siguiente refresco.
     override fun deleteNotification(id: String) {
         _notifications.update { list -> list.filterNot { it.id == id } }
         scope.launch {
@@ -992,13 +990,8 @@ object SupabaseRepository : HuellaRepository {
 
     private fun level(value: String?) = runCatching { Level.valueOf(value.orEmpty()) }.getOrDefault(Level.AMIGO_ANIMAL)
     private fun requestStatus(value: String?) = runCatching { RequestStatus.valueOf(value.orEmpty()) }.getOrDefault(RequestStatus.PENDIENTE)
-    // ponytail: el enum del servidor ya trae SIGHTING y REQUEST_REJECTED, pero NotificationsScreen (fuera de esta capa)
-    // tiene un `when` exhaustivo sin esas ramas. Se muestran con el tipo de icono/destino más cercano hasta añadirlas.
-    private fun notificationType(value: String?) = when (value) {
-        "SIGHTING" -> NotificationType.NEW_COMMENT          // abre la publicación (target_id)
-        "REQUEST_REJECTED" -> NotificationType.POST_REJECTED // icono de rechazo, abre la publicación
-        else -> runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
-    }
+    private fun notificationType(value: String?) =
+        runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
 
     private fun relativeTime(value: String?): String {
         val time = parseSupabaseDate(value) ?: return "hoy"

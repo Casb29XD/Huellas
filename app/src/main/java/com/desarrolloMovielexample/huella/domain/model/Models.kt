@@ -191,7 +191,9 @@ enum class NotificationType {
     LEVEL_UP,
     NEW_COMMENT,
     NEW_VOTE,
-    BADGE_EARNED
+    BADGE_EARNED,
+    REQUEST_REJECTED,
+    SIGHTING
 }
 
 data class AppNotification(
