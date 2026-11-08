@@ -341,8 +341,8 @@ private fun StepPetData(state: CreatePostUiState, vm: CreatePostViewModel) {
         FieldLabel("Tamaño")
         PlainSegmented(listOf("Pequeño", "Mediano", "Grande"), state.size, vm::onSize)
     }
-    ToggleRow("Tiene vacunas", "Se mostrará el badge “Vacunado”", state.vaccinated, vm::onVaccinated)
-    ToggleRow("Está castrado", "Se mostrará el badge “Castrado”", state.sterilized, vm::onSterilized)
+    ToggleRow("Tiene vacunas", "Se mostrará la etiqueta “Vacunado”", state.vaccinated, vm::onVaccinated)
+    ToggleRow("Está castrado", "Se mostrará la etiqueta “Castrado”", state.sterilized, vm::onSterilized)
     HuellaTextField(
         value = state.age,
         onValueChange = vm::onAge,
