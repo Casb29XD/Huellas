@@ -396,7 +396,7 @@
     <string name="action_reject">Rechazar</string>
     <string name="action_accept">Aceptar</string>
     <string name="request_accepted_title">Solicitud aceptada</string>
-    <string name="request_accepted_text">¿Deseas cerrar esta publicación? El esquema actual no registra el estado de adopción ni otorga puntos automáticamente.</string>
+    <string name="request_accepted_text">¿Cerrar la publicación? Se marcará como adopción concretada y sumarás 50 puntos.</string>
     <string name="request_close_post">Cerrar publicación</string>
     <string name="request_keep_open">Mantener abierta</string>
     <string name="msg_request_rejected">Solicitud de %1$s rechazada</string>
@@ -465,4 +465,10 @@
         <item quantity="many">%1$d rechazadas</item>
         <item quantity="other">%1$d rechazadas</item>
     </plurals>
+    <!-- Acciones que otorga award_points en el servidor (la clave es el texto de points_history.action). -->
+    <string name="points_action_create">Crear una publicación</string>
+    <string name="points_action_approved">Publicación aprobada</string>
+    <string name="points_action_comment">Comentar una publicación</string>
+    <string name="points_action_sighting">Reportar un avistamiento</string>
+    <string name="points_action_adoption">Adopción concretada</string>
 </resources>

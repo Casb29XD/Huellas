@@ -89,7 +89,7 @@ fun LevelsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text(action.what, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
+                            Text(pointsActionLabel(action.what), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
                             Text(
                                 stringResource(R.string.points_plus, action.points),
                                 style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),

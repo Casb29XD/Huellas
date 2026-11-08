@@ -97,9 +97,12 @@ object SupabaseRepository : HuellaRepository {
     override val pointsHistory: List<PointsEntry> get() = cachedPointsHistory
     private val userCache = mutableMapOf<String, User>()
     private val authorPublications = mutableMapOf<String, List<Publication>>()
+    /** Las mismas acciones y puntos que award_points en el servidor; la UI las traduce con pointsActionLabel. */
     override val pointsActions = listOf(
         PointsAction("Crear una publicación", 5),
         PointsAction("Publicación aprobada", 10),
+        PointsAction("Comentar una publicación", 2),
+        PointsAction("Reportar un avistamiento", 5),
         PointsAction("Adopción concretada", 50),
     )
     override val cities = listOf(
