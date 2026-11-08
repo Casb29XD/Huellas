@@ -243,7 +243,7 @@ private fun CategoryCard(category: Category, selected: Boolean, onClick: () -> U
         modifier
             .defaultMinSize(minHeight = 96.dp)
             .clip(shape)
-            .background(if (selected) category.color.copy(alpha = 0.08f) else Color.White)
+            .background(if (selected) category.color.copy(alpha = 0.08f) else HuellaColors.Surface)
             .border(1.5.dp, if (selected) category.color else HuellaColors.OutlineVariant, shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 16.dp),
@@ -283,7 +283,7 @@ private fun AddPhotoTile(onClick: () -> Unit, modifier: Modifier) {
     Column(
         modifier
             .clip(HuellaShapes.Card)
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .drawBehind {
                 val stroke = 1.5.dp.toPx()
                 drawRoundRect(
@@ -393,7 +393,7 @@ private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChang
         Modifier
             .fillMaxWidth()
             .clip(HuellaShapes.Card)
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .border(1.dp, HuellaColors.Divider, HuellaShapes.Card)
             .clickable { onChange(!checked) }
             .padding(horizontal = 14.dp, vertical = 12.dp),

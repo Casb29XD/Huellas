@@ -212,7 +212,7 @@ fun MapScreen(
                     Modifier
                         .shadow(3.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color.White)
+                        .background(HuellaColors.Surface)
                         .clickable(onClick = onBack)
                         .padding(10.dp),
                 ) {
@@ -223,7 +223,7 @@ fun MapScreen(
                         .weight(1f)
                         .shadow(3.dp, RoundedCornerShape(22.dp))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White)
+                        .background(HuellaColors.Surface)
                         .padding(3.dp),
                 ) {
                     ToggleSegment("Lista", R.drawable.icon_accion_lista, selected = !showMap, Modifier.weight(1f)) { showMap = false }
@@ -322,7 +322,7 @@ private fun LegendChip(text: String, dot: Color, active: Boolean, onClick: () ->
             .alpha(if (active) 1f else 0.5f)
             .shadow(2.dp, RoundedCornerShape(10.dp))
             .clip(RoundedCornerShape(10.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -141,7 +141,7 @@ fun HuellaFilterChip(
         modifier
             .height(34.dp)
             .clip(HuellaShapes.FilterChip)
-            .background(if (selected) HuellaColors.PrimaryContainer else Color.White)
+            .background(if (selected) HuellaColors.PrimaryContainer else HuellaColors.Surface)
             .border(BorderStroke(1.dp, if (selected) HuellaColors.Primary else HuellaColors.Outline), HuellaShapes.FilterChip)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),

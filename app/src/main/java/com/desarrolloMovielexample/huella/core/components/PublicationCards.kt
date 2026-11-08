@@ -68,7 +68,7 @@ fun categoryIcon(category: Category, filled: Boolean = false): Int = when (categ
 fun Modifier.huellaCard(): Modifier = this
     .shadow(1.dp, HuellaShapes.Card, clip = false, ambientColor = HuellaColors.TextPrimary, spotColor = HuellaColors.TextPrimary)
     .clip(HuellaShapes.Card)
-    .background(Color.White)
+    .background(HuellaColors.Surface)
     .border(1.dp, HuellaColors.TextPrimary.copy(alpha = 0.05f), HuellaShapes.Card)
 
 @Composable

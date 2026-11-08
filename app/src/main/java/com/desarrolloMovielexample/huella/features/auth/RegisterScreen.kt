@@ -171,7 +171,7 @@ private fun TermsCheckbox(checked: Boolean, isError: Boolean, onToggle: () -> Un
     Row(
         Modifier
             .fillMaxWidth()
-            .background(Color.White, HuellaShapes.Card)
+            .background(HuellaColors.Surface, HuellaShapes.Card)
             .border(1.dp, if (isError) HuellaColors.Error else HuellaColors.OutlineVariant, HuellaShapes.Card)
             .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() })
             .padding(12.dp),
@@ -183,7 +183,7 @@ private fun TermsCheckbox(checked: Boolean, isError: Boolean, onToggle: () -> Un
             Modifier
                 .padding(top = 1.dp)
                 .size(20.dp)
-                .background(if (checked) HuellaColors.Primary else Color.White, boxShape)
+                .background(if (checked) HuellaColors.Primary else HuellaColors.Surface, boxShape)
                 .border(2.dp, if (checked) HuellaColors.Primary else if (isError) HuellaColors.Error else HuellaColors.TextTertiary, boxShape),
             contentAlignment = Alignment.Center,
         ) {

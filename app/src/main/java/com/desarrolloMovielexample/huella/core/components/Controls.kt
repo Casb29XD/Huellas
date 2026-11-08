@@ -188,7 +188,7 @@ fun HuellaSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifi
             snackbarData = data,
             shape = HuellaShapes.Card,
             containerColor = HuellaColors.TextPrimary,
-            contentColor = Color.White,
+            contentColor = HuellaColors.Background,
             actionColor = HuellaColors.PrimaryContainer,
         )
     }

@@ -283,7 +283,7 @@ private fun ModerationEntry(onClick: () -> Unit, modifier: Modifier = Modifier) 
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .drawBehind {
                 val stroke = 1.dp.toPx()
                 drawRoundRect(

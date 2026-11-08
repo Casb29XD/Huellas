@@ -85,7 +85,7 @@ fun ChatScreen(
         topBar = {
             Column(
                 Modifier
-                    .background(Color.White)
+                    .background(HuellaColors.Surface)
                     .statusBarsPadding(),
             ) {
                 Row(
@@ -134,7 +134,7 @@ fun ChatScreen(
         bottomBar = {
             Column(
                 Modifier
-                    .background(Color.White)
+                    .background(HuellaColors.Surface)
                     .navigationBarsPadding()
                     .imePadding(),
             ) {
@@ -234,7 +234,7 @@ private fun MessageBubble(message: ChatMessage) {
                 color = if (message.fromMe) Color.White else HuellaColors.TextPrimary,
                 modifier = Modifier
                     .shadow(1.dp, shape)
-                    .background(if (message.fromMe) HuellaColors.Primary else Color.White, shape)
+                    .background(if (message.fromMe) HuellaColors.Primary else HuellaColors.Surface, shape)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
             )
             Text(message.time, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = HuellaColors.TextTertiary)
