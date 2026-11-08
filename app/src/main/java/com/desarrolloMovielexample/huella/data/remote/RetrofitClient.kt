@@ -1,6 +1,5 @@
 package com.desarrolloMovielexample.huella.data.remote
 
-import com.desarrolloMovielexample.huella.BuildConfig
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -19,7 +18,7 @@ object RetrofitClient {
     private val supabaseClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
             val builder = chain.request().newBuilder()
-                .header("apikey", BuildConfig.SUPABASE_PUBLISHABLE_KEY)
+                .header("apikey", SupabaseConfig.publishableKey)
                 .header("Accept", "application/json")
             SupabaseSession.accessToken?.let { builder.header("Authorization", "Bearer $it") }
                 ?: builder.removeHeader("Authorization")
@@ -32,12 +31,21 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val supabaseRetrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BuildConfig.SUPABASE_URL.trimEnd('/') + "/")
-        .client(supabaseClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    @Volatile
+    private var cached: Pair<String, SupabaseApiService>? = null
 
-    val supabaseApi: SupabaseApiService =
-        supabaseRetrofit.create(SupabaseApiService::class.java)
+    /** Lanza IllegalStateException si falta app/.env, en vez de crashear al construir Retrofit con URL vacía. */
+    val supabaseApi: SupabaseApiService
+        get() {
+            SupabaseConfig.requireConfigured()
+            val url = SupabaseConfig.url
+            cached?.takeIf { it.first == url }?.let { return it.second }
+            return Retrofit.Builder()
+                .baseUrl("$url/")
+                .client(supabaseClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(SupabaseApiService::class.java)
+                .also { cached = url to it }
+        }
 }
