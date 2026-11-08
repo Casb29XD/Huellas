@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -195,12 +196,12 @@ private fun ContinueButton(text: String, onClick: () -> Unit, modifier: Modifier
 private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewModel, onAddPhotos: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("¿Qué quieres publicar?", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+        // Equal-height rows; an odd last category (Veterinaria) spans the full row instead of sitting alone.
         Category.entries.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { cat ->
-                    CategoryCard(cat, selected = cat == state.category, onClick = { vm.onCategory(cat) }, modifier = Modifier.weight(1f))
+                    CategoryCard(cat, selected = cat == state.category, onClick = { vm.onCategory(cat) }, modifier = Modifier.weight(1f).fillMaxHeight())
                 }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }

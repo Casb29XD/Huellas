@@ -488,14 +488,13 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
     }
 }
 
-/** Two-column grid of equal-height cells; [cell] renders cell [index] with the given modifier. */
+/** Two-column grid of equal-height cells; an odd last cell spans the row. [cell] renders cell [index] with the given modifier. */
 @Composable
 private fun InfoGrid(count: Int, cell: @Composable (index: Int, modifier: Modifier) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         (0 until count).chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { i -> cell(i, Modifier.weight(1f).fillMaxHeight()) }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }
@@ -533,7 +532,7 @@ private fun AdoptionInfo(pub: Publication) {
                 if (pub.vaccinated) "Al día" else "Pendientes",
             ),
         )
-        if (pub.sterilized != null) add(InfoItem(R.drawable.icon_attr_vacunado, "Castración", if (pub.sterilized == true) "Sí" else "No"))
+        if (pub.sterilized != null) add(InfoItem(R.drawable.icon_attr_castrado, "Castración", if (pub.sterilized == true) "Sí" else "No"))
     }
     InfoGrid(items.size) { i, m -> IconCell(items[i], HuellaColors.Primary, m) }
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
