@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.ModerationStats
+import com.desarrolloMovielexample.huella.domain.model.Report
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
@@ -97,6 +98,7 @@ data class ModerationDetailUiState(
     val rejectError: String? = null,
     val isApproving: Boolean = false,
     val isRejecting: Boolean = false,
+    val resolvingReportId: String? = null,
     val finished: Boolean = false,
 ) {
     val busy: Boolean get() = isApproving || isRejecting || finished
@@ -125,6 +127,24 @@ class ModerationDetailViewModel(private val repo: HuellaRepository = SupabaseRep
             _messages.send(
                 if (result.isSuccess) "Publicación aprobada. Ya es visible para todos."
                 else result.exceptionOrNull()?.message ?: "No pudimos aprobar la publicación",
+            )
+        }
+    }
+
+    fun resolveReport(report: Report) {
+        if (_uiState.value.resolvingReportId != null || report.id.isBlank()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(resolvingReportId = report.id) }
+            val result = repo.resolveReport(report.id)
+            _uiState.update { state ->
+                state.copy(
+                    resolvingReportId = null,
+                    item = if (result.isSuccess) state.item?.let { it.copy(reports = it.reports - report) } else state.item,
+                )
+            }
+            _messages.send(
+                if (result.isSuccess) "Reporte marcado como resuelto."
+                else result.exceptionOrNull()?.message ?: "No pudimos resolver el reporte",
             )
         }
     }
