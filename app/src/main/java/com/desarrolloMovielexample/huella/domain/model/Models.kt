@@ -66,7 +66,7 @@ data class Publication(
     val neighborhood: String = city,
     val timeAgo: String,
     val description: String,
-    val imageUrl: String?,        // random photo (picsum); null -> striped placeholder only
+    val imageUrl: String?,        // URL pública en pet-images; null -> solo el placeholder a rayas
     val tone: Long,               // ARGB of the striped placeholder band
     val photoLabel: String = title,
     val author: Author,

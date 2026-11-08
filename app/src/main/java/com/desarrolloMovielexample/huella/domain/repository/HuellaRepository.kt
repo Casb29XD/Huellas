@@ -16,7 +16,7 @@ import com.desarrolloMovielexample.huella.domain.model.User
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Data contract shared by the Supabase implementation and the in-memory preview repository.
+ * Contrato de datos: SupabaseRepository en la app y FakeRepository (en memoria) en los tests.
  * Suspend functions return [Result] with Spanish error messages.
  */
 interface HuellaRepository {
