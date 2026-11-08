@@ -19,3 +19,4 @@ local.properties
 .env.*
 *.env
 graphify-out/
+!.env.example

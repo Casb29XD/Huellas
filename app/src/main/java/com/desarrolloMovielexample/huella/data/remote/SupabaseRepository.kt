@@ -2,7 +2,6 @@ package com.desarrolloMovielexample.huella.data.remote
 
 import android.content.Context
 import android.net.Uri
-import com.desarrolloMovielexample.huella.BuildConfig
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import com.desarrolloMovielexample.huella.domain.model.*
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
@@ -51,7 +50,7 @@ object SupabaseRepository : HuellaRepository {
         }
         val objectPath = "${requireUserId()}/${UUID.randomUUID()}.$ext"
         apiCall { api.uploadPetImage(objectPath, bytes.toRequestBody(mimeType.toMediaType()), mimeType) }
-        return "${BuildConfig.SUPABASE_URL.trimEnd('/')}/storage/v1/object/public/pet-images/$objectPath"
+        return "${SupabaseConfig.url}/storage/v1/object/public/pet-images/$objectPath"
     }
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -97,6 +96,8 @@ object SupabaseRepository : HuellaRepository {
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
+        // Sin app/.env no hay red que disparar: las pantallas muestran el error de requireConfigured() al usarse.
+        if (!SupabaseConfig.isConfigured) return
         val id = SupabaseSession.userId
         if (id != null && SupabaseSession.accessToken != null) {
             scope.launch {
@@ -632,11 +633,7 @@ object SupabaseRepository : HuellaRepository {
             )
         }
 
-    private fun requireConfigured() {
-        check(BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank()) {
-            "Configura SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY en app/.env"
-        }
-    }
+    private fun requireConfigured() = SupabaseConfig.requireConfigured()
 
     private fun requireUserId(): String {
         requireConfigured()
