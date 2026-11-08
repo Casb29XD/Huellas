@@ -5,8 +5,8 @@ Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MAT
 
 ## Resumen ejecutivo
 
-- **Alcance:** 126 commits (`git log fix/auditoria-2026-11 ^04713a4`, contando este) y 173 archivos cambiados,
-  con unas +10 300 y −2 800 líneas. Se añadieron 21 migraciones append-only a las 3 que ya existían, además de pruebas
+- **Alcance:** 131 commits (`git log fix/auditoria-2026-11 ^04713a4`, contando este) y 177 archivos cambiados,
+  con unas +10 600 y −2 800 líneas. Se añadieron 24 migraciones append-only a las 3 que ya existían, además de pruebas
   pgTAP, E2E contra Supabase y Robolectric, y las Edge Functions `moderate-ai` y `verify-image`.
 - **Estado final de los 63 ítems:** 57 resueltos, 6 parciales (5, 18, 20, 21, 22, 36) y 0 pendientes.
   - Los parciales de backend dependen de un paso operativo en el hosted: rotar la contraseña de `admin@huella.app`
@@ -20,10 +20,10 @@ Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MAT
 - **Funciones simuladas que ahora son reales:** editar, eliminar, finalizar adopción, comentarios, votos,
   avistamientos, puntos, notificaciones y eliminar cuenta pasan por PostgREST, RPC y triggers. Las pruebas E2E las
   ejercitan con el `SupabaseRepository` real.
-- **Pruebas:** la corrida final contra el hosted (`scripts/test-all.sh` sobre `09b7ff3`, exit 0, verde a la primera)
-  dio:
-  - pgTAP: 19/19 tests y 213/213 aserciones.
-  - `deno test supabase/functions/`: 8/8 (`moderate-ai` y `verify-image`).
+- **Pruebas:** la corrida final contra el hosted (`scripts/test-all.sh` sobre `e16808f`, exit 0, tras los cierres de
+  backend de la sección "Pendiente") dio:
+  - pgTAP: 22/22 tests y 225/225 aserciones.
+  - `deno test supabase/functions/`: 10/10 (`moderate-ai` y `verify-image`).
   - JVM: 119/119 en 30 clases, con 24 E2E contra el hosted, sin saltos ni fallos.
 - **Pendiente operativo:**
   - Rotar la contraseña de `admin@huella.app` en el hosted (ítem 5). La sesión de reparación no tenía permiso.
@@ -207,14 +207,14 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
 
 | Recurso | Estado |
 |---|---|
-| Migraciones | 24 registradas en `supabase_migrations.schema_migrations`; la última es `20261109340100`. Son las mismas 24 de `supabase/migrations/`, no falta ninguna |
-| Edge Function `moderate-ai` | `ACTIVE`, **versión 2** (la de `e6104ac`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de moderador `{"status":"not_configured"}` |
+| Migraciones | 27 registradas en `supabase_migrations.schema_migrations`; la última es `20261109350200`. Son las mismas 27 de `supabase/migrations/`, no falta ninguna |
+| Edge Function `moderate-ai` | `ACTIVE`, **versión 3** (la de `3729555`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de un moderador de prueba `{"status":"not_configured"}` |
 | Edge Function `verify-image` | `ACTIVE`, versión 2, con `verify_jwt=true`. Solo acepta el service role: anon recibe 403 |
 | Secrets de funciones | Solo los que Supabase crea por defecto. **No hay `DEEPSEEK_API_KEY`** (decisión del dueño), así que `moderate-ai` responde `not_configured` y la UI lo muestra |
 | Vault | **Faltan** `huellas_project_url` y `huellas_service_role_key`. Sin ellos, los triggers de storage usan el modo de respaldo: borran la fila de `storage.objects`, el binario queda huérfano en S3 y no se llama a `verify-image` (ítem 18) |
-| pg_cron | Dos jobs activos: `huellas_cierre_automatico` (`0 8 * * *`) y `huellas_limpieza_notificaciones` (`30 8 * * *`) |
+| pg_cron | Tres jobs: `huellas_cierre_automatico` (`0 8 * * *`), `huellas_limpieza_notificaciones` (`30 8 * * *`) y `huellas_reconciliacion_storage` (`15 * * * *`) |
 | Storage | Bucket `pet-images`, público, con límite de 5 MB y MIME `image/jpeg`, `image/png` o `image/webp`. Cuatro políticas, todas limitadas a la carpeta propia (ver, subir, actualizar y borrar). Ya no hay listado público |
-| `adoption_requests` | Dos políticas: INSERT del solicitante y SELECT de solicitudes enviadas o recibidas. La política UPDATE del autor ya no existe |
+| `adoption_requests` | Dos políticas: INSERT del solicitante y SELECT de solicitudes enviadas o recibidas. La política UPDATE del autor ya no existe. Re-aseguradas sin depender de datos por `20261109350000` (`test_45`) |
 | Realtime | La publicación `supabase_realtime` incluye `chat_messages` y `notifications`. La app todavía no se suscribe (ítem 20) |
 | Auth | 6 usuarios: 4 de semilla (`admin@huella.app`, que es moderador, y laura, carlos y sofia) y 2 cuentas gmail del desarrollador. La confirmación de correo está activa |
 
@@ -231,24 +231,32 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
    `source /c/temp/huellas-audit/.env.remote && scripts/configure-storage-vault.sh`. Con eso quedan activos el
    borrado de binarios por la Storage API y la verificación de magic bytes, sin otros cambios. `test_43` ya prueba
    el cableado con un Vault de prueba dentro de la transacción.
-3. **Seguimiento de la revisión automática de dos migraciones.** No hay migración posterior para ninguna de las dos:
-   - `20261109300100_reparar_codificacion.sql` hace la conversión de datos (`convert_from(...)` sobre `city`) en la
-     misma transacción que el DROP/CREATE de las políticas de `adoption_requests`. Ya está aplicada y las políticas
-     quedaron bien (ver la tabla anterior), pero falta una migración que las vuelva a asegurar sin depender de datos,
-     y un pgTAP que exija exactamente las políticas INSERT previstas.
-   - `20261109330000_storage_por_api.sql` solo encola `net.http_delete`. No borra las filas de `storage.objects` en
-     la misma transacción y no hay un job de reconciliación en pg_cron. Si la petición falla, el objeto sigue
-     público. `test_13` y `test_43` pasan, pero no cubren ese fallo.
-4. **Residuos menores del backend:**
-   - `moderate-ai`: un `risk` inválido o ausente queda en 0 en lugar de un valor alto o 0.5. La heurística de venta
-     no detecta "venta", "mil pesos" ni "COP". El campo `phone` de la publicación se envía al proveedor del modelo
-     (`index.ts:33`).
-   - `handle_new_user`, `sync_profile_email` y `delete_publication_images` (SECURITY DEFINER) conservan EXECUTE para
-     PUBLIC y anon. No se pueden llamar como RPC porque son funciones de trigger, pero conviene revocarlo.
+3. **Seguimiento de la revisión automática de dos migraciones: cerrado, con un límite abierto.**
+   - `20261109300100_reparar_codificacion.sql`: `20261109350000` (`5659d93`, aplicada) re-asegura sin depender de
+     datos los privilegios (solo SELECT e INSERT de `publication_id`, `applicant_id`, `message`) y exactamente las
+     dos políticas. `test_45_politicas_solicitudes` lo exige. La conversión de datos no se repite: en un entorno
+     donde fallara, `apply-migrations` se detiene en `300100` y una copia posterior no llegaría a correr.
+   - `20261109330000_storage_por_api.sql`: `20261109350100` (`8b44dcf`, aplicada) borra también las filas de
+     `storage.objects` en la misma transacción (`purge_pet_images`, que usan `delete_publication_images` y
+     `delete_my_account`), con o sin Vault. Las peticiones encoladas se registran en `public.storage_purge_failures`
+     y el job `huellas_reconciliacion_storage` las cruza con `net._http_response`: borra las 2xx y registra error,
+     timeout o falta de respuesta. Es horario y no diario porque `pg_net.ttl` es de 6 h. No reintenta (ver el
+     límite). Lo cubren `test_46_purga_storage` y `test_43`.
+   - **Límite abierto (verificado en el hosted con un objeto de prueba):** la Storage API borra el binario solo de
+     las filas que encuentra. Si la fila ya se borró por SQL, el DELETE responde `[]` y el binario queda huérfano en
+     S3. No se sirve (sin fila, `/object/public/...` responde 400), pero sigue almacenado. Además, la CDN puede servir
+     una copia en caché de la URL pública durante su TTL. Purgar también el binario exige otro diseño, y decidirlo le
+     corresponde al dueño: por ejemplo, guardar `name` y `version` y reinsertar la fila justo antes del DELETE.
+4. **Residuos menores del backend: cerrados.**
+   - `moderate-ai` (`3729555`, desplegada como versión 3): ya no envía `phone`, un `risk` ausente o inválido queda en
+     0.5 y la heurística detecta "venta", "vendo", "mil pesos", "COP", "$" con cifra y "precio" sin marcar
+     "ventana". Lo cubre `review_test.ts`.
+   - `20261109350200` (`e16808f`, aplicada) retira EXECUTE a PUBLIC, anon y authenticated de todas las funciones de
+     trigger SECURITY DEFINER de public. Lo exige `test_47_triggers_sin_execute`.
 5. **Key de DeepSeek.** Falta decidir si se activa la sugerencia de IA:
    - Se activa con `supabase secrets set DEEPSEEK_API_KEY=... --project-ref <ref>` y, si se quiere, `DEEPSEEK_MODEL`.
-   - Activarla manda el contenido de cada publicación a un tercero, así que conviene revisarlo contra la política
-     de datos (y quitar antes `phone` del envío).
+   - Activarla manda el contenido de cada publicación a un tercero (ya sin `phone`), así que conviene revisarlo
+     contra la política de datos.
    - Detalles en `docs/MODERACION_IA.md`.
 6. **Credenciales del seed.** El moderador de `supabase/seed.sql` ya nace con contraseña aleatoria, pero laura,
    carlos y sofia siguen con contraseñas en claro:
@@ -277,7 +285,7 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
      el perfil.
    - `icon_attr_castrado.xml` tiene finales de línea CRLF.
 10. **Trailer de los commits.** La rama mezcla dos trailers: 97 commits con `Co-Authored-By: Claude Opus 5.5`, que
-    es la atribución que indicó el harness, y 29 con `Claude Fable 5.1`, que pide `ENTORNO_REMOTO.md`. Si se quiere
+    es la atribución que indicó el harness, y 34 con `Claude Fable 5.1`, que pide `ENTORNO_REMOTO.md`. Si se quiere
     uno solo, los trailers se reescriben con un rebase antes de publicar.
 11. **Sin CI.** Las pruebas se corren a mano con `scripts/test-all.sh`. Un pipeline necesitaría secretos del hosted
     o un Supabase efímero con Docker.
@@ -304,4 +312,4 @@ Después del merge:
 3. Rotar las cuentas semilla (pendiente 1).
 4. Generar el APK de release con `app/.env` apuntando al proyecto real.
 
-Son 126 commits, demasiados para revisarlos uno por uno. Es más práctico recorrerlos por ítem con la matriz.
+Son 131 commits, demasiados para revisarlos uno por uno. Es más práctico recorrerlos por ítem con la matriz.
