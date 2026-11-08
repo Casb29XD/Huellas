@@ -1,35 +1,31 @@
 package com.desarrolloMovielexample.huella.data.remote
 
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
-import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
+import java.lang.reflect.Proxy
+
+/** Cualquier endpoint que el mock no sobrescribe falla con el nombre del método. */
+private val unsupported = Proxy.newProxyInstance(
+    SupabaseApiService::class.java.classLoader,
+    arrayOf(SupabaseApiService::class.java),
+) { _, method, _ -> throw UnsupportedOperationException("MockSupabaseApiService.${method.name}") } as SupabaseApiService
 
 /**
- * Mock implementation of [SupabaseApiService] for local unit testing without calling the real network.
+ * Doble en memoria de [SupabaseApiService] solo con los endpoints que usa SupabaseEndpointsMockTest.
+ * ponytail: el resto delega en un Proxy que lanza; añade un override cuando un test lo necesite.
  */
-class MockSupabaseApiService : SupabaseApiService {
+class MockSupabaseApiService : SupabaseApiService by unsupported {
 
-    var mockProfiles: MutableList<JsonObject> = mutableListOf()
-    var mockPublications: MutableList<JsonObject> = mutableListOf()
-    var mockReports: MutableList<JsonObject> = mutableListOf()
-    var mockRequests: MutableList<JsonObject> = mutableListOf()
-    var mockConversations: MutableList<JsonObject> = mutableListOf()
-    var mockMessages: MutableList<JsonObject> = mutableListOf()
-    var mockNotifications: MutableList<JsonObject> = mutableListOf()
-    var mockPointsHistory: MutableList<JsonObject> = mutableListOf()
+    val mockPublications: MutableList<JsonObject> = mutableListOf()
+    val mockRequests: MutableList<JsonObject> = mutableListOf()
+    val mockMessages: MutableList<JsonObject> = mutableListOf()
+    val mockNotifications: MutableList<JsonObject> = mutableListOf()
 
     var lastModeratedPayload: JsonObject? = null
     var shouldFailAuth: Boolean = false
-
-    override suspend fun uploadPetImage(objectPath: String, body: RequestBody, contentType: String, upsert: String): Response<JsonObject> {
-        val res = JsonObject().apply { addProperty("Key", "pet-images/$objectPath") }
-        return Response.success(res)
-    }
 
     override suspend fun signIn(body: JsonObject): Response<JsonObject> {
         if (shouldFailAuth) {
@@ -43,57 +39,6 @@ class MockSupabaseApiService : SupabaseApiService {
         }
         return Response.success(res)
     }
-
-    override suspend fun refreshSession(body: JsonObject): Response<JsonObject> {
-        val res = JsonObject().apply {
-            addProperty("access_token", "refreshed_mock_token")
-            addProperty("refresh_token", "refreshed_refresh_token")
-        }
-        return Response.success(res)
-    }
-
-    override suspend fun exchangeCodeForSession(body: JsonObject): Response<JsonObject> = verifyOtp(body)
-
-    override suspend fun signUp(body: JsonObject, redirectTo: String?): Response<JsonObject> {
-        val res = JsonObject().apply {
-            addProperty("access_token", "signup_mock_token")
-            addProperty("refresh_token", "signup_refresh_token")
-            add("user", JsonObject().apply { addProperty("id", "user_mock_signup") })
-        }
-        return Response.success(res)
-    }
-
-    override suspend fun recoverPassword(body: JsonObject, redirectTo: String?): Response<JsonObject> {
-        return Response.success(JsonObject())
-    }
-
-    override suspend fun getUser(bearerToken: String): Response<JsonObject> {
-        val res = JsonObject().apply { addProperty("id", "user_mock_1") }
-        return Response.success(res)
-    }
-
-    override suspend fun verifyOtp(body: JsonObject): Response<JsonObject> {
-        val res = JsonObject().apply {
-            addProperty("access_token", "otp_mock_token")
-            addProperty("refresh_token", "otp_refresh_token")
-            add("user", JsonObject().apply { addProperty("id", "user_mock_otp") })
-        }
-        return Response.success(res)
-    }
-
-    override suspend fun getProfile(select: String, userId: String): Response<List<JsonObject>> {
-        return Response.success(mockProfiles)
-    }
-
-    override suspend fun updateProfile(userId: String, body: JsonObject, prefer: String): Response<Unit> {
-        return Response.success(Unit)
-    }
-
-    override suspend fun updateAuthUser(body: JsonObject): Response<JsonObject> = Response.success(body)
-
-    override suspend fun getMyProfile(body: JsonObject): Response<List<JsonObject>> = Response.success(mockProfiles.take(1))
-
-    override suspend fun getContactPhone(body: JsonObject): Response<JsonElement> = Response.success(JsonPrimitive("3000000000"))
 
     override suspend fun getPublications(
         select: String,
@@ -120,60 +65,6 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(listOf(body))
     }
 
-    override suspend fun updatePublication(id: String, body: JsonObject, select: String, prefer: String): Response<List<JsonObject>> {
-        val row = mockPublications.firstOrNull { it.get("id")?.asString == id.removePrefix("eq.") }
-            ?: return Response.success(emptyList())
-        body.entrySet().forEach { (k, v) -> row.add(k, v) }
-        row.addProperty("status", "EN_REVISION")
-        return Response.success(listOf(row))
-    }
-
-    override suspend fun deletePublication(id: String, select: String, prefer: String): Response<List<JsonObject>> {
-        val removed = mockPublications.filter { it.get("id")?.asString == id.removePrefix("eq.") }
-        mockPublications.removeAll(removed)
-        return Response.success(removed)
-    }
-
-    var mockComments: MutableList<JsonObject> = mutableListOf()
-    var mockVotes: MutableList<JsonObject> = mutableListOf()
-
-    override suspend fun getPublicationCounts(id: String, select: String): Response<List<JsonObject>> =
-        Response.success(mockPublications.filter { it.get("id")?.asString == id.removePrefix("eq.") })
-
-    override suspend fun getComments(publicationId: String, select: String, order: String): Response<List<JsonObject>> =
-        Response.success(mockComments.filter { it.get("publication_id")?.asString == publicationId.removePrefix("eq.") })
-
-    override suspend fun createComment(body: JsonObject, select: String, prefer: String): Response<List<JsonObject>> {
-        mockComments.add(body)
-        return Response.success(listOf(body))
-    }
-
-    override suspend fun deleteComment(id: String, select: String, prefer: String): Response<List<JsonObject>> {
-        val removed = mockComments.filter { it.get("id")?.asString == id.removePrefix("eq.") }
-        mockComments.removeAll(removed)
-        return Response.success(removed)
-    }
-
-    override suspend fun upsertVote(body: JsonObject, onConflict: String, prefer: String): Response<Unit> {
-        mockVotes.add(body)
-        return Response.success(Unit)
-    }
-
-    override suspend fun deleteVote(publicationId: String, userId: String): Response<Unit> = Response.success(Unit)
-
-    override suspend fun getMyVote(publicationId: String, userId: String, select: String): Response<List<JsonObject>> =
-        Response.success(mockVotes.takeLast(1))
-
-    override suspend fun reportSighting(body: JsonObject): Response<Unit> = Response.success(Unit)
-
-    override suspend fun closePublication(body: JsonObject): Response<Unit> {
-        val pubId = body.get("p_publication_id")?.asString
-        mockPublications.filter { it.get("id")?.asString == pubId }.forEach { it.addProperty("lifecycle", "FINALIZADA") }
-        return Response.success(Unit)
-    }
-
-    override suspend fun deleteMyAccount(body: JsonObject): Response<Unit> = Response.success(Unit)
-
     override suspend fun moderatePublication(body: JsonObject): Response<Unit> {
         lastModeratedPayload = body
         val pubId = body.get("p_publication_id")?.asString
@@ -186,42 +77,9 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(Unit)
     }
 
-    override suspend fun createReport(body: JsonObject): Response<Unit> {
-        mockReports.add(body)
-        return Response.success(Unit)
-    }
-
-    override suspend fun resolveReport(body: JsonObject): Response<Unit> {
-        mockReports.removeAll { it.get("id")?.asString == body.get("p_report_id")?.asString }
-        return Response.success(Unit)
-    }
-
-    override suspend fun getReportsForModeration(select: String, status: String, order: String): Response<List<JsonObject>> {
-        return Response.success(mockReports)
-    }
-
-    override suspend fun getRequests(select: String, applicantId: String?, publicationId: String?, order: String): Response<List<JsonObject>> {
-        return Response.success(mockRequests)
-    }
-
     override suspend fun createAdoptionRequest(body: JsonObject): Response<Unit> {
         mockRequests.add(body)
         return Response.success(Unit)
-    }
-
-    override suspend fun respondToRequest(body: JsonObject): Response<JsonElement> = Response.success(JsonPrimitive("conv_mock_1"))
-
-    override suspend fun getConversations(select: String, order: String): Response<List<JsonObject>> {
-        return Response.success(mockConversations)
-    }
-
-    override suspend fun createConversation(body: JsonObject, prefer: String): Response<List<JsonObject>> {
-        mockConversations.add(body)
-        return Response.success(listOf(body))
-    }
-
-    override suspend fun getMessages(select: String, conversationId: String, order: String): Response<List<JsonObject>> {
-        return Response.success(mockMessages)
     }
 
     override suspend fun sendMessage(body: JsonObject): Response<Unit> {
@@ -229,27 +87,8 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(Unit)
     }
 
-    override suspend fun getNotifications(select: String, order: String): Response<List<JsonObject>> {
-        return Response.success(mockNotifications)
-    }
-
     override suspend fun markNotificationsRead(unread: String, body: JsonObject, prefer: String): Response<Unit> {
         mockNotifications.forEach { it.addProperty("read", true) }
         return Response.success(Unit)
-    }
-
-    override suspend fun updateNotification(id: String, body: JsonObject, prefer: String): Response<Unit> {
-        mockNotifications.filter { it.get("id")?.asString == id.removePrefix("eq.") }
-            .forEach { row -> body.entrySet().forEach { (k, v) -> row.add(k, v) } }
-        return Response.success(Unit)
-    }
-
-    override suspend fun deleteNotification(id: String, prefer: String): Response<Unit> {
-        mockNotifications.removeAll { it.get("id")?.asString == id.removePrefix("eq.") }
-        return Response.success(Unit)
-    }
-
-    override suspend fun getPointsHistory(select: String, order: String): Response<List<JsonObject>> {
-        return Response.success(mockPointsHistory)
     }
 }
