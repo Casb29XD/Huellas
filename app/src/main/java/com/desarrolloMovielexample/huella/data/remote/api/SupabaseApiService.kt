@@ -169,6 +169,10 @@ interface SupabaseApiService {
     @POST("rest/v1/rpc/close_publication")
     suspend fun closePublication(@Body body: JsonObject): Response<Unit>
 
+    /** Borra auth.users del usuario (cascada a perfil, publicaciones, solicitudes...) y sus fotos. */
+    @POST("rest/v1/rpc/delete_my_account")
+    suspend fun deleteMyAccount(@Body body: JsonObject = JsonObject()): Response<Unit>
+
     @POST("rest/v1/rpc/moderate_publication")
     suspend fun moderatePublication(@Body body: JsonObject): Response<Unit>
 

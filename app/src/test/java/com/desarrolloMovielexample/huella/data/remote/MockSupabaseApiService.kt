@@ -170,6 +170,8 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(Unit)
     }
 
+    override suspend fun deleteMyAccount(body: JsonObject): Response<Unit> = Response.success(Unit)
+
     override suspend fun moderatePublication(body: JsonObject): Response<Unit> {
         lastModeratedPayload = body
         val pubId = body.get("p_publication_id")?.asString
