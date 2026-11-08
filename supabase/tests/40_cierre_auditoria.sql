@@ -173,3 +173,20 @@ BEGIN
         'otros buckets no pasan por verify-image');
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION tests.test_44_ubicacion() RETURNS SETOF TEXT
+LANGUAGE plpgsql AS $$
+DECLARE
+    a UUID := tests.tap_user('{"name":"tap A"}');
+    ins TEXT := 'INSERT INTO public.publications (author_id, title, species, breed, size, city, description, latitude, longitude) '
+                'VALUES (auth.uid(), ''tap'', ''Perro'', ''Criollo'', ''Mediano'', ''Medellín'', ''tap'', %s, %s)';
+BEGIN
+    PERFORM tests.tap_as(a);
+    RETURN NEXT lives_ok(format(ins, 'NULL', 'NULL'), 'sin ubicación: NULL');
+    RETURN NEXT lives_ok(format(ins, '6.2442', '-75.5812'), 'ubicación real');
+    RETURN NEXT throws_ok(format(ins, '0', '0'), '23514', NULL, '(0,0) no es una ubicación');
+    RETURN NEXT throws_ok(format(ins, '6.2442', 'NULL'), '23514', NULL, 'media coordenada se rechaza');
+    RETURN NEXT throws_ok(format(ins, '96', '-75'), '23514', NULL, 'latitud fuera de rango se rechaza');
+    RESET ROLE;
+END;
+$$;
