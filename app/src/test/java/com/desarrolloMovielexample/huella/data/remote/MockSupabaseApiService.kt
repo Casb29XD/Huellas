@@ -164,6 +164,12 @@ class MockSupabaseApiService : SupabaseApiService {
 
     override suspend fun reportSighting(body: JsonObject): Response<Unit> = Response.success(Unit)
 
+    override suspend fun closePublication(body: JsonObject): Response<Unit> {
+        val pubId = body.get("p_publication_id")?.asString
+        mockPublications.filter { it.get("id")?.asString == pubId }.forEach { it.addProperty("lifecycle", "FINALIZADA") }
+        return Response.success(Unit)
+    }
+
     override suspend fun moderatePublication(body: JsonObject): Response<Unit> {
         lastModeratedPayload = body
         val pubId = body.get("p_publication_id")?.asString

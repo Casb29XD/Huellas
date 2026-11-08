@@ -165,6 +165,10 @@ interface SupabaseApiService {
     @POST("rest/v1/rpc/report_sighting")
     suspend fun reportSighting(@Body body: JsonObject): Response<Unit>
 
+    /** Solo el autor: lifecycle=FINALIZADA, +50 si es adopción/temporal y contadores (servidor). */
+    @POST("rest/v1/rpc/close_publication")
+    suspend fun closePublication(@Body body: JsonObject): Response<Unit>
+
     @POST("rest/v1/rpc/moderate_publication")
     suspend fun moderatePublication(@Body body: JsonObject): Response<Unit>
 

@@ -351,8 +351,22 @@ object SupabaseRepository : HuellaRepository {
         Unit
     }.onSuccess { quietly { refreshRequests() } }
 
-    override suspend fun closePublication(publicationId: String): Result<Unit> =
-        Result.failure(IllegalStateException("El esquema de Supabase no incluye un estado para cerrar una publicación sin borrarla"))
+    override suspend fun closePublication(publicationId: String): Result<Unit> = result {
+        requireUserId()
+        apiCall { api.closePublication(json { addProperty("p_publication_id", publicationId) }) }
+        val close = { p: Publication -> if (p.id == publicationId) p.copy(lifecycle = LifecycleStatus.FINALIZADA) else p }
+        _myPublications.update { it.map(close) }
+        _publications.update { it.map(close) }
+        Unit
+    }.onSuccess {
+        // El servidor suma puntos y actualiza contadores del perfil.
+        quietly { refreshMyProfile() }
+        quietly { refreshPointsHistory() }
+    }
+
+    private suspend fun refreshMyProfile() {
+        apiCall { api.getMyProfile() }.firstOrNull()?.let { _currentUser.value = it.toUser() }
+    }
 
     override fun getConversation(id: String): Conversation? = conversations[id]
 
@@ -903,6 +917,7 @@ object SupabaseRepository : HuellaRepository {
             photoLabel = string("photo_label") ?: title,
             author = author,
             status = runCatching { PostStatus.valueOf(string("status").orEmpty()) }.getOrDefault(PostStatus.EN_REVISION),
+            lifecycle = runCatching { LifecycleStatus.valueOf(string("lifecycle").orEmpty()) }.getOrDefault(LifecycleStatus.ACTIVA),
             votesCount = int("votes_count"),
             commentsCount = int("comments_count"),
             eventDate = string("event_date"),
