@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.data.remote.api
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import retrofit2.Response
 import retrofit2.http.Body
@@ -50,18 +51,32 @@ interface SupabaseApiService {
         @Query("type") type: String,
     ): Response<JsonObject>
 
+    /** Cambia email o contraseña del usuario autenticado (Supabase envía la confirmación del email nuevo). */
+    @PUT("auth/v1/user")
+    suspend fun updateAuthUser(@Body body: JsonObject): Response<JsonObject>
+
+    /** Perfil de otro usuario: solo columnas públicas (email y phone no son legibles para terceros). */
     @GET("rest/v1/profiles")
     suspend fun getProfile(
-        @Query("select") select: String = "*",
+        @Query("select") select: String = "id,name,city,level,initials,points,member_since,avatar_url,is_moderator,publications_count,adoptions_count,foster_count,active_count,created_at",
         @Query("id") userId: String,
     ): Response<List<JsonObject>>
 
+    /** Fila completa del perfil propio (incluye email, phone y bio). */
+    @POST("rest/v1/rpc/get_my_profile")
+    suspend fun getMyProfile(@Body body: JsonObject = JsonObject()): Response<List<JsonObject>>
+
+    /** Teléfono del otro participante de la conversación; null si no lo tiene. */
+    @POST("rest/v1/rpc/get_contact_phone")
+    suspend fun getContactPhone(@Body body: JsonObject): Response<JsonElement>
+
+    /** return=minimal: la respuesta no puede incluir columnas sin privilegio de lectura. */
     @PATCH("rest/v1/profiles")
     suspend fun updateProfile(
         @Query("id") userId: String,
         @Body body: JsonObject,
-        @Header("Prefer") prefer: String = "return=representation",
-    ): Response<List<JsonObject>>
+        @Header("Prefer") prefer: String = "return=minimal",
+    ): Response<Unit>
 
     @GET("rest/v1/publications")
     suspend fun getPublications(
@@ -130,7 +145,7 @@ interface SupabaseApiService {
 
     @GET("rest/v1/conversations")
     suspend fun getConversations(
-        @Query("select") select: String = "*,publications(title),participant_one_profile:profiles!conversations_participant_one_fkey(id,name,level,initials,phone),participant_two_profile:profiles!conversations_participant_two_fkey(id,name,level,initials,phone)",
+        @Query("select") select: String = "*,publications(title),participant_one_profile:profiles!conversations_participant_one_fkey(id,name,level,initials),participant_two_profile:profiles!conversations_participant_two_fkey(id,name,level,initials)",
         @Query("order") order: String = "updated_at.desc",
     ): Response<List<JsonObject>>
 

@@ -323,6 +323,9 @@ object FakeRepository : HuellaRepository {
 
     override fun getUser(userId: String): User? = users.value.firstOrNull { it.id == userId }
 
+    override suspend fun refreshUser(userId: String): Result<User> =
+        getUser(userId)?.let { Result.success(it) } ?: Result.failure(IllegalStateException("No encontramos este perfil"))
+
     // ---------- Publications Implementations ----------
     override fun getPublication(id: String): Publication? =
         allPublications.value.firstOrNull { it.id == id }

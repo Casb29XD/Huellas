@@ -82,6 +82,7 @@ object SupabaseRepository : HuellaRepository {
     private var cachedPointsHistory: List<PointsEntry> = emptyList()
     override val pointsHistory: List<PointsEntry> get() = cachedPointsHistory
     private val userCache = mutableMapOf<String, User>()
+    private val authorPublications = mutableMapOf<String, List<Publication>>()
     override val pointsActions = listOf(
         PointsAction("Crear una publicación", 5),
         PointsAction("Publicación aprobada", 10),
@@ -105,8 +106,8 @@ object SupabaseRepository : HuellaRepository {
         val id = SupabaseSession.userId
         if (id != null && SupabaseSession.accessToken != null) {
             scope.launch {
-                apiCall { api.getProfile(userId = "eq.$id") }
-                    .firstOrNull()?.let { _currentUser.value = it.toUser() }
+                runCatching { apiCall { api.getMyProfile() } }.getOrNull()
+                    ?.firstOrNull()?.let { _currentUser.value = it.toUser() }
                 refreshAll()
             }
         } else {
@@ -126,7 +127,7 @@ object SupabaseRepository : HuellaRepository {
         val userJson = auth.obj("user") ?: error("Supabase no devolvió el usuario")
         val id = userJson.string("id") ?: error("El usuario no tiene un identificador")
         SupabaseSession.save(appContext, token, id, auth.string("refresh_token"))
-        val profile = apiCall { api.getProfile(userId = "eq.$id") }.firstOrNull()
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
             ?: error("No encontramos el perfil asociado a esta cuenta")
         val user = profile.toUser()
         _currentUser.value = user
@@ -153,7 +154,7 @@ object SupabaseRepository : HuellaRepository {
         val userJson = response.obj("user") ?: error("Supabase no devolvió el usuario")
         val id = userJson.string("id") ?: error("El usuario no tiene un identificador")
         SupabaseSession.save(appContext, token, id, response.string("refresh_token"))
-        val profile = apiCall { api.getProfile(userId = "eq.$id") }.firstOrNull()
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
             ?: error("La cuenta se creó, pero aún no aparece su perfil")
         val user = profile.toUser()
         _currentUser.value = user
@@ -200,7 +201,7 @@ object SupabaseRepository : HuellaRepository {
 
         var profile: JsonObject? = null
         for (i in 0..4) {
-            profile = apiCall { api.getProfile(userId = "eq.$userId") }.firstOrNull()
+            profile = apiCall { api.getMyProfile() }.firstOrNull()
             if (profile != null) break
             delay(350)
         }
@@ -228,12 +229,18 @@ object SupabaseRepository : HuellaRepository {
         val id = requireUserId()
         val values = json {
             addProperty("name", name.trim())
-            addProperty("email", email.trim())
             addProperty("city", city.substringBefore(",").trim())
             addProperty("phone", phone.trim())
             addProperty("bio", bio.trim())
         }
-        val profile = apiCall { api.updateProfile("eq.$id", values) }.firstOrNull()
+        apiCall { api.updateProfile("eq.$id", values) }
+        // profiles.email no es editable por el cliente: el cambio pasa por Auth (correo de confirmación)
+        // y un trigger en auth.users lo copia al perfil cuando se confirma.
+        val newEmail = email.trim()
+        if (newEmail.isNotBlank() && !newEmail.equals(_currentUser.value?.email, ignoreCase = true)) {
+            apiCall { api.updateAuthUser(json { addProperty("email", newEmail) }) }
+        }
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
             ?: error("No se pudo actualizar el perfil")
         profile.toUser().also { _currentUser.value = it }
     }
@@ -248,14 +255,24 @@ object SupabaseRepository : HuellaRepository {
     }
 
     override fun getUser(userId: String): User? =
-        userCache[userId] ?: _currentUser.value?.takeIf { it.id == userId }
+        _currentUser.value?.takeIf { it.id == userId } ?: userCache[userId]
+
+    /** Perfil público (solo columnas públicas) y publicaciones aprobadas de [userId], en caché (ítem 28). */
+    override suspend fun refreshUser(userId: String): Result<User> = result {
+        val user = apiCall { api.getProfile(userId = "eq.$userId") }.firstOrNull()?.toUser()
+            ?: error("No encontramos este perfil")
+        val publications = apiCall { api.getPublications(authorId = "eq.$userId") }.map { it.toPublication() }
+        userCache[userId] = user
+        authorPublications[userId] = publications
+        user
+    }
 
     override fun getPublication(id: String): Publication? =
         (_publications.value + _myPublications.value + _moderationQueue.value.map { it.publication })
             .firstOrNull { it.id == id }
 
     override fun publicationsByAuthor(userId: String): List<Publication> =
-        (_publications.value + _myPublications.value).distinctBy { it.id }
+        authorPublications[userId] ?: (_publications.value + _myPublications.value).distinctBy { it.id }
             .filter { it.author.userId == userId }
 
     override suspend fun createPublication(draft: PublicationDraft): Result<Publication> = result {
@@ -346,8 +363,21 @@ object SupabaseRepository : HuellaRepository {
 
     override fun messages(conversationId: String): StateFlow<List<ChatMessage>> {
         val flow = messageFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }
-        scope.launch { runCatching { flow.value = fetchMessages(conversationId) } }
+        scope.launch {
+            if (conversations[conversationId] == null) quietly { refreshConversations() }
+            quietly { loadContactPhone(conversationId) }
+            quietly { flow.value = fetchMessages(conversationId) }
+        }
         return flow.asStateFlow()
+    }
+
+    /** El teléfono del contacto no viaja en el embed de profiles: solo lo entrega rpc/get_contact_phone a participantes. */
+    private suspend fun loadContactPhone(conversationId: String) {
+        val conversation = conversations[conversationId] ?: return
+        if (conversation.phone.isNotBlank()) return
+        val phone = apiCall { api.getContactPhone(json { addProperty("p_conversation_id", conversationId) }) }
+            .takeUnless { it.isJsonNull }?.asString.orEmpty()
+        conversations[conversationId] = conversation.copy(phone = phone)
     }
 
     override suspend fun sendMessage(conversationId: String, text: String): Result<Unit> = result {
@@ -645,7 +675,7 @@ object SupabaseRepository : HuellaRepository {
             id = id,
             contact = author,
             about = row.string("about").orEmpty(),
-            phone = contact?.string("phone").orEmpty(),
+            phone = conversations[id]?.phone.orEmpty(),
         )
     }
 
@@ -719,7 +749,12 @@ object SupabaseRepository : HuellaRepository {
         initials = string("initials").orEmpty(),
         memberSince = string("member_since") ?: "2026",
         role = if (boolean("is_moderator")) Role.MODERADOR else Role.USUARIO,
-        stats = ProfileStats(activeCount = int("active_count"), adoptionsCount = int("adoptions_count"), fosterCount = int("foster_count")),
+        stats = ProfileStats(
+            activeCount = int("active_count"),
+            finishedCount = (int("publications_count") - int("active_count")).coerceAtLeast(0),
+            adoptionsCount = int("adoptions_count"),
+            fosterCount = int("foster_count"),
+        ),
     )
 
     private fun JsonObject.toPublication(): Publication {
@@ -731,14 +766,6 @@ object SupabaseRepository : HuellaRepository {
             initials = profile?.string("initials").orEmpty(),
         )
         val title = string("title").orEmpty()
-        val authorId = string("author_id") ?: profile?.string("id").orEmpty()
-        if (profile != null && authorId.isNotBlank()) {
-            userCache[authorId] = User(
-                id = authorId, name = profile.string("name").orEmpty(), email = "",
-                city = string("city").orEmpty(), points = 0,
-                initials = profile.string("initials").orEmpty(),
-            )
-        }
         return Publication(
             id = string("id").orEmpty(),
             category = runCatching { Category.valueOf(string("category").orEmpty()) }.getOrDefault(Category.ADOPCION),

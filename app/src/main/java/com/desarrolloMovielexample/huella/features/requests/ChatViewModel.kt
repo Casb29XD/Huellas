@@ -36,7 +36,10 @@ class ChatViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
         conversationId = id
         _uiState.update { it.copy(conversation = repo.getConversation(id)) }
         viewModelScope.launch {
-            repo.messages(id).collect { list -> _uiState.update { it.copy(messages = list) } }
+            // La conversación puede llegar (o completarse con el teléfono) después de abrir el chat.
+            repo.messages(id).collect { list ->
+                _uiState.update { it.copy(messages = list, conversation = repo.getConversation(id) ?: it.conversation) }
+            }
         }
     }
 

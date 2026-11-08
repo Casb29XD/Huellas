@@ -34,7 +34,12 @@ class PublicProfileViewModel(private val repo: HuellaRepository = SupabaseReposi
     fun load(userId: String) {
         if (loadedId == userId) return
         loadedId = userId
-        _uiState.value = PublicProfileUiState(true, repo.getUser(userId), repo.publicationsByAuthor(userId))
+        val cached = repo.getUser(userId)
+        _uiState.value = PublicProfileUiState(cached != null, cached, repo.publicationsByAuthor(userId))
+        viewModelScope.launch {
+            val fresh = repo.refreshUser(userId).getOrNull()
+            _uiState.value = PublicProfileUiState(true, fresh ?: cached, repo.publicationsByAuthor(userId))
+        }
     }
 
     fun contact(userId: String) {

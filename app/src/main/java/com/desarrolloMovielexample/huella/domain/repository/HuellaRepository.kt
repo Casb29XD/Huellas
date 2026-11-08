@@ -30,6 +30,8 @@ interface HuellaRepository {
     suspend fun deleteAccount(): Result<Unit>
     fun logout()
     fun getUser(userId: String): User?
+    /** Carga el perfil público de [userId] y sus publicaciones; luego [getUser] y [publicationsByAuthor] los devuelven. */
+    suspend fun refreshUser(userId: String): Result<User>
 
     // Publications
     val publications: StateFlow<List<Publication>>        // public feed
