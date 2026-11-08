@@ -53,7 +53,9 @@ class RlsSecurityE2eTest {
     @Test
     fun `c - signup con is_moderator true no crea moderador (rojo hasta B1)`() {
         val email = E2eEnv.uniqueEmail()
-        val body = """{"email":"$email","password":"${E2eEnv.PASSWORD}","data":{"name":"E2E","is_moderator":true}}"""
+        // Con code_challenge como la app (PKCE, ítems 11/36): el hosted debe aceptar el signup PKCE.
+        val body = """{"email":"$email","password":"${E2eEnv.PASSWORD}","data":{"name":"E2E","is_moderator":true},""" +
+            """"code_challenge":"${"c".repeat(43)}","code_challenge_method":"s256"}"""
         var r = E2eEnv.rest("auth/v1/signup", "POST", body)
         // ponytail: el SMTP del hosted limita correos de confirmación por hora; con 429 la Admin API crea el usuario con
         // los mismos metadatos, que llegan igual a raw_user_meta_data y a handle_new_user (el punto vulnerable).
