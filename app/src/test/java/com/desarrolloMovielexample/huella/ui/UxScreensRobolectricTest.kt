@@ -21,6 +21,7 @@ import com.desarrolloMovielexample.huella.domain.model.User
 import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
 import com.desarrolloMovielexample.huella.features.auth.RegisterScreen
 import com.desarrolloMovielexample.huella.features.auth.RegisterViewModel
+import com.desarrolloMovielexample.huella.features.feed.DetailSheet
 import com.desarrolloMovielexample.huella.features.feed.HomeScreen
 import com.desarrolloMovielexample.huella.features.feed.HomeViewModel
 import com.desarrolloMovielexample.huella.features.feed.PublicationDetailScreen
@@ -83,6 +84,28 @@ class UxScreensRobolectricTest {
         compose.onAllNodesWithTag("gallery_slide").assertCountEquals(1)
         compose.onAllNodes(hasText("foto 1/", substring = true)).assertCountEquals(0)
         compose.onAllNodes(hasText("foto:", substring = true)).assertCountEquals(0)
+    }
+
+    @Test
+    fun `item 44 - reportar sin motivo muestra el error inline sin tapar el CTA`() {
+        val id = FakeRepository.publications.value.first().id
+        val vm = PublicationDetailViewModel(id, FakeRepository)
+        compose.setContent {
+            HuellaTheme(darkTheme = false) {
+                PublicationDetailScreen(publicationId = id, onBack = {}, onOpenAuthor = {}, onOpenMap = {}, viewModel = vm)
+            }
+        }
+        vm.openSheet(DetailSheet.REPORTAR)
+        compose.waitForIdle()
+        val cta = compose.onNode(hasText("Enviar reporte") and hasClickAction())
+        cta.performScrollTo().performClick()
+        compose.waitForIdle()
+        val error = compose.onNodeWithText("Selecciona un motivo para el reporte")
+        error.assertIsDisplayed()
+        val e = error.getUnclippedBoundsInRoot()
+        val c = cta.getUnclippedBoundsInRoot()
+        assertTrue("error ${e.top}-${e.bottom} vs CTA ${c.top}-${c.bottom}", e.bottom <= c.top || e.top >= c.bottom)
+        compose.onAllNodesWithText("Selecciona un motivo para el reporte").assertCountEquals(1) // sin snackbar duplicado
     }
 
     @Test

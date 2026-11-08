@@ -317,6 +317,7 @@ fun PublicationDetailScreen(
                     placeholder = stringResource(R.string.detail_message_placeholder),
                     singleLine = false,
                     minHeight = 110.dp,
+                    error = state.sheetError?.asString(),
                 )
                 PrimaryButton(
                     stringResource(R.string.detail_send_request),
@@ -356,6 +357,9 @@ fun PublicationDetailScreen(
                         if (i < REPORT_REASONS.lastIndex) HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
                     }
                 }
+                state.sheetError?.let {
+                    Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark, modifier = Modifier.testTag("sheet_error"))
+                }
                 HuellaTextField(
                     value = state.reportDetail,
                     onValueChange = viewModel::onReportDetailChange,
@@ -384,6 +388,7 @@ fun PublicationDetailScreen(
                     placeholder = stringResource(R.string.detail_where_placeholder),
                     singleLine = false,
                     minHeight = 90.dp,
+                    error = state.sheetError?.asString(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Outlined.MilitaryTech, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp))
@@ -436,16 +441,17 @@ private fun Modifier.softCard(background: Color = HuellaColors.Surface): Modifie
     .background(background)
     .border(1.dp, HuellaColors.Divider, RoundedCornerShape(12.dp))
 
+/** Los errores de validación van inline; el snackbar (errores de red) va en el flujo, bajo el CTA, sin taparlo (ítem 44). */
 @Composable
 private fun SheetBody(host: SnackbarHostState, gap: Dp = 16.dp, content: @Composable () -> Unit) {
-    Box {
-        Column(
-            Modifier
-                .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(gap),
-        ) { content() }
-        HuellaSnackbarHost(host, Modifier.align(Alignment.BottomCenter))
+    Column(
+        Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(gap),
+    ) {
+        content()
+        HuellaSnackbarHost(host)
     }
 }
 
