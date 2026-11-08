@@ -50,10 +50,6 @@ interface SupabaseApiService {
     @GET("auth/v1/user")
     suspend fun getUser(@Header("Authorization") bearerToken: String): Response<JsonObject>
 
-    /** Enlaces antiguos con token_hash: POST /verify devuelve la sesión (GET /verify solo redirige). */
-    @POST("auth/v1/verify")
-    suspend fun verifyOtp(@Body body: JsonObject): Response<JsonObject>
-
     /** Cambia email o contraseña del usuario autenticado (Supabase envía la confirmación del email nuevo). */
     @PUT("auth/v1/user")
     suspend fun updateAuthUser(@Body body: JsonObject): Response<JsonObject>

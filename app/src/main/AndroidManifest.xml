@@ -35,7 +35,8 @@
                   · Confirmación de registro  → huella://auth/confirm?code=…
                   · Reset de contraseña       → huella://auth/confirm?type=recovery&code=…
                 El esquema custom puede interceptarlo otra app, pero el code no sirve sin el
-                code_verifier que solo guarda esta app (enlaces viejos con token_hash siguen aceptándose).
+                code_verifier que solo guarda esta app; los enlaces con token_hash o access_token se
+                rechazan. Pendiente: App Links https con autoVerify=true y assetlinks.json (requiere dominio).
                 Configura la misma URL en Supabase Dashboard → Authentication → URL Configuration:
                   Site URL            : huella://auth
                   Redirect URLs       : huella://auth/confirm

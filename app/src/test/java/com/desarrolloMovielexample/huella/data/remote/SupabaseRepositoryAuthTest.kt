@@ -93,6 +93,19 @@ class SupabaseRepositoryAuthTest {
     }
 
     @Test
+    fun `item 36 - enlaces con token_hash o access_token no dan sesion`() = runBlocking {
+        val links = listOf(
+            "huella://auth/confirm?token_hash=pkce_abc&type=signup",
+            "huella://auth/confirm#access_token=robado&refresh_token=r&type=recovery",
+        )
+        for (link in links) {
+            assertTrue(link, SupabaseRepository.handleAuthCallback(Uri.parse(link)).isFailure)
+        }
+        assertNull(SupabaseSession.accessToken)
+        assertTrue(requests.none { it.path!!.startsWith("/auth/v1/verify") || it.path!!.startsWith("/auth/v1/token") })
+    }
+
+    @Test
     fun `dos 401 a la vez gastan un solo refresh token`() = runBlocking {
         SupabaseSession.save(context, "old-token", "u1", "refresh-1")
         val restored = (1..2).map { async(Dispatchers.IO) { SupabaseRepository.restoreSession() } }.awaitAll()
