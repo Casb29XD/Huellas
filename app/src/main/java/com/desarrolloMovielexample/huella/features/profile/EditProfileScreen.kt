@@ -46,7 +46,6 @@ import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
-import kotlinx.coroutines.delay
 
 @Composable
 fun EditProfileScreen(
@@ -57,12 +56,8 @@ fun EditProfileScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
-    // Let the "Cambios guardados" snackbar be seen before leaving.
     LaunchedEffect(state.saved) {
-        if (state.saved) {
-            delay(1_200)
-            onSaved()
-        }
+        if (state.saved) onSaved()
     }
 
     Scaffold(
