@@ -49,6 +49,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 object SupabaseRepository : HuellaRepository {
     /** Deep link de los correos de Auth (debe estar en las Redirect URLs del proyecto). */
     private const val AUTH_REDIRECT = "huella://auth/confirm"
+    private const val FEED_PAGE = 20
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var appContext: Context
     private val api: SupabaseApiService get() = RetrofitClient.supabaseApi
@@ -358,6 +359,28 @@ object SupabaseRepository : HuellaRepository {
         user
     }
 
+    /** Filtros de servidor del feed (categoría, especie, ciudad sin departamento) que reutilizan las páginas siguientes. */
+    private var feedFilter: Triple<Category?, String?, String?> = Triple(null, null, null)
+
+    override suspend fun loadFeed(category: Category?, species: String?, city: String?, reset: Boolean): Result<Boolean> = result {
+        if (reset) feedFilter = Triple(category, species, city?.substringBefore(",")?.trim())
+        val page = fetchFeed(offset = if (reset) 0 else _publications.value.size, limit = FEED_PAGE)
+        _publications.value = if (reset) page else (_publications.value + page).distinctBy { it.id }
+        page.size == FEED_PAGE
+    }
+
+    private suspend fun fetchFeed(offset: Int, limit: Int): List<Publication> = apiCall {
+        val (category, species, city) = feedFilter
+        api.getPublications(
+            category = category?.let { "eq.${it.name}" },
+            species = species?.let { "eq.$it" },
+            city = city?.let { "eq.$it" },
+            order = "created_at.desc,id.desc", // orden total: las páginas no se pisan ni saltan filas
+            limit = limit,
+            offset = offset,
+        )
+    }.map { it.toPublication() }
+
     override fun getPublication(id: String): Publication? =
         (_publications.value + _myPublications.value + _moderationQueue.value.map { it.publication })
             .firstOrNull { it.id == id }
@@ -446,11 +469,14 @@ object SupabaseRepository : HuellaRepository {
     override suspend fun openConversation(contactUserId: String, publicationId: String?): Result<String> = result {
         val currentId = requireUserId()
         require(contactUserId != currentId) { "No puedes iniciar un chat contigo mismo" }
-        val existing = apiCall { api.getConversations() }.firstOrNull { row ->
-            val pairMatches = (row.string("participant_one") == currentId && row.string("participant_two") == contactUserId) ||
-                (row.string("participant_two") == currentId && row.string("participant_one") == contactUserId)
-            pairMatches && (publicationId == null || row.string("publication_id") == publicationId)
-        }
+        // El servidor filtra el par (en cualquier orden) y la publicación: no se descargan todas las conversaciones.
+        val existing = apiCall {
+            api.getConversations(
+                or = "(and(participant_one.eq.$currentId,participant_two.eq.$contactUserId)," +
+                    "and(participant_one.eq.$contactUserId,participant_two.eq.$currentId))",
+                publicationId = publicationId?.let { "eq.$it" },
+            )
+        }.firstOrNull()
         if (existing != null) {
             cacheConversation(existing, currentId)
             existing.string("id") ?: error("La conversación no tiene identificador")
@@ -465,7 +491,7 @@ object SupabaseRepository : HuellaRepository {
             val created = apiCall { api.createConversation(body) }.firstOrNull()
                 ?: error("Supabase no devolvió la conversación creada")
             val createdId = created.string("id") ?: error("La conversación no tiene identificador")
-            val hydrated = apiCall { api.getConversations() }.firstOrNull { it.string("id") == createdId }
+            val hydrated = apiCall { api.getConversations(id = "eq.$createdId") }.firstOrNull()
             cacheConversation(hydrated ?: created, currentId)
             createdId
         }
@@ -733,9 +759,9 @@ object SupabaseRepository : HuellaRepository {
         }
     }
 
+    /** Relee desde el principio tantas filas como ya estaban cargadas (mínimo una página) con los filtros vigentes. */
     private suspend fun refreshFeed() {
-        val rows = apiCall { api.getPublications() }
-        _publications.value = rows.map { it.toPublication() }
+        _publications.value = fetchFeed(offset = 0, limit = maxOf(FEED_PAGE, _publications.value.size))
     }
 
     private suspend fun refreshMyPublications() {

@@ -469,4 +469,5 @@
     <string name="points_action_comment">Comentar una publicación</string>
     <string name="points_action_sighting">Reportar un avistamiento</string>
     <string name="points_action_adoption">Adopción concretada</string>
+    <string name="error_load_feed">No se pudo cargar el feed</string>
 </resources>

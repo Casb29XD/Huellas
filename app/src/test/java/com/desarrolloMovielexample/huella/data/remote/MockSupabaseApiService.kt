@@ -49,7 +49,8 @@ class MockSupabaseApiService : SupabaseApiService by unsupported {
         authorId: String?,
         updatedAfter: String?,
         order: String,
-        limit: Int
+        limit: Int,
+        offset: Int?,
     ): Response<List<JsonObject>> {
         val filtered = if (status != null && status.startsWith("eq.")) {
             val st = status.substringAfter("eq.")

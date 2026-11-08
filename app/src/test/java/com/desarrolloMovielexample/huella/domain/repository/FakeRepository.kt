@@ -334,6 +334,10 @@ object FakeRepository : HuellaRepository {
         getUser(userId)?.let { Result.success(it) } ?: Result.failure(IllegalStateException("No encontramos este perfil"))
 
     // ---------- Publications Implementations ----------
+    /** Todo el feed ya está en memoria: los filtros los aplica HomeViewModel y no hay más páginas. */
+    override suspend fun loadFeed(category: Category?, species: String?, city: String?, reset: Boolean): Result<Boolean> =
+        Result.success(false)
+
     override fun getPublication(id: String): Publication? =
         allPublications.value.firstOrNull { it.id == id }
 
