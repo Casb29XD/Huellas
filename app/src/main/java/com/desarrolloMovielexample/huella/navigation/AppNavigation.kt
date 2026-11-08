@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.navigation
 
+import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -10,7 +11,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -43,6 +46,7 @@ import com.desarrolloMovielexample.huella.features.profile.PublicProfileScreen
 import com.desarrolloMovielexample.huella.features.profile.SettingsScreen
 import com.desarrolloMovielexample.huella.features.requests.ChatScreen
 import com.desarrolloMovielexample.huella.features.requests.RequestsScreen
+import kotlinx.coroutines.launch
 
 /** Bottom-bar tab for each top-level route (bar hidden elsewhere). */
 private fun tabForDestination(destination: androidx.navigation.NavDestination?): BottomBarItem? {
@@ -73,6 +77,9 @@ private fun NavHostController.navigateClearingStack(route: Any) {
     }
 }
 
+private const val APP_PREFS = "huella_prefs"
+private const val ONBOARDING_SEEN = "onboarding_seen"
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppNavigation(
@@ -81,6 +88,13 @@ fun AppNavigation(
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentTab = tabForDestination(backStackEntry?.destination)
+    val scope = rememberCoroutineScope()
+    val prefs = LocalContext.current.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
+
+    // Ítem 26: si el refresh token caduca, volver a Login en vez de quedar en "Inicia sesión para continuar".
+    LaunchedEffect(Unit) {
+        SupabaseRepository.sessionExpired.collect { navController.navigateClearingStack(Routes.Login) }
+    }
 
     // Manejar deep links de Supabase Auth al iniciar la app.
     LaunchedEffect(deepLinkUri) {
@@ -143,8 +157,16 @@ fun AppNavigation(
             composable<Routes.Splash> {
                 SplashScreen(
                     onFinished = {
-                        navController.navigate(Routes.Onboarding) {
-                            popUpTo<Routes.Splash> { inclusive = true }
+                        // Con deep link de Auth, el LaunchedEffect de arriba decide el destino.
+                        if (deepLinkUri == null) scope.launch {
+                            // Ítem 25: sesión válida -> Home; si no, onboarding solo la primera vez y luego Login.
+                            val target = when {
+                                SupabaseRepository.restoreSession() -> Routes.Home
+                                prefs.getBoolean(ONBOARDING_SEEN, false) -> Routes.Login
+                                else -> Routes.Onboarding
+                            }
+                            // Pila limpia: si el refresh caducó, sessionExpired pudo haber navegado ya a Login.
+                            navController.navigateClearingStack(target)
                         }
                     },
                 )
@@ -152,6 +174,7 @@ fun AppNavigation(
             composable<Routes.Onboarding> {
                 OnboardingScreen(
                     onFinish = {
+                        prefs.edit().putBoolean(ONBOARDING_SEEN, true).apply()
                         navController.navigate(Routes.Login) {
                             popUpTo<Routes.Onboarding> { inclusive = true }
                         }

@@ -12,11 +12,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import retrofit2.Response
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
@@ -103,17 +108,32 @@ object SupabaseRepository : HuellaRepository {
         appContext = context.applicationContext
         // Sin app/.env no hay red que disparar: las pantallas muestran el error de requireConfigured() al usarse.
         if (!SupabaseConfig.isConfigured) return
-        val id = SupabaseSession.userId
-        if (id != null && SupabaseSession.accessToken != null) {
-            scope.launch {
-                runCatching { apiCall { api.getMyProfile() } }.getOrNull()
-                    ?.firstOrNull()?.let { _currentUser.value = it.toUser() }
-                refreshAll()
-            }
-        } else {
-            scope.launch { quietly { refreshFeed() } }
-        }
+        // Con sesión guardada, el Splash llama a restoreSession() y esa carga perfil y datos.
+        if (SupabaseSession.accessToken == null) scope.launch { quietly { refreshFeed() } }
     }
+
+    /**
+     * Splash (ítem 25): true si hay token guardado y rpc/get_my_profile responde (apiCall refresca el
+     * token si hace falta). Si no, la app va a Login aunque quede un token viejo en disco.
+     */
+    suspend fun restoreSession(): Boolean {
+        if (!SupabaseConfig.isConfigured || SupabaseSession.accessToken == null) return false
+        val profile = try {
+            apiCall { api.getMyProfile() }.firstOrNull()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        } ?: return false
+        _currentUser.value = profile.toUser()
+        scope.launch { refreshAll() }
+        return true
+    }
+
+    private val refreshMutex = Mutex()
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Emite cuando el refresh token ya no sirve: AppNavigation vuelve a Login (ítem 26). */
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
 
     override suspend fun login(email: String, password: String): Result<User> = result {
         requireConfigured()
@@ -705,26 +725,45 @@ object SupabaseRepository : HuellaRepository {
         }
 
     private suspend fun <T> apiCall(call: suspend () -> Response<T>): T {
+        val tokenUsed = SupabaseSession.accessToken
         var response = call()
-        if (response.code() == 401 && SupabaseSession.refreshToken != null) {
-            val refreshBody = json { addProperty("refresh_token", SupabaseSession.refreshToken!!) }
-            val refreshed = runCatching { api.refreshSession(refreshBody) }.getOrNull()
-            val auth = refreshed?.body()
-            val newAccessToken = auth?.string("access_token")
-            val currentUserId = SupabaseSession.userId
-            if (refreshed?.isSuccessful == true && newAccessToken != null && currentUserId != null) {
-                SupabaseSession.save(appContext, newAccessToken, currentUserId, auth.string("refresh_token"))
-                response = call()
-            } else {
-                SupabaseSession.clear(appContext)
-                _currentUser.value = null
-            }
+        if (response.code() == 401 && tokenUsed != null && refreshAccessToken(tokenUsed)) {
+            response = call()
         }
         if (!response.isSuccessful) {
             val serverText = runCatching { response.errorBody()?.string() }.getOrNull()
             throw IllegalStateException(parseError(serverText) ?: "Error de Supabase (${response.code()})")
         }
         return response.body() ?: Unit as T
+    }
+
+    /**
+     * Un solo refresh a la vez (ítem 26): si dos llamadas reciben 401 juntas, la segunda reutiliza el
+     * token nuevo en vez de gastar otra vez el mismo refresh token (Supabase revocaría la familia).
+     * Sin red no se cierra la sesión; si Supabase rechaza el refresh token, se cierra y se avisa.
+     */
+    private suspend fun refreshAccessToken(staleToken: String): Boolean = refreshMutex.withLock {
+        val current = SupabaseSession.accessToken
+        if (current != null && current != staleToken) return@withLock true
+        val refreshToken = SupabaseSession.refreshToken
+        val userId = SupabaseSession.userId
+        if (refreshToken != null && userId != null) {
+            val response = try {
+                api.refreshSession(json { addProperty("refresh_token", refreshToken) })
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return@withLock false
+            }
+            val newToken = response.body()?.string("access_token")
+            if (response.isSuccessful && newToken != null) {
+                SupabaseSession.save(appContext, newToken, userId, response.body()?.string("refresh_token") ?: refreshToken)
+                return@withLock true
+            }
+        }
+        logout()
+        _sessionExpired.tryEmit(Unit)
+        false
     }
 
     private fun errorMessage(error: Exception): String =
