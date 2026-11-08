@@ -94,13 +94,11 @@ fun ModerationDetailScreen(
     LaunchedEffect(itemId) { viewModel.load(itemId) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val sheetSnackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel) {
+        // El Scaffold ancla el snackbar sobre la DecisionBar; los errores del sheet se muestran inline.
         viewModel.messages.collect { message ->
-            // Feedback goes to the sheet's own host while it is open (the sheet window covers the screen).
-            val host = if (viewModel.uiState.value.showRejectSheet) sheetSnackbarHostState else snackbarHostState
-            launch { host.showSnackbar(message, duration = SnackbarDuration.Short) }
+            launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short) }
         }
     }
     LaunchedEffect(state.finished) {
@@ -157,7 +155,6 @@ fun ModerationDetailScreen(
                         PetImage(
                             imageUrl = item.publication.imageUrl,
                             tone = toneColor(item.publication.tone),
-                            label = "foto 1/3: ${item.publication.title}",
                             contentDescription = item.publication.title,
                             modifier = Modifier.matchParentSize(),
                         )
@@ -184,25 +181,23 @@ fun ModerationDetailScreen(
                 )
             },
         ) {
-            Box {
-                RejectSheetContent(
-                    selected = state.rejectReason,
-                    reasonError = state.reasonError,
-                    comment = state.rejectComment,
-                    commentError = state.commentError,
-                    loading = state.isRejecting,
-                    onSelect = viewModel::selectReason,
-                    onCommentChange = viewModel::updateComment,
-                    onClose = viewModel::closeRejectSheet,
-                    onConfirm = viewModel::confirmReject,
-                )
-                HuellaSnackbarHost(sheetSnackbarHostState, Modifier.align(Alignment.BottomCenter))
-            }
+            RejectSheetContent(
+                selected = state.rejectReason,
+                reasonError = state.reasonError,
+                comment = state.rejectComment,
+                commentError = state.commentError,
+                rejectError = state.rejectError,
+                loading = state.isRejecting,
+                onSelect = viewModel::selectReason,
+                onCommentChange = viewModel::updateComment,
+                onClose = viewModel::closeRejectSheet,
+                onConfirm = viewModel::confirmReject,
+            )
         }
     }
 }
 
-/** Yellow "En revisión · 8 h en espera · publicado hace 8 h" header with back arrow. */
+/** Yellow "En revisión · Publicada hace 8 h" header (una sola métrica de tiempo). */
 @Composable
 private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
     Row(
@@ -218,9 +213,14 @@ private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
         HuellaIcon(R.drawable.icon_estado_en_revision, tint = HuellaColors.WarningDark, size = 26.dp)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text("En revisión", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = HuellaColors.WarningDark)
             Text(
-                "${item.waitTime} · publicado ${item.publication.timeAgo}",
+                if (item.isReported) "Publicación reportada" else "En revisión",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = HuellaColors.WarningDark,
+            )
+            Text(
+                "Publicada ${item.publication.timeAgo}",
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.WarningDark,
             )
@@ -371,7 +371,7 @@ private fun ReportRow(report: Report) {
     }
 }
 
-/** Sticky "Rechazar" (red) + "Aprobar" (green) bar. */
+/** Sticky "Aprobar" (verde) + "Rechazar" (rojo, a la derecha) bar. */
 @Composable
 private fun DecisionBar(approving: Boolean, enabled: Boolean, onReject: () -> Unit, onApprove: () -> Unit) {
     Column(
@@ -385,8 +385,8 @@ private fun DecisionBar(approving: Boolean, enabled: Boolean, onReject: () -> Un
             Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            DecisionButton("Rechazar", R.drawable.icon_accion_rechazar, HuellaColors.Error, false, enabled, onReject, Modifier.weight(1f))
             DecisionButton("Aprobar", R.drawable.icon_accion_aprobar, HuellaColors.Primary, approving, enabled, onApprove, Modifier.weight(1f))
+            DecisionButton("Rechazar", R.drawable.icon_accion_rechazar, HuellaColors.Error, false, enabled, onReject, Modifier.weight(1f))
         }
     }
 }
@@ -431,6 +431,7 @@ private fun RejectSheetContent(
     reasonError: Boolean,
     comment: String,
     commentError: String?,
+    rejectError: String?,
     loading: Boolean,
     onSelect: (String) -> Unit,
     onCommentChange: (String) -> Unit,
@@ -480,6 +481,10 @@ private fun RejectSheetContent(
                 }
             }
         }
+        if (reasonError) {
+            // Texto además del color (accesibilidad, ítem 58).
+            Text("Selecciona un motivo de rechazo", style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+        }
         HuellaTextField(
             value = comment,
             onValueChange = onCommentChange,
@@ -488,6 +493,9 @@ private fun RejectSheetContent(
             singleLine = false,
             minHeight = 72.dp,
         )
+        if (rejectError != null) {
+            Text(rejectError, style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+        }
         PrimaryButton(
             text = "Confirmar rechazo",
             onClick = onConfirm,
@@ -498,10 +506,10 @@ private fun RejectSheetContent(
     }
 }
 
-/** Design radio: 20dp ring (#8A8F88), red ring + dot when selected. */
+/** Design radio: 20dp ring (#8A8F88), primary ring + dot when selected (el rojo queda para errores). */
 @Composable
 private fun RadioDot(selected: Boolean) {
-    val color = if (selected) HuellaColors.Error else HuellaColors.TextTertiary
+    val color = if (selected) HuellaColors.Primary else HuellaColors.TextTertiary
     Box(
         Modifier
             .size(20.dp)

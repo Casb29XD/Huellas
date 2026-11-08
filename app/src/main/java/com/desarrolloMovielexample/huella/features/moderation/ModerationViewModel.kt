@@ -94,6 +94,7 @@ data class ModerationDetailUiState(
     val rejectComment: String = "",
     val reasonError: Boolean = false,
     val commentError: String? = null,
+    val rejectError: String? = null,
     val isApproving: Boolean = false,
     val isRejecting: Boolean = false,
     val finished: Boolean = false,
@@ -134,11 +135,11 @@ class ModerationDetailViewModel(private val repo: HuellaRepository = SupabaseRep
     }
 
     fun closeRejectSheet() {
-        _uiState.update { it.copy(showRejectSheet = false, reasonError = false, commentError = null) }
+        _uiState.update { it.copy(showRejectSheet = false, reasonError = false, commentError = null, rejectError = null) }
     }
 
     fun selectReason(reason: String) {
-        _uiState.update { it.copy(rejectReason = reason, reasonError = false, commentError = null) }
+        _uiState.update { it.copy(rejectReason = reason, reasonError = false, commentError = null, rejectError = null) }
     }
 
     fun updateComment(comment: String) {
@@ -150,27 +151,25 @@ class ModerationDetailViewModel(private val repo: HuellaRepository = SupabaseRep
         val item = state.item ?: return
         if (state.busy) return
         val reason = state.rejectReason
+        // Errores de validación solo inline y persistentes (sin snackbar que tape el CTA ni duplique el texto).
         if (reason == null) {
             _uiState.update { it.copy(reasonError = true) }
-            _messages.trySend("Selecciona un motivo de rechazo")
             return
         }
         if (reason == "Otro" && state.rejectComment.isBlank()) {
-            val msg = "Cuéntale al autor el motivo del rechazo"
-            _uiState.update { it.copy(commentError = msg) }
-            _messages.trySend(msg)
+            _uiState.update { it.copy(commentError = "Cuéntale al autor el motivo del rechazo") }
             return
         }
         viewModelScope.launch {
-            _uiState.update { it.copy(isRejecting = true) }
+            _uiState.update { it.copy(isRejecting = true, rejectError = null) }
             val result = repo.reject(item.id, reason, state.rejectComment.trim())
-            _uiState.update {
-                it.copy(isRejecting = false, finished = result.isSuccess, showRejectSheet = !result.isSuccess && it.showRejectSheet)
+            if (result.isSuccess) {
+                _uiState.update { it.copy(isRejecting = false, finished = true, showRejectSheet = false) }
+                _messages.send("Publicación rechazada. Notificamos al autor.")
+            } else {
+                val msg = result.exceptionOrNull()?.message ?: "No pudimos rechazar la publicación"
+                _uiState.update { it.copy(isRejecting = false, rejectError = msg) }
             }
-            _messages.send(
-                if (result.isSuccess) "Publicación rechazada. Notificamos al autor."
-                else result.exceptionOrNull()?.message ?: "No pudimos rechazar la publicación",
-            )
         }
     }
 }
