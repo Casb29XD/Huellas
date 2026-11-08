@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.e2e
 
 import org.junit.AfterClass
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -9,7 +10,7 @@ import org.junit.Test
 import java.util.UUID
 
 /**
- * Exploits reproducidos en la auditoría (ítems 1-4 y 18). Cada prueba ASSERTA que el ataque está bloqueado.
+ * Exploits reproducidos en la auditoría (ítems 1-4, 18 y 23). Cada prueba ASSERTA que el ataque está bloqueado.
  * Hoy fallan (rojo) a propósito: las migraciones de roles/RLS/storage las ponen en verde. No marcar @Ignore.
  * Cada prueba usa usuarios propios (E2eEnv.createUser) que se borran en @AfterClass.
  */
@@ -101,5 +102,14 @@ class RlsSecurityE2eTest {
             E2eEnv.admin("storage/v1/object/pet-images", "DELETE",
                 """{"prefixes":["${own.removePrefix("pet-images/")}","${foreign.removePrefix("pet-images/")}"]}""")
         }
+    }
+
+    /** Ítem 23: profiles.email no debe poder divergir de auth.users.email cambiándolo por PATCH sin pasar por auth. */
+    @Test
+    fun `f - usuario no puede cambiar su email de perfil sin pasar por auth (rojo hasta B1)`() {
+        val laura = E2eEnv.createUser(name = "Laura E2E")
+        val other = E2eEnv.uniqueEmail()
+        E2eEnv.rest("rest/v1/profiles?id=eq.${laura.id}", "PATCH", """{"email":"$other"}""", laura.token)
+        assertEquals("profiles.email divergió de auth.users.email", laura.email, profile(laura.id, "email").get("email").asString)
     }
 }
