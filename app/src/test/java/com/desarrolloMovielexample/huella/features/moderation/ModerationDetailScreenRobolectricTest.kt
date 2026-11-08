@@ -25,7 +25,7 @@ class ModerationDetailScreenRobolectricTest {
                 ModerationDetailScreen(
                     itemId = "102",
                     onBack = {},
-                    onDone = {},
+                    onDone = { _ -> },
                     viewModel = ModerationDetailViewModel(FakeRepository, analyze),
                 )
             }

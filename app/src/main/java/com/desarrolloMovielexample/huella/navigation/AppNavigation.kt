@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -25,6 +27,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.desarrolloMovielexample.huella.core.components.BottomBarItem
 import com.desarrolloMovielexample.huella.core.components.HuellaBottomBar
+import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordScreen
@@ -93,6 +97,10 @@ fun AppNavigation(
     val currentTab = tabForDestination(backStackEntry?.destination)
     val scope = rememberCoroutineScope()
     val prefs = LocalContext.current.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
+    // Confirmaciones que sobreviven a la navegación: la pantalla sale al instante y el aviso se ve en el destino (ítem 56).
+    val appSnackbar = remember { SnackbarHostState() }
+    val resources = LocalContext.current.resources
+    val flash: (UiText) -> Unit = { msg -> scope.launch { appSnackbar.showSnackbar(msg.resolve(resources)) } }
 
     // Ítem 26: si el refresh token caduca, volver a Login en vez de quedar en "Inicia sesión para continuar".
     LaunchedEffect(Unit) {
@@ -120,6 +128,7 @@ fun AppNavigation(
     Scaffold(
         containerColor = HuellaColors.Background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { HuellaSnackbarHost(appSnackbar) },
         bottomBar = {
             if (currentTab != null) {
                 HuellaBottomBar(
@@ -193,7 +202,7 @@ fun AppNavigation(
             composable<Routes.SetPassword> {
                 // Desde el enlace de recuperación la pila está vacía: al terminar se entra a Home.
                 val leave = { if (!navController.popBackStack()) navController.navigateClearingStack(Routes.Home) }
-                SetPasswordScreen(onBack = leave, onDone = leave)
+                SetPasswordScreen(onBack = leave, onDone = { msg -> leave(); flash(msg) })
             }
 
             // ---------- 02 Inicio y detalle ----------
@@ -328,7 +337,10 @@ fun AppNavigation(
                 ModerationDetailScreen(
                     itemId = route.id,
                     onBack = { navController.popBackStack() },
-                    onDone = { navController.popBackStack() },
+                    onDone = { msg ->
+                        navController.popBackStack()
+                        flash(msg)
+                    },
                 )
             }
 

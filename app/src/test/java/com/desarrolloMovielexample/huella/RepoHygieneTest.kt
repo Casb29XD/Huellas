@@ -77,4 +77,12 @@ class RepoHygieneTest {
         assertFalse("permiso de ubicación sin uso", "LOCATION" in manifest)
         assertFalse("filtro de distancia decorativo", "distanceKm" in file("app/src/main/java/com/desarrolloMovielexample/huella/features/feed/HomeViewModel.kt"))
     }
+
+    @Test
+    fun `item 56 - sin esperas fijas para que se vea un snackbar`() {
+        val offenders = tree("app/src/main/java", "kt").filter { f ->
+            f.name != "SplashScreen.kt" && Regex("""delay\(\d""").containsMatchIn(f.readText(Charsets.UTF_8))
+        }
+        assertEquals(emptyList<String>(), offenders.map { it.name })
+    }
 }

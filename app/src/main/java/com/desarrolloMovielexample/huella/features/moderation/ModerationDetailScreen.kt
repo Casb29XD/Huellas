@@ -86,7 +86,6 @@ import com.desarrolloMovielexample.huella.core.utils.asString
 import com.desarrolloMovielexample.huella.data.remote.AiReview
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.Report
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -98,7 +97,8 @@ private val DisabledReject = Color(0xFFE6B9B9)
 fun ModerationDetailScreen(
     itemId: String,
     onBack: () -> Unit,
-    onDone: () -> Unit,
+    /** Recibe la confirmación para mostrarla en la pantalla de destino. */
+    onDone: (UiText) -> Unit,
     viewModel: ModerationDetailViewModel = viewModel(),
 ) {
     LaunchedEffect(itemId) { viewModel.load(itemId) }
@@ -112,12 +112,7 @@ fun ModerationDetailScreen(
             launch { snackbarHostState.showSnackbar(message.resolve(resources), duration = SnackbarDuration.Short) }
         }
     }
-    LaunchedEffect(state.finished) {
-        if (state.finished) {
-            delay(1_500) // let the confirmation snackbar be read before leaving
-            onDone()
-        }
-    }
+    LaunchedEffect(state.doneMessage) { state.doneMessage?.let(onDone) }
 
     val item = state.item
     Scaffold(

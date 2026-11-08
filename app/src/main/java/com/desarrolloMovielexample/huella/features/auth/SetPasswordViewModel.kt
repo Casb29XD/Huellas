@@ -60,8 +60,8 @@ class SetPasswordViewModel(private val repo: HuellaRepository = SupabaseReposito
         viewModelScope.launch {
             repo.updatePassword(s.password)
                 .onSuccess {
+                    // La confirmación la muestra el destino (AppNavigation), no esta pantalla que se cierra.
                     _uiState.update { it.copy(isLoading = false, saved = true) }
-                    _messages.send(uiText(R.string.msg_password_updated))
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
