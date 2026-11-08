@@ -311,7 +311,7 @@ private fun ApplicantCard(
                     Text(
                         stringResource(R.string.public_contact),
                         style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
-                        color = HuellaColors.Primary,
+                        color = HuellaColors.PrimaryText,
                     )
                 }
             }

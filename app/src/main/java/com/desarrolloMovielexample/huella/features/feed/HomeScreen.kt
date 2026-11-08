@@ -424,7 +424,7 @@ private fun CategoryFilterChip(
             .height(34.dp)
             .clip(shape)
             .background(if (selected) selectedColor else HuellaColors.Surface)
-            .border(1.dp, if (selected) Color.Transparent else ChipBorder, shape)
+            .border(1.dp, if (selected) Color.Transparent else HuellaColors.Outline, shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -435,7 +435,6 @@ private fun CategoryFilterChip(
     }
 }
 
-private val ChipBorder = Color(0xFFD9DED9)
 
 /** Removable chips for the applied filters ("Conejo ×", "Cartagena ×"). */
 @OptIn(ExperimentalLayoutApi::class)

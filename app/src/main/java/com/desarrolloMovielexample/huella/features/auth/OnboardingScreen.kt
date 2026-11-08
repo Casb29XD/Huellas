@@ -98,7 +98,7 @@ fun OnboardingScreen(
                 Text(
                     stringResource(R.string.onboarding_skip),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                 )
             }
         }

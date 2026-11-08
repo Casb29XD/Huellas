@@ -206,7 +206,7 @@ private fun PointsCard(user: User, onOpenLevels: () -> Unit, modifier: Modifier 
             Text(
                 stringResource(R.string.profile_view_levels),
                 style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
-                color = HuellaColors.Primary,
+                color = HuellaColors.PrimaryText,
                 modifier = Modifier
                     .clickable(onClick = onOpenLevels)
                     .padding(bottom = 4.dp),
@@ -277,7 +277,7 @@ private fun PointsHistory(history: List<PointsEntry>) {
                 Text(
                     stringResource(R.string.points_plus, entry.points),
                     style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 15.sp),
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                 )
             }
             if (index < history.lastIndex) HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)

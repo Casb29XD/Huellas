@@ -145,7 +145,7 @@ fun RegisterScreen(
                 Text(
                     stringResource(R.string.register_read_terms),
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                     modifier = Modifier
                         .minimumInteractiveComponentSize()
                         .clickable(onClick = onOpenTerms),

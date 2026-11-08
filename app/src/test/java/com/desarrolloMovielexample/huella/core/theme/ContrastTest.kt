@@ -27,6 +27,17 @@ class ContrastTest {
             .toMap()
     }
 
+    private fun accentPairs() = with(HuellaColors) {
+        mapOf(
+            "PrimaryText/Surface" to (PrimaryText to Surface),
+            "PrimaryText/Background" to (PrimaryText to Background),
+            "WarningDark/WarningContainer" to (WarningDark to WarningContainer),
+            "VetText/VetSoft" to (VetText to VetSoft),
+        ) + if (isDark) mapOf("PrimaryText/PrimarySoft" to (PrimaryText to PrimarySoft)) else emptyMap()
+    }
+
+    @Test fun `acentos de texto en tema claro`() = check(false, ::accentPairs)
+    @Test fun `acentos de texto en tema oscuro`() = check(true, ::accentPairs)
     @Test fun `texto sobre fondos en tema claro`() = check(false, ::textPairs)
     @Test fun `texto sobre fondos en tema oscuro`() = check(true, ::textPairs)
 }
