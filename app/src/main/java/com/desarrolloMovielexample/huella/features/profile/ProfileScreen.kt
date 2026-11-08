@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.profile
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -271,7 +272,7 @@ private fun PointsHistory(history: List<PointsEntry>) {
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(pointsActionLabel(entry.what), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
-                    Text(entry.whenLabel, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+                    Text(entry.whenLabel.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
                 }
                 Text(
                     stringResource(R.string.points_plus, entry.points),

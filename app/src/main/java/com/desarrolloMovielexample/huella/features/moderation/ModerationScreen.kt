@@ -236,7 +236,7 @@ private fun ModerationListItem(item: ModerationItem, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                stringResource(R.string.moderation_published_by, pub.timeAgo, pub.author.name),
+                stringResource(R.string.moderation_published_by, pub.timeAgo.asString(), pub.author.name),
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.TextTertiary,
                 maxLines = 1,

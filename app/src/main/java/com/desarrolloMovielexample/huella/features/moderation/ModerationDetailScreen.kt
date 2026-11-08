@@ -228,7 +228,7 @@ private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
                 color = HuellaColors.WarningDark,
             )
             Text(
-                stringResource(R.string.moderation_published, item.publication.timeAgo),
+                stringResource(R.string.moderation_published, item.publication.timeAgo.asString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.WarningDark,
             )

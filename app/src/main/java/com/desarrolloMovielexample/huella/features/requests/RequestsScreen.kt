@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.requests
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -125,7 +126,7 @@ fun RequestsScreen(
                                     trailingTag = { RequestStatusTag(item.request.status) },
                                 )
                                 Text(
-                                    item.request.whenLabel,
+                                    item.request.whenLabel.asString(),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = HuellaColors.TextTertiary,
                                     modifier = Modifier.padding(start = 4.dp),
@@ -270,7 +271,7 @@ private fun ApplicantCard(
                     Text(stringResource(applicant.level.labelRes), style = MaterialTheme.typography.labelMedium, color = applicant.level.color)
                 }
             }
-            Text(applicant.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+            Text(applicant.timeAgo.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
         }
         Text(
             applicant.message,
