@@ -35,7 +35,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 import java.util.concurrent.TimeUnit
 
-// Pantallas con FakeRepository; "es" para que LocalizedText no traduzca los textos.
+// Pantallas con FakeRepository; "es" para verificar el copy en español (en-US tomaría values-en).
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "es")
 class UxScreensRobolectricTest {
