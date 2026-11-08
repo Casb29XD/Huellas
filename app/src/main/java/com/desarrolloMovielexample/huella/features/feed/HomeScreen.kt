@@ -37,8 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -500,22 +498,6 @@ private fun FiltersSheet(
                 label = stringResource(R.string.field_city),
                 placeholder = allCities,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    SheetLabel(stringResource(R.string.filter_distance))
-                    Text(stringResource(R.string.distance_km, draft.distanceKm.toInt()), style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
-                }
-                Slider(
-                    value = draft.distanceKm,
-                    onValueChange = { draft = draft.copy(distanceKm = it) },
-                    valueRange = 1f..50f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = HuellaColors.Primary,
-                        activeTrackColor = HuellaColors.Primary,
-                        inactiveTrackColor = HuellaColors.OutlineVariant,
-                    ),
-                )
-            }
             Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryButton(stringResource(R.string.action_clear), onClick = onClear, modifier = Modifier.weight(1f))
                 PrimaryButton(stringResource(R.string.action_apply), onClick = { onApply(draft) }, modifier = Modifier.weight(1f))

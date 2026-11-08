@@ -90,4 +90,11 @@ class CreatePostViewModelTest {
         advanceUntilIdle()
         assertTrue(own.uiState.value.isAuthor)
     }
+
+    @Test
+    fun `item 33 - la ciudad por defecto es la del perfil, no Medellin fijo`() = runTest(dispatcher) {
+        FakeRepository.login("andres@correo.com", "12345678") // Bogotá
+        assertEquals("Bogotá, Cundinamarca", CreatePostViewModel(FakeRepository).uiState.value.city)
+        FakeRepository.login("mariana@correo.com", "12345678")
+    }
 }

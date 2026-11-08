@@ -159,8 +159,6 @@
     <string name="filter_size">Tamaño</string>
     <string name="filter_only_vaccinated">Solo con vacunas</string>
     <string name="filter_only_sterilized">Solo castrados</string>
-    <string name="filter_distance">Distancia</string>
-    <string name="distance_km">%1$d km</string>
     <string name="action_clear">Limpiar</string>
     <string name="action_apply">Aplicar</string>
     <string name="all_cities">Todas las ciudades</string>
