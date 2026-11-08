@@ -44,10 +44,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +60,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -85,6 +87,8 @@ import com.desarrolloMovielexample.huella.core.components.PetImage
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.components.StripedPlaceholder
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
+import com.desarrolloMovielexample.huella.core.components.labelRes
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.components.sexIcon
 import com.desarrolloMovielexample.huella.core.components.sizeIcon
 import com.desarrolloMovielexample.huella.core.components.speciesIcon
@@ -111,22 +115,23 @@ fun PublicationDetailScreen(
     var showDeleteConfirm by remember { androidx.compose.runtime.mutableStateOf(false) }
     val sheetHost = remember { SnackbarHostState() }
 
+    val resources = LocalContext.current.resources
     LaunchedEffect(viewModel) {
         viewModel.messages.collect { msg ->
             val sheetOpen = viewModel.uiState.value.sheet.let { it != null && it != DetailSheet.LLAMAR }
-            (if (sheetOpen) sheetHost else screenHost).showSnackbar(msg)
+            (if (sheetOpen) sheetHost else screenHost).showSnackbar(msg.resolve(resources))
         }
     }
 
     val pub = state.publication
     if (pub == null) {
-        Scaffold(containerColor = HuellaColors.Background, topBar = { HuellaTopBar("Publicación", onBack = onBack) }) { padding ->
+        Scaffold(containerColor = HuellaColors.Background, topBar = { HuellaTopBar(stringResource(R.string.detail_title), onBack = onBack) }) { padding ->
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 EmptyState(
                     illustration = R.drawable.illus_searching,
-                    title = "Publicación no disponible",
-                    text = "Es posible que haya sido eliminada o cerrada por su autor.",
-                    actionText = "Volver",
+                    title = stringResource(R.string.detail_unavailable),
+                    text = stringResource(R.string.detail_unavailable_text),
+                    actionText = stringResource(R.string.action_go_back),
                     onAction = onBack,
                 )
             }
@@ -135,13 +140,13 @@ fun PublicationDetailScreen(
     }
 
     val context = LocalContext.current
+    val shareText = stringResource(R.string.detail_share_text, pub.title, stringResource(pub.category.labelRes), pub.city)
     val share = {
-        val text = "${pub.title} · ${pub.category.label} en ${pub.city}. Míralo en Huella."
         runCatching {
             context.startActivity(
                 Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, text)
+                    putExtra(Intent.EXTRA_TEXT, shareText)
                 }, null),
             )
         }
@@ -159,8 +164,8 @@ fun PublicationDetailScreen(
                         Modifier.fillMaxWidth().background(HuellaColors.Surface).padding(horizontal = 16.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
-                        PillButton("Eliminar", onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
+                        PrimaryButton(stringResource(R.string.action_edit), onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
+                        PillButton(stringResource(R.string.action_delete), onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
                     }
                 }
                 ActionBar(
@@ -208,11 +213,11 @@ fun PublicationDetailScreen(
                         else -> AdoptionInfo(pub)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Descripción", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+                        Text(stringResource(R.string.detail_description), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
                         Text(pub.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.4.sp), color = HuellaColors.TextBody)
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Ubicación", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+                        Text(stringResource(R.string.detail_location), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
                         Box(
                             Modifier
                                 .fillMaxWidth()
@@ -266,19 +271,19 @@ fun PublicationDetailScreen(
     if (showDeleteConfirm) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("¿Eliminar publicación?") },
-            text = { Text("Esta acción eliminará la publicación definitivamente.") },
+            title = { Text(stringResource(R.string.detail_delete_title)) },
+            text = { Text(stringResource(R.string.detail_delete_text)) },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showDeleteConfirm = false
                     viewModel.deleteCurrentPublication(onSuccess = onBack)
                 }) {
-                    Text("Eliminar", color = HuellaColors.ErrorDark)
+                    Text(stringResource(R.string.action_delete), color = HuellaColors.ErrorDark)
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
         )
@@ -287,7 +292,7 @@ fun PublicationDetailScreen(
     when (state.sheet) {
         DetailSheet.INTERES -> HuellaBottomSheet(onDismiss = viewModel::closeSheet) {
             SheetBody(sheetHost) {
-                SheetTitle("Me interesa adoptar", viewModel::closeSheet)
+                SheetTitle(stringResource(R.string.detail_interest), viewModel::closeSheet)
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -299,19 +304,19 @@ fun PublicationDetailScreen(
                     StripedPlaceholder(toneColor(pub.tone), Modifier.size(48.dp).clip(RoundedCornerShape(10.dp)))
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(pub.title, style = Medium14, color = HuellaColors.TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("Publicado por ${pub.author.name}", style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+                        Text(stringResource(R.string.detail_posted_by, pub.author.name), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
                     }
                 }
                 HuellaTextField(
                     value = state.interestMessage,
                     onValueChange = viewModel::onInterestMessageChange,
-                    label = "Mensaje al autor (opcional)",
-                    placeholder = "Cuéntale por qué serías un buen hogar",
+                    label = stringResource(R.string.detail_message_label),
+                    placeholder = stringResource(R.string.detail_message_placeholder),
                     singleLine = false,
                     minHeight = 110.dp,
                 )
                 PrimaryButton(
-                    "Enviar solicitud",
+                    stringResource(R.string.detail_send_request),
                     onClick = viewModel::sendInterest,
                     modifier = Modifier.fillMaxWidth(),
                     loading = state.isSending,
@@ -322,8 +327,8 @@ fun PublicationDetailScreen(
 
         DetailSheet.REPORTAR -> HuellaBottomSheet(onDismiss = viewModel::closeSheet) {
             SheetBody(sheetHost, gap = 14.dp) {
-                SheetTitle("Reportar publicación", viewModel::closeSheet)
-                Text("¿Cuál es el motivo?", style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
+                SheetTitle(stringResource(R.string.detail_report), viewModel::closeSheet)
+                Text(stringResource(R.string.detail_report_reason), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
                 Column(Modifier.fillMaxWidth().softCard()) {
                     REPORT_REASONS.forEachIndexed { i, reason ->
                         val selected = state.reportReason == reason
@@ -343,7 +348,7 @@ fun PublicationDetailScreen(
                             ) {
                                 if (selected) Box(Modifier.size(10.dp).clip(CircleShape).background(HuellaColors.Primary))
                             }
-                            Text(reason, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+                            Text(optionLabel(reason), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
                         }
                         if (i < REPORT_REASONS.lastIndex) HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
                     }
@@ -351,12 +356,12 @@ fun PublicationDetailScreen(
                 HuellaTextField(
                     value = state.reportDetail,
                     onValueChange = viewModel::onReportDetailChange,
-                    placeholder = "Detalle (opcional)",
+                    placeholder = stringResource(R.string.detail_report_detail),
                     singleLine = false,
                     minHeight = 72.dp,
                 )
                 PillButton(
-                    "Enviar reporte",
+                    stringResource(R.string.detail_send_report),
                     onClick = viewModel::sendReport,
                     modifier = Modifier.fillMaxWidth(),
                     container = HuellaColors.Error,
@@ -368,21 +373,21 @@ fun PublicationDetailScreen(
 
         DetailSheet.VISTO -> HuellaBottomSheet(onDismiss = viewModel::closeSheet) {
             SheetBody(sheetHost) {
-                SheetTitle("Lo he visto", viewModel::closeSheet)
+                SheetTitle(stringResource(R.string.detail_seen), viewModel::closeSheet)
                 HuellaTextField(
                     value = state.sightingText,
                     onValueChange = viewModel::onSightingChange,
-                    label = "¿Dónde y cuándo?",
-                    placeholder = "Ej: hoy a las 8 a. m. cerca de la Circular 73",
+                    label = stringResource(R.string.detail_where_when),
+                    placeholder = stringResource(R.string.detail_where_placeholder),
                     singleLine = false,
                     minHeight = 90.dp,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Outlined.MilitaryTech, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp))
-                    Text("Este aviso suma 5 puntos a tu nivel.", style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextSecondary)
+                    Text(stringResource(R.string.detail_seen_points), style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextSecondary)
                 }
                 PrimaryButton(
-                    "Enviar aviso",
+                    stringResource(R.string.detail_send_sighting),
                     onClick = viewModel::sendSighting,
                     modifier = Modifier.fillMaxWidth(),
                     loading = state.isSending,
@@ -394,7 +399,7 @@ fun PublicationDetailScreen(
 
         DetailSheet.COMENTARIOS -> HuellaBottomSheet(onDismiss = viewModel::closeSheet) {
             SheetBody(sheetHost) {
-                SheetTitle("Comentarios", viewModel::closeSheet)
+                SheetTitle(stringResource(R.string.comments), viewModel::closeSheet)
                 CommentsSection(
                     comments = state.comments,
                     draft = state.commentDraft,
@@ -407,7 +412,7 @@ fun PublicationDetailScreen(
         }
         DetailSheet.LLAMAR -> CallDialog(
             name = pub.author.name,
-            phone = pub.phone ?: "Sin teléfono registrado",
+            phone = pub.phone ?: stringResource(R.string.detail_no_phone),
             onDismiss = viewModel::closeSheet,
             onCall = {
                 viewModel.closeSheet()
@@ -469,8 +474,9 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = HuellaColors.TextPrimary)
             }
+            val shareLabel = stringResource(R.string.action_share)
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
@@ -479,7 +485,7 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
                     .clip(CircleShape)
                     .background(HuellaColors.Surface.copy(alpha = 0.9f))
                     .clickable(onClick = onShare)
-                    .semantics { contentDescription = "Compartir" },
+                    .semantics { contentDescription = shareLabel },
                 contentAlignment = Alignment.Center,
             ) {
                 HuellaIcon(R.drawable.icon_accion_compartir, tint = HuellaColors.TextPrimary, size = 29.dp)
@@ -540,22 +546,22 @@ private fun IconCell(item: InfoItem, tint: Color, modifier: Modifier) {
 @Composable
 private fun AdoptionInfo(pub: Publication) {
     val items = buildList {
-        add(InfoItem(speciesIcon(pub.species), "Tipo", pub.species))
-        add(InfoItem(R.drawable.icon_attr_raza_aproximada, "Raza aproximada", pub.breed))
-        add(InfoItem(sizeIcon(pub.size), "Tamaño", pub.size))
+        add(InfoItem(speciesIcon(pub.species), stringResource(R.string.detail_type), optionLabel(pub.species)))
+        add(InfoItem(R.drawable.icon_attr_raza_aproximada, stringResource(R.string.detail_breed), pub.breed))
+        add(InfoItem(sizeIcon(pub.size), stringResource(R.string.detail_size), optionLabel(pub.size)))
         add(
             InfoItem(
                 if (pub.vaccinated) R.drawable.icon_attr_vacunado else R.drawable.icon_attr_sin_vacunas,
-                "Vacunas",
-                if (pub.vaccinated) "Al día" else "Pendientes",
+                stringResource(R.string.detail_vaccines),
+                stringResource(if (pub.vaccinated) R.string.detail_vaccines_ok else R.string.detail_vaccines_pending),
             ),
         )
-        if (pub.sterilized != null) add(InfoItem(R.drawable.icon_attr_castrado, "Castración", if (pub.sterilized == true) "Sí" else "No"))
+        if (pub.sterilized != null) add(InfoItem(R.drawable.icon_attr_castrado, stringResource(R.string.detail_neutering), stringResource(if (pub.sterilized == true) R.string.yes else R.string.no)))
     }
     InfoGrid(items.size) { i, m -> IconCell(items[i], HuellaColors.Primary, m) }
     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         pub.age?.let { InlineAttr(R.drawable.icon_attr_edad, it) }
-        pub.sex?.let { InlineAttr(sexIcon(it), it) }
+        pub.sex?.let { InlineAttr(sexIcon(it), optionLabel(it)) }
     }
 }
 
@@ -583,7 +589,7 @@ private fun LostFoundInfo(pub: Publication) {
         HuellaIcon(R.drawable.icon_attr_fecha, tint = fg, size = 31.dp)
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                if (found) "Fecha y lugar del hallazgo" else "Fecha y lugar de la pérdida",
+                stringResource(if (found) R.string.detail_found_when else R.string.detail_lost_when),
                 style = MaterialTheme.typography.labelMedium,
                 color = fg.copy(alpha = 0.8f),
             )
@@ -592,10 +598,10 @@ private fun LostFoundInfo(pub: Publication) {
         }
     }
     val items = listOf(
-        InfoItem(speciesIcon(pub.species), "Tipo", pub.species),
-        InfoItem(R.drawable.icon_attr_raza_aproximada, "Raza aproximada", pub.breed),
-        InfoItem(sizeIcon(pub.size), "Tamaño", pub.size),
-        InfoItem(sexIcon(pub.sex), "Sexo", pub.sex ?: "Desconocido"),
+        InfoItem(speciesIcon(pub.species), stringResource(R.string.detail_type), optionLabel(pub.species)),
+        InfoItem(R.drawable.icon_attr_raza_aproximada, stringResource(R.string.detail_breed), pub.breed),
+        InfoItem(sizeIcon(pub.size), stringResource(R.string.detail_size), optionLabel(pub.size)),
+        InfoItem(sexIcon(pub.sex), stringResource(R.string.detail_sex), optionLabel(pub.sex ?: "Desconocido")),
     )
     InfoGrid(items.size) { i, m -> IconCell(items[i], pub.category.color, m) }
 }
@@ -613,16 +619,16 @@ private fun TextCell(label: String, value: String, modifier: Modifier) {
 private fun VetInfo(pub: Publication) {
     InfoGrid(4) { i, m ->
         when (i) {
-            0 -> TextCell("Fecha", pub.eventDate.orEmpty(), m)
-            1 -> TextCell("Horario", pub.schedule.orEmpty(), m)
-            2 -> TextCell("Lugar", pub.place ?: pub.neighborhood, m)
+            0 -> TextCell(stringResource(R.string.detail_date), pub.eventDate.orEmpty(), m)
+            1 -> TextCell(stringResource(R.string.detail_schedule), pub.schedule.orEmpty(), m)
+            2 -> TextCell(stringResource(R.string.detail_place), pub.place ?: pub.neighborhood, m)
             else -> Column(
                 m.clip(RoundedCornerShape(12.dp)).background(VetSoft).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text("Cupo disponible", style = MaterialTheme.typography.labelSmall, color = HuellaColors.CatVeterinaria)
+                Text(stringResource(R.string.detail_capacity), style = MaterialTheme.typography.labelSmall, color = HuellaColors.CatVeterinaria)
                 Text(
-                    "${pub.capacity ?: 0} lugares",
+                    pluralStringResource(R.plurals.capacity_places, pub.capacity ?: 0, pub.capacity ?: 0),
                     style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp),
                     color = HuellaColors.CatVeterinaria,
                 )
@@ -631,7 +637,7 @@ private fun VetInfo(pub: Publication) {
     }
     if (pub.services.isNotEmpty()) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SheetLabel("Servicios")
+            SheetLabel(stringResource(R.string.detail_services))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 pub.services.forEach { s ->
                     Row(
@@ -643,7 +649,7 @@ private fun VetInfo(pub: Publication) {
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Icon(Icons.Outlined.Check, contentDescription = null, tint = HuellaColors.CatVeterinaria, modifier = Modifier.size(16.dp))
-                        Text(s, style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp), color = HuellaColors.CatVeterinaria)
+                        Text(optionLabel(s), style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp), color = HuellaColors.CatVeterinaria)
                     }
                 }
             }
@@ -671,7 +677,7 @@ private fun AuthorCard(pub: Publication, onOpenAuthor: (String) -> Unit) {
             }
         }
         Text(
-            "Ver perfil",
+            stringResource(R.string.view_profile),
             style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
             color = HuellaColors.Primary,
             modifier = Modifier
@@ -702,31 +708,32 @@ private fun ActionBar(
             val cat = pub.category
             when {
                 cat.isAdoption && requestSent -> PillButton(
-                    "Solicitud enviada ✓", onClick = {}, modifier = Modifier.weight(1f), enabled = false,
+                    stringResource(R.string.detail_request_sent), onClick = {}, modifier = Modifier.weight(1f), enabled = false,
                     container = HuellaColors.Disabled, content = HuellaColors.TextTertiary,
                     iconRes = R.drawable.icon_accion_solicitud_enviada, iconSize = 29.dp,
                 )
                 cat.isAdoption -> PillButton(
-                    "Me interesa adoptar", onClick = onCta, modifier = Modifier.weight(1f),
+                    stringResource(R.string.detail_interest), onClick = onCta, modifier = Modifier.weight(1f),
                     iconRes = R.drawable.icon_accion_me_interesa_adoptar,
                 )
                 cat.isLostFound -> {
-                    PillButton("Lo he visto", onClick = onCta, modifier = Modifier.weight(1f), container = cat.color, icon = Icons.Outlined.Visibility)
+                    PillButton(stringResource(R.string.detail_seen), onClick = onCta, modifier = Modifier.weight(1f), container = cat.color, icon = Icons.Outlined.Visibility)
                     PillButton(
-                        "Llamar", onClick = onCall, modifier = Modifier.weight(1f),
+                        stringResource(R.string.action_call), onClick = onCall, modifier = Modifier.weight(1f),
                         container = Color.Transparent, content = cat.color, border = cat.color,
                         iconRes = R.drawable.icon_accion_llamar,
                     )
                 }
-                else -> PillButton("Cómo llegar", onClick = onCta, modifier = Modifier.weight(1f), container = HuellaColors.CatVeterinaria, icon = Icons.Outlined.Directions)
+                else -> PillButton(stringResource(R.string.detail_directions), onClick = onCta, modifier = Modifier.weight(1f), container = HuellaColors.CatVeterinaria, icon = Icons.Outlined.Directions)
             }
+            val reportLabel = stringResource(R.string.detail_report)
             Box(
                 Modifier
                     .size(48.dp)
                     .clip(CircleShape)
                     .border(1.dp, HuellaColors.Outline, CircleShape)
                     .clickable(onClick = onReport)
-                    .semantics { contentDescription = "Reportar publicación" },
+                    .semantics { contentDescription = reportLabel },
                 contentAlignment = Alignment.Center,
             ) {
                 HuellaIcon(R.drawable.icon_accion_reportar, tint = HuellaColors.TextSecondary, size = 29.dp)
@@ -785,11 +792,11 @@ private fun CallDialog(name: String, phone: String, onDismiss: () -> Unit, onCal
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             HuellaIcon(R.drawable.icon_accion_llamar, tint = HuellaColors.Primary, size = 36.dp)
-            Text("Llamar a $name", style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp), color = HuellaColors.TextPrimary)
+            Text(stringResource(R.string.detail_call_name, name), style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp), color = HuellaColors.TextPrimary)
             Text(phone, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Cancelar",
+                    stringResource(R.string.action_cancel),
                     style = Medium14,
                     color = HuellaColors.Primary,
                     modifier = Modifier
@@ -798,7 +805,7 @@ private fun CallDialog(name: String, phone: String, onDismiss: () -> Unit, onCal
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 )
                 Text(
-                    "Llamar",
+                    stringResource(R.string.action_call),
                     style = Medium14,
                     color = Color.White,
                     modifier = Modifier
