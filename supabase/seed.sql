@@ -71,7 +71,7 @@ END IF;
 -- Perfil del admin (is_moderator = TRUE)
 INSERT INTO public.profiles (
   id, name, email, city, phone, bio,
-  points, level, initials, member_since,
+  points, level, initials,
   is_moderator, publications_count, adoptions_count, foster_count, active_count
 ) VALUES (
   v_admin_id,
@@ -80,12 +80,12 @@ INSERT INTO public.profiles (
   'Medellín',
   '+57 310 000 0001',
   'Supervisor oficial de la plataforma Huella. Revisa y modera publicaciones para mantener la comunidad segura.',
-  1500, 'HEROE', 'AH', '2026',
+  1500, 'HEROE', 'AH',
   TRUE, 0, 0, 0, 0
 ) ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
   bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
-  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  is_moderator = EXCLUDED.is_moderator,
   publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
   foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
@@ -116,7 +116,7 @@ END IF;
 
 INSERT INTO public.profiles (
   id, name, email, city, phone, bio,
-  points, level, initials, member_since,
+  points, level, initials,
   is_moderator, publications_count, adoptions_count, foster_count, active_count
 ) VALUES (
   v_user1_id,
@@ -125,12 +125,12 @@ INSERT INTO public.profiles (
   'Medellín',
   '+57 311 222 3344',
   'Amante de los animales. He rescatado 3 perros y 2 gatos desde que descubrí Huella.',
-  120, 'PROTECTOR', 'LG', '2026',
+  120, 'PROTECTOR', 'LG',
   FALSE, 4, 2, 1, 2
 ) ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
   bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
-  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  is_moderator = EXCLUDED.is_moderator,
   publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
   foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
@@ -161,7 +161,7 @@ END IF;
 
 INSERT INTO public.profiles (
   id, name, email, city, phone, bio,
-  points, level, initials, member_since,
+  points, level, initials,
   is_moderator, publications_count, adoptions_count, foster_count, active_count
 ) VALUES (
   v_user2_id,
@@ -170,12 +170,12 @@ INSERT INTO public.profiles (
   'Bogotá',
   '+57 312 555 6677',
   'Veterinario voluntario. Organizo jornadas de vacunación en el barrio.',
-  350, 'GUARDIAN', 'CR', '2026',
+  350, 'GUARDIAN', 'CR',
   FALSE, 8, 5, 3, 3
 ) ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
   bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
-  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  is_moderator = EXCLUDED.is_moderator,
   publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
   foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
@@ -206,7 +206,7 @@ END IF;
 
 INSERT INTO public.profiles (
   id, name, email, city, phone, bio,
-  points, level, initials, member_since,
+  points, level, initials,
   is_moderator, publications_count, adoptions_count, foster_count, active_count
 ) VALUES (
   v_user3_id,
@@ -215,12 +215,12 @@ INSERT INTO public.profiles (
   'Cali',
   '+57 313 888 9900',
   'Recién llegué a Huella. Busco adoptar mi primera mascota.',
-  10, 'AMIGO_ANIMAL', 'SM', '2026',
+  10, 'AMIGO_ANIMAL', 'SM',
   FALSE, 1, 0, 0, 1
 ) ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name, email = EXCLUDED.email, city = EXCLUDED.city, phone = EXCLUDED.phone,
   bio = EXCLUDED.bio, points = EXCLUDED.points, level = EXCLUDED.level, initials = EXCLUDED.initials,
-  member_since = EXCLUDED.member_since, is_moderator = EXCLUDED.is_moderator,
+  is_moderator = EXCLUDED.is_moderator,
   publications_count = EXCLUDED.publications_count, adoptions_count = EXCLUDED.adoptions_count,
   foster_count = EXCLUDED.foster_count, active_count = EXCLUDED.active_count;
 
@@ -238,7 +238,7 @@ v_pub5_id := extensions.uuid_generate_v4();
 INSERT INTO public.publications (
   id, author_id, category, title, species, breed, size,
   vaccinated, sterilized, age, sex,
-  city, neighborhood, description, image_url, tone, photo_label,
+  city, neighborhood, description, image_url, photo_label,
   status, latitude, longitude, created_at, updated_at
 ) VALUES (
   v_pub1_id, v_user1_id,
@@ -246,7 +246,7 @@ INSERT INTO public.publications (
   TRUE, TRUE, '2 años', 'Macho',
   'Medellín', 'El Poblado',
   'Max es un beagle de 2 años, cariñoso y muy activo. Vive bien con niños y otros perros. Ha sido maltratado pero está recuperado y listo para un nuevo comienzo. Incluye cartilla de vacunación completa.',
-  'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600', 3632851165, 'Max, beagle juguetón',
+  'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600', 'Max, beagle juguetón',
   'APROBADA', 6.2088, -75.5742, NOW() - INTERVAL '3 days', NOW() - INTERVAL '2 days'
 );
 
@@ -254,7 +254,7 @@ INSERT INTO public.publications (
 INSERT INTO public.publications (
   id, author_id, category, title, species, breed, size,
   vaccinated, sterilized, age, sex,
-  city, neighborhood, description, image_url, tone, photo_label,
+  city, neighborhood, description, image_url, photo_label,
   status, latitude, longitude, created_at, updated_at
 ) VALUES (
   v_pub2_id, v_user2_id,
@@ -262,7 +262,7 @@ INSERT INTO public.publications (
   TRUE, TRUE, '1 año', 'Hembra',
   'Bogotá', 'Chapinero',
   'Luna es una gatita siamesa de un año. Tranquila, muy limpia y sociable. Lleva vacunas al día y chip de identificación. Busca hogar sin perros o con perros que respeten a los gatos.',
-  'https://images.unsplash.com/photo-1529778873920-4da4926a72c2?w=600', 3632851165, 'Luna, gatita siamesa',
+  'https://images.unsplash.com/photo-1529778873920-4da4926a72c2?w=600', 'Luna, gatita siamesa',
   'APROBADA', 4.6097, -74.0817, NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days'
 );
 
@@ -270,7 +270,7 @@ INSERT INTO public.publications (
 INSERT INTO public.publications (
   id, author_id, category, title, species, breed, size,
   vaccinated, sterilized, age, sex,
-  city, neighborhood, description, image_url, tone, photo_label,
+  city, neighborhood, description, image_url, photo_label,
   status, event_date, latitude, longitude, created_at, updated_at
 ) VALUES (
   v_pub3_id, v_user1_id,
@@ -278,7 +278,7 @@ INSERT INTO public.publications (
   TRUE, FALSE, '4 años', 'Macho',
   'Medellín', 'El Poblado',
   'Tobi se perdió el 4 de noviembre cerca al parque de El Poblado. Es de color café con manchas blancas, usa collar rojo. Recompensa. Por favor comuníquese si lo ve.',
-  NULL, 3641654400, 'Tobi, se perdió en Poblado',
+  NULL, 'Tobi, se perdió en Poblado',
   'EN_REVISION', 'Mié 4 nov', 6.2088, -75.5700, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'
 );
 
@@ -286,7 +286,7 @@ INSERT INTO public.publications (
 INSERT INTO public.publications (
   id, author_id, category, title, species, breed, size,
   vaccinated, sterilized, age, sex,
-  city, neighborhood, description, image_url, tone, photo_label,
+  city, neighborhood, description, image_url, photo_label,
   status, event_date, latitude, longitude, created_at, updated_at
 ) VALUES (
   v_pub4_id, v_user3_id,
@@ -294,7 +294,7 @@ INSERT INTO public.publications (
   FALSE, FALSE, 'Desconocida', 'Desconocido',
   'Cali', 'Ciudad Jardín',
   'Encontré este gatito atigrado deambulando. Parece manso y en buen estado. Lo tengo en casa mientras aparece su dueño. Llama al número de contacto.',
-  'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=600', 3641654400, 'Gato atigrado encontrado',
+  'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=600', 'Gato atigrado encontrado',
   'APROBADA', 'Jue 5 nov', 3.4516, -76.5320, NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day'
 );
 
@@ -302,7 +302,7 @@ INSERT INTO public.publications (
 INSERT INTO public.publications (
   id, author_id, category, title, species, breed, size,
   vaccinated, sterilized, age, sex,
-  city, neighborhood, description, image_url, tone, photo_label,
+  city, neighborhood, description, image_url, photo_label,
   status, event_date, schedule, place, services, capacity, phone,
   latitude, longitude, created_at, updated_at
 ) VALUES (
@@ -311,7 +311,7 @@ INSERT INTO public.publications (
   FALSE, FALSE, 'Todas', 'Todos',
   'Bogotá', 'Chapinero',
   'Jornada de salud animal gratuita. Traé tu perro o gato. Cupos limitados, llega temprano. Recuerda llevar el carné de vacunación anterior si lo tienes.',
-  'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=600', 3641654400, 'Jornada veterinaria gratuita',
+  'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=600', 'Jornada veterinaria gratuita',
   'APROBADA', 'Sáb 8 nov · 8:00 a. m.', '8:00 a. m. — 1:00 p. m.', 'Parque El Virrey, Chapinero',
   ARRAY['Vacunación', 'Desparasitación', 'Chip de identificación'], 200, '+57 320 111 2233',
   4.6600, -74.0528, NOW() - INTERVAL '4 days', NOW() - INTERVAL '3 days'
