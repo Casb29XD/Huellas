@@ -2,6 +2,9 @@ package com.desarrolloMovielexample.huella.features.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Level
 import com.desarrolloMovielexample.huella.domain.model.Publication
@@ -64,8 +67,8 @@ class HomeViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), controls.value)
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     init {
         // ponytail: simulated first load so the skeleton state is visible; real fetch replaces this.
@@ -81,7 +84,7 @@ class HomeViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
 
     fun applyFilters(filters: FeedFilters) {
         controls.update { it.copy(filters = filters) }
-        _messages.trySend(if (filters.isActive) "Filtros aplicados" else "Mostrando todas las publicaciones")
+        _messages.trySend(uiText(if (filters.isActive) R.string.msg_filters_applied else R.string.msg_showing_all))
     }
 
     fun updateFilters(filters: FeedFilters) = controls.update { it.copy(filters = filters) }
@@ -89,11 +92,11 @@ class HomeViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
     /** "Limpiar filtros": query, category and sheet filters. */
     fun clearAll() {
         controls.update { it.copy(query = "", category = null, filters = FeedFilters()) }
-        _messages.trySend("Filtros eliminados")
+        _messages.trySend(uiText(R.string.msg_filters_cleared))
     }
 
     fun createAlert() {
-        _messages.trySend("Listo, te avisaremos cuando haya mascotas para esta búsqueda")
+        _messages.trySend(uiText(R.string.msg_alert_created))
     }
 }
 

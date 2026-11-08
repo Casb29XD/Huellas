@@ -2,6 +2,10 @@ package com.desarrolloMovielexample.huella.features.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Comment
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
@@ -41,8 +45,8 @@ class PublicationDetailViewModel(
     private val _uiState = MutableStateFlow(PublicationDetailUiState(publication = repo.getPublication(publicationId)))
     val uiState: StateFlow<PublicationDetailUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -102,10 +106,10 @@ class PublicationDetailViewModel(
             repo.addComment(publicationId, text)
                 .onSuccess {
                     _uiState.update { it.copy(commentDraft = "") }
-                    _messages.send("Comentario publicado")
+                    _messages.send(uiText(R.string.msg_comment_posted))
                 }
                 .onFailure {
-                    _messages.send(it.message ?: "No se pudo publicar el comentario")
+                    _messages.send(it.toUiText(R.string.error_comment_post))
                 }
         }
     }
@@ -113,8 +117,8 @@ class PublicationDetailViewModel(
     fun deleteComment(commentId: String) {
         viewModelScope.launch {
             repo.deleteComment(publicationId, commentId)
-                .onSuccess { _messages.send("Comentario eliminado") }
-                .onFailure { _messages.send(it.message ?: "No se pudo eliminar el comentario") }
+                .onSuccess { _messages.send(uiText(R.string.msg_comment_deleted)) }
+                .onFailure { _messages.send(it.toUiText(R.string.error_comment_delete)) }
         }
     }
 
@@ -122,11 +126,11 @@ class PublicationDetailViewModel(
         viewModelScope.launch {
             repo.deletePublication(publicationId)
                 .onSuccess {
-                    _messages.send("Publicación eliminada")
+                    _messages.send(uiText(R.string.msg_post_deleted))
                     onSuccess()
                 }
                 .onFailure {
-                    _messages.send(it.message ?: "No se pudo eliminar la publicación")
+                    _messages.send(it.toUiText(R.string.error_post_delete))
                 }
         }
     }
@@ -135,7 +139,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.interestMessage.length > 500) {
-            _messages.trySend("El mensaje no puede superar 500 caracteres")
+            _messages.trySend(uiText(R.string.error_message_too_long))
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -143,11 +147,14 @@ class PublicationDetailViewModel(
             repo.sendAdoptionRequest(publicationId, s.interestMessage.trim())
                 .onSuccess {
                     _uiState.update { it.copy(isSending = false, sheet = null, requestSent = true, interestMessage = "") }
-                    _messages.send("Solicitud enviada. Te avisaremos cuando ${s.publication?.author?.name?.substringBefore(" ") ?: "el autor"} responda")
+                    _messages.send(
+                        s.publication?.author?.name?.substringBefore(" ")?.let { uiText(R.string.msg_request_sent_named, it) }
+                            ?: uiText(R.string.msg_request_sent),
+                    )
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isSending = false) }
-                    _messages.send(e.message ?: "No pudimos enviar la solicitud")
+                    _messages.send(e.toUiText(R.string.error_send_request))
                 }
         }
     }
@@ -156,7 +163,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.reportReason == null) {
-            _messages.trySend("Selecciona un motivo para el reporte")
+            _messages.trySend(uiText(R.string.error_report_reason))
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -164,11 +171,11 @@ class PublicationDetailViewModel(
             repo.reportPublication(publicationId, s.reportReason, s.reportDetail.trim())
                 .onSuccess {
                     _uiState.update { it.copy(isSending = false, sheet = null, reportReason = null, reportDetail = "") }
-                    _messages.send("Gracias. Un moderador revisará tu reporte")
+                    _messages.send(uiText(R.string.msg_report_sent))
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isSending = false) }
-                    _messages.send(e.message ?: "No pudimos enviar el reporte")
+                    _messages.send(e.toUiText(R.string.error_send_report))
                 }
         }
     }
@@ -177,7 +184,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.sightingText.isBlank()) {
-            _messages.trySend("Cuéntanos dónde y cuándo lo viste")
+            _messages.trySend(uiText(R.string.error_sighting_empty))
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -185,11 +192,11 @@ class PublicationDetailViewModel(
             repo.reportSighting(publicationId, s.sightingText)
                 .onSuccess {
                     _uiState.update { it.copy(isSending = false, sheet = null, sightingText = "") }
-                    _messages.send("Aviso enviado al autor. ¡Gracias por ayudar!")
+                    _messages.send(uiText(R.string.msg_sighting_sent))
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isSending = false) }
-                    _messages.send(e.message ?: "No pudimos enviar el aviso")
+                    _messages.send(e.toUiText(R.string.error_send_sighting))
                 }
         }
     }

@@ -40,7 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,8 +54,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -79,6 +82,8 @@ import com.desarrolloMovielexample.huella.core.components.PublicationCard
 import com.desarrolloMovielexample.huella.core.components.SecondaryButton
 import com.desarrolloMovielexample.huella.core.components.SegmentedSelector
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
+import com.desarrolloMovielexample.huella.core.components.labelRes
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
@@ -97,8 +102,9 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilters by rememberSaveable { mutableStateOf(false) }
 
+    val resources = LocalContext.current.resources
     LaunchedEffect(viewModel) {
-        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) }
     }
 
     Scaffold(
@@ -177,12 +183,12 @@ private fun FeedList(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Hola, ${state.userFirstName}", style = MaterialTheme.typography.titleLarge, color = HuellaColors.TextPrimary)
+                    Text(stringResource(R.string.home_greeting, state.userFirstName), style = MaterialTheme.typography.titleLarge, color = HuellaColors.TextPrimary)
                     LevelBadge(state.userLevel, soft = true)
                 }
                 Box {
                     IconButton(onClick = onOpenNotifications) {
-                        Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones", tint = HuellaColors.TextPrimary)
+                        Icon(Icons.Outlined.Notifications, contentDescription = stringResource(R.string.notifications_title), tint = HuellaColors.TextPrimary)
                     }
                     if (state.hasUnreadNotifications) {
                         Box(
@@ -199,10 +205,11 @@ private fun FeedList(
                     }
                 }
                 Spacer(Modifier.size(4.dp))
+                val myProfile = stringResource(R.string.home_my_profile)
                 Avatar(
                     state.userInitials,
                     state.userLevel,
-                    Modifier.clickable(onClick = onOpenProfile).semantics { contentDescription = "Mi perfil" },
+                    Modifier.clickable(onClick = onOpenProfile).semantics { contentDescription = myProfile },
                     size = 40.dp,
                 )
             }
@@ -219,6 +226,7 @@ private fun FeedList(
                     active = false,
                     modifier = Modifier.weight(1f),
                 )
+                val viewMap = stringResource(R.string.home_view_map)
                 Box(
                     Modifier
                         .size(48.dp)
@@ -226,7 +234,7 @@ private fun FeedList(
                         .background(HuellaColors.Surface)
                         .border(1.dp, HuellaColors.OutlineVariant, CircleShape)
                         .clickable(onClick = onOpenMap)
-                        .semantics { contentDescription = "Ver mapa" },
+                        .semantics { contentDescription = viewMap },
                     contentAlignment = Alignment.Center,
                 ) {
                     HuellaIcon(R.drawable.icon_accion_mapa, tint = HuellaColors.Primary, size = 29.dp)
@@ -240,9 +248,9 @@ private fun FeedList(
                     .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CategoryFilterChip("Todas", R.drawable.icon_animal_otro, HuellaColors.TextPrimary, state.category == null) { onCategory(null) }
+                CategoryFilterChip(stringResource(R.string.filter_all), R.drawable.icon_animal_otro, HuellaColors.TextPrimary, state.category == null) { onCategory(null) }
                 Category.entries.forEach { c ->
-                    CategoryFilterChip(c.label, categoryIcon(c), c.color, state.category == c) { onCategory(c) }
+                    CategoryFilterChip(stringResource(c.labelRes), categoryIcon(c), c.color, state.category == c) { onCategory(c) }
                 }
             }
         }
@@ -252,9 +260,9 @@ private fun FeedList(
         item {
             val n = state.publications.size
             // ponytail: the user's city is not in HomeUiState yet; only the city filter is known here.
-            val near = state.filters.city?.substringBefore(",")?.let { " cerca de $it" }.orEmpty()
+            val near = state.filters.city?.substringBefore(",")?.let { stringResource(R.string.feed_near, it) }.orEmpty()
             Text(
-                "$n ${if (n == 1) "publicación" else "publicaciones"}$near",
+                pluralStringResource(R.plurals.feed_count, n, n) + near,
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.TextTertiary,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 10.dp),
@@ -306,12 +314,12 @@ private fun NoResults(
         ) {
             EmptyState(
                 illustration = R.drawable.illus_searching,
-                title = "No encontramos mascotas",
-                text = "Prueba con otra ciudad o quita algún filtro. También puedes activar alertas para esta búsqueda.",
+                title = stringResource(R.string.feed_empty_title),
+                text = stringResource(R.string.feed_empty_text),
                 illustrationSize = 230.dp,
-                actionText = "Limpiar filtros",
+                actionText = stringResource(R.string.feed_clear_filters),
                 onAction = onClear,
-                secondaryActionText = "Crear alerta",
+                secondaryActionText = stringResource(R.string.feed_create_alert),
                 onSecondaryAction = onCreateAlert,
                 modifier = Modifier.padding(vertical = 24.dp),
             )
@@ -353,7 +361,7 @@ private fun SearchField(
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (query.isEmpty()) {
                         Text(
-                            "Buscar mascotas, razas, ciudades",
+                            stringResource(R.string.feed_search_placeholder),
                             style = MaterialTheme.typography.bodyMedium,
                             color = HuellaColors.TextTertiary,
                             maxLines = 2,
@@ -366,7 +374,7 @@ private fun SearchField(
         if (query.isNotEmpty()) {
             Icon(
                 Icons.Outlined.Close,
-                contentDescription = "Borrar búsqueda",
+                contentDescription = stringResource(R.string.feed_clear_search),
                 tint = HuellaColors.TextSecondary,
                 modifier = Modifier
                     .clip(CircleShape)
@@ -376,11 +384,12 @@ private fun SearchField(
             )
         }
         if (onOpenFilters != null) {
+            val filtersLabel = stringResource(R.string.filters_title)
             Box(
                 Modifier
                     .clip(CircleShape)
                     .clickable(onClick = onOpenFilters)
-                    .semantics { contentDescription = "Filtros" }
+                    .semantics { contentDescription = filtersLabel }
                     .padding(6.dp),
             ) {
                 HuellaIcon(R.drawable.icon_accion_filtros, tint = HuellaColors.Primary, size = 29.dp)
@@ -429,14 +438,14 @@ private fun ActiveFilterChips(
     onRemoveCategory: () -> Unit = {},
 ) {
     FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (category != null) HuellaFilterChip(category.label, selected = true, onClick = onRemoveCategory, onRemove = onRemoveCategory)
-        filters.species?.let { HuellaFilterChip(it, true, { onUpdate(filters.copy(species = null)) }, onRemove = { onUpdate(filters.copy(species = null)) }) }
-        filters.size?.let { HuellaFilterChip(it, true, { onUpdate(filters.copy(size = null)) }, onRemove = { onUpdate(filters.copy(size = null)) }) }
+        if (category != null) HuellaFilterChip(stringResource(category.labelRes), selected = true, onClick = onRemoveCategory, onRemove = onRemoveCategory)
+        filters.species?.let { HuellaFilterChip(optionLabel(it), true, { onUpdate(filters.copy(species = null)) }, onRemove = { onUpdate(filters.copy(species = null)) }) }
+        filters.size?.let { HuellaFilterChip(optionLabel(it), true, { onUpdate(filters.copy(size = null)) }, onRemove = { onUpdate(filters.copy(size = null)) }) }
         if (filters.onlyVaccinated) {
-            HuellaFilterChip("Vacunados", true, { onUpdate(filters.copy(onlyVaccinated = false)) }, onRemove = { onUpdate(filters.copy(onlyVaccinated = false)) })
+            HuellaFilterChip(stringResource(R.string.filter_vaccinated), true, { onUpdate(filters.copy(onlyVaccinated = false)) }, onRemove = { onUpdate(filters.copy(onlyVaccinated = false)) })
         }
         if (filters.onlySterilized) {
-            HuellaFilterChip("Castrados", true, { onUpdate(filters.copy(onlySterilized = false)) }, onRemove = { onUpdate(filters.copy(onlySterilized = false)) })
+            HuellaFilterChip(stringResource(R.string.filter_sterilized), true, { onUpdate(filters.copy(onlySterilized = false)) }, onRemove = { onUpdate(filters.copy(onlySterilized = false)) })
         }
         filters.city?.let {
             HuellaFilterChip(it.substringBefore(","), true, { onUpdate(filters.copy(city = null)) }, onRemove = { onUpdate(filters.copy(city = null)) })
@@ -462,38 +471,39 @@ private fun FiltersSheet(
                 .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            SheetTitle("Filtros", onDismiss)
+            SheetTitle(stringResource(R.string.filters_title), onDismiss)
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SheetLabel("Tipo de animal")
+                SheetLabel(stringResource(R.string.filter_animal_type))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     species.forEach { s ->
-                        HuellaFilterChip(s, selected = draft.species == s, onClick = {
+                        HuellaFilterChip(optionLabel(s), selected = draft.species == s, onClick = {
                             draft = draft.copy(species = if (draft.species == s) null else s)
                         })
                     }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SheetLabel("Tamaño")
+                SheetLabel(stringResource(R.string.filter_size))
                 SegmentedSelector(
                     options = listOf("Pequeño", "Mediano", "Grande"),
                     selected = draft.size.orEmpty(),
                     onSelect = { draft = draft.copy(size = if (draft.size == it) null else it) },
                 )
             }
-            SwitchRow("Solo con vacunas", draft.onlyVaccinated) { draft = draft.copy(onlyVaccinated = it) }
-            SwitchRow("Solo castrados", draft.onlySterilized) { draft = draft.copy(onlySterilized = it) }
+            SwitchRow(stringResource(R.string.filter_only_vaccinated), draft.onlyVaccinated) { draft = draft.copy(onlyVaccinated = it) }
+            SwitchRow(stringResource(R.string.filter_only_sterilized), draft.onlySterilized) { draft = draft.copy(onlySterilized = it) }
+            val allCities = stringResource(R.string.all_cities)
             HuellaDropdownField(
                 value = draft.city?.substringBefore(",").orEmpty(),
-                options = listOf(ALL_CITIES) + cities,
-                onSelect = { draft = draft.copy(city = if (it == ALL_CITIES) null else it) },
-                label = "Ciudad",
-                placeholder = ALL_CITIES,
+                options = listOf(allCities) + cities,
+                onSelect = { draft = draft.copy(city = if (it == allCities) null else it) },
+                label = stringResource(R.string.field_city),
+                placeholder = allCities,
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    SheetLabel("Distancia")
-                    Text("${draft.distanceKm.toInt()} km", style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
+                    SheetLabel(stringResource(R.string.filter_distance))
+                    Text(stringResource(R.string.distance_km, draft.distanceKm.toInt()), style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
                 }
                 Slider(
                     value = draft.distanceKm,
@@ -507,14 +517,12 @@ private fun FiltersSheet(
                 )
             }
             Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("Limpiar", onClick = onClear, modifier = Modifier.weight(1f))
-                PrimaryButton("Aplicar", onClick = { onApply(draft) }, modifier = Modifier.weight(1f))
+                SecondaryButton(stringResource(R.string.action_clear), onClick = onClear, modifier = Modifier.weight(1f))
+                PrimaryButton(stringResource(R.string.action_apply), onClick = { onApply(draft) }, modifier = Modifier.weight(1f))
             }
         }
     }
 }
-
-private const val ALL_CITIES = "Todas las ciudades"
 
 @Composable
 private fun SwitchRow(text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
@@ -561,7 +569,7 @@ internal fun SheetTitle(title: String, onClose: () -> Unit) {
         Text(title, style = MaterialTheme.typography.titleLarge, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
         Icon(
             Icons.Outlined.Close,
-            contentDescription = "Cerrar",
+            contentDescription = stringResource(R.string.action_close),
             tint = HuellaColors.TextPrimary,
             modifier = Modifier
                 .clip(CircleShape)
