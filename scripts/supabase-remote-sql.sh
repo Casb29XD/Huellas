@@ -4,6 +4,8 @@
 # Requiere SUPABASE_ACCESS_TOKEN y SUPABASE_PROJECT_REF en el entorno (source C:\temp\huellas-audit\.env.remote).
 # Imprime el JSON de filas de la última sentencia; sale con código 1 si la API devuelve error.
 set -euo pipefail
+# Python en Windows lee stdin/argv en cp1252: sin esto el SQL con tildes llega con mojibake ("BogotÃ¡").
+export PYTHONUTF8=1
 : "${SUPABASE_ACCESS_TOKEN:?define SUPABASE_ACCESS_TOKEN}"
 : "${SUPABASE_PROJECT_REF:?define SUPABASE_PROJECT_REF}"
 if [ "${1:-}" = "-f" ]; then SQL="$(cat "$2")"; else SQL="${1:?sql}"; fi

@@ -6,6 +6,8 @@
 # (3) ejecuta runtests('tests', '^test_') y muestra el TAP; falla si hay "not ok".
 # Requiere SUPABASE_ACCESS_TOKEN y SUPABASE_PROJECT_REF (source C:\temp\huellas-audit\.env.remote).
 set -euo pipefail
+# Python en Windows lee stdin/argv en cp1252: sin esto el SQL con tildes llega con mojibake ("BogotÃ¡").
+export PYTHONUTF8=1
 cd "$(dirname "$0")/.."
 SQL=scripts/supabase-remote-sql.sh
 $SQL "create extension if not exists pgtap with schema extensions; create schema if not exists tests;" >/dev/null
