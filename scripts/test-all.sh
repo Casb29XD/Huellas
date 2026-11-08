@@ -42,7 +42,8 @@ else
   [ -z "$missing" ] || { echo "Faltan variables:$missing (define HUELLAS_ENV o expórtalas; ver docs/PRUEBAS.md)"; exit 2; }
   echo "SUPABASE_URL=$SUPABASE_URL"
   run "pgTAP remoto" scripts/run-pgtap-remote.sh
-  run "gradle testDebugUnitTest" scripts/gradle-native.sh --continue :app:testDebugUnitTest
+  # --rerun: las variables de entorno no son entradas de Gradle; sin él, un resultado cacheado sin e2e se da por bueno.
+  run "gradle testDebugUnitTest" scripts/gradle-native.sh --continue :app:testDebugUnitTest --rerun
 fi
 
 step "resumen"
