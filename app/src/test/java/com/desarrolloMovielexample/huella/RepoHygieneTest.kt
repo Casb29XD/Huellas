@@ -26,6 +26,13 @@ class RepoHygieneTest {
     }
 
     @Test
+    fun `item 5 - el moderador del seed no tiene contrasena publicada`() {
+        val seed = file("supabase/seed.sql")
+        assertFalse("seed.sql publica la clave del admin", "admin1234" in seed.lowercase())
+        assertTrue("el admin del seed debe nacer con clave aleatoria", "crypt(encode(gen_random_bytes(" in seed)
+    }
+
+    @Test
     fun `item 16 - cada perfil del seed usa ON CONFLICT DO UPDATE`() {
         val seed = file("supabase/seed.sql")
         val inserts = Regex("INSERT INTO public\\.profiles", RegexOption.IGNORE_CASE).findAll(seed).count()

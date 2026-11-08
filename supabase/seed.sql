@@ -7,8 +7,10 @@
 -- ([db.seed] en supabase/config.toml). En un proyecto real los moderadores se
 -- crean desde el dashboard y se promueven con service_role.
 --
--- Cuentas locales (contraseña = Nombre1234!): admin@huella.app (moderador),
--- laura@ejemplo.com, carlos@ejemplo.com, sofia@ejemplo.com.
+-- Cuentas locales: laura@ejemplo.com, carlos@ejemplo.com, sofia@ejemplo.com (contraseña = Nombre1234!).
+-- admin@huella.app (moderador) nace con una contraseña aleatoria que nadie conoce: para entrar con él,
+-- "Olvidé mi contraseña" (el correo llega a Inbucket/Mailpit del stack local) o fíjala en Studio.
+-- Ningún moderador tiene contraseña publicada en el repo (ítem 5).
 -- Es re-ejecutable: los perfiles usan ON CONFLICT DO UPDATE porque el trigger
 -- on_auth_user_created ya creó la fila al insertar en auth.users.
 -- ============================================================================
@@ -60,7 +62,7 @@ IF v_admin_id IS NULL THEN
     '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'admin@huella.app',
-    crypt('Admin1234!', gen_salt('bf')),
+    crypt(encode(gen_random_bytes(24), 'base64'), gen_salt('bf')),  -- aleatoria: ver cabecera
     NOW(),
     '{"provider":"email","providers":["email"]}',
     '{"name":"Administrador Huella","city":"Medellín"}',
