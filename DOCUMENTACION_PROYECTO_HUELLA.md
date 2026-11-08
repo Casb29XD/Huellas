@@ -46,11 +46,12 @@ En las aplicaciones convencionales de rescate animal o adopción, la interacció
 5. **Moderación:** el RPC `moderate_publication` cambia el estado, notifica al autor y suma puntos; el feed solo
    muestra publicaciones `APROBADA`. La Edge Function `moderate-ai` da una sugerencia opcional (`docs/MODERACION_IA.md`).
 6. **Funciones respaldadas por el servidor:** comentarios y votos (tablas con RLS; un comentario ajeno notifica
-   `NEW_COMMENT` al autor), "Lo he visto" (`report_sighting`, notificación `SIGHTING`), edición (vuelve a revisión) y
+   `NEW_COMMENT` al autor), "Lo he visto" (`report_sighting`, notificación `SIGHTING`), edición desde el asistente (PATCH; vuelve a revisión) y
    eliminación de publicaciones, eliminación de cuenta (`delete_my_account`), cierre de publicación, notificaciones
    de solicitudes y estadísticas del perfil.
 7. **Pendiente:** los tipos `NEW_VOTE` y `BADGE_EARNED` existen en el enum pero ningún proceso los genera; no hay
-   insignias calculadas ni notificaciones push.
+   insignias calculadas ni notificaciones push (Ajustes no muestra interruptores de notificaciones). Cada publicación
+   guarda una sola foto (`image_url`); no hay geolocalización (ni permisos de ubicación ni filtro de distancia).
 
 ---
 
