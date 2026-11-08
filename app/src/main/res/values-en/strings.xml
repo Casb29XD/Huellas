@@ -262,8 +262,8 @@
     <string name="action_publish">Post</string>
     <string name="create_overline">New post · %1$d/3</string>
     <string name="create_what">What would you like to post?</string>
-    <string name="create_photos">Photos</string>
-    <string name="create_photos_left">Up to %1$d · %2$d left</string>
+    <string name="create_photos">Photo</string>
+    <string name="create_photos_hint">One main photo per post</string>
     <string name="create_photo_n">Photo %1$d</string>
     <string name="create_remove_photo">Remove photo</string>
     <string name="create_add_photo">Add</string>
@@ -286,7 +286,7 @@
     <string name="create_date_vet">Event date</string>
     <string name="create_date_lost">Date lost</string>
     <string name="create_date_found">Date found</string>
-    <string name="create_step_1">Category and photos</string>
+    <string name="create_step_1">Category and photo</string>
     <string name="create_step_2">Pet details</string>
     <string name="create_step_3">Description and location</string>
     <string name="error_photo_required">Add at least one photo</string>

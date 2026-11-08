@@ -98,8 +98,8 @@ fun CreatePostScreen(
     onPublished: () -> Unit,
     viewModel: CreatePostViewModel = viewModel(),
 ) {
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        viewModel.addPhotos(uris)
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        viewModel.addPhotos(listOfNotNull(uri))
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -222,7 +222,7 @@ private fun StepCategoryAndPhotos(state: CreatePostUiState, vm: CreatePostViewMo
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.create_photos), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
-            Text(stringResource(R.string.create_photos_left, MAX_PHOTOS, MAX_PHOTOS - state.photos.size), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+            Text(stringResource(R.string.create_photos_hint), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
         }
         val tiles: List<Uri?> = state.photos + if (state.photos.size < MAX_PHOTOS) listOf(null) else emptyList()
         tiles.chunked(3).forEach { row ->
