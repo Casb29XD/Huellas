@@ -211,42 +211,23 @@ object SupabaseRepository : HuellaRepository {
 
         params["error_description"]?.let { error(it) } // p. ej. enlace vencido
 
-        var accessToken = params["access_token"]
-        var refreshToken = params["refresh_token"]
-        var userId: String? = null
-
+        // Ítem 36: solo PKCE. huella:// lo puede registrar otra app; un code interceptado no sirve sin el
+        // code_verifier que guarda esta app, pero un token_hash o un access_token sí darían sesión: se rechazan.
         val code = params["code"]
-        val tokenHash = params["token_hash"] ?: params["token"]
-        if (accessToken.isNullOrBlank() && !code.isNullOrBlank()) {
-            // PKCE (ítems 11 y 36): otra app que intercepte huella://auth no tiene el verifier.
-            val verifier = SupabaseSession.codeVerifier
-                ?: error("Abre el enlace en el mismo teléfono donde lo solicitaste")
-            val session = apiCall { api.exchangeCodeForSession(json {
-                addProperty("auth_code", code)
-                addProperty("code_verifier", verifier)
-            }) }
-            SupabaseSession.saveCodeVerifier(appContext, null)
-            accessToken = session.string("access_token")
-            refreshToken = session.string("refresh_token")
-            userId = session.obj("user")?.string("id")
-        } else if (accessToken.isNullOrBlank() && !tokenHash.isNullOrBlank()) {
-            val verified = apiCall { api.verifyOtp(json {
-                addProperty("type", params["type"] ?: "signup")
-                addProperty("token_hash", tokenHash)
-            }) }
-            accessToken = verified.string("access_token")
-            refreshToken = verified.string("refresh_token")
-            userId = verified.obj("user")?.string("id")
-        }
-
-        if (accessToken.isNullOrBlank()) {
-            error("No se encontraron credenciales de autenticación en el enlace")
-        }
-
-        if (userId.isNullOrBlank()) {
-            val userJson = apiCall { api.getUser("Bearer $accessToken") }
-            userId = userJson.string("id") ?: error("No se pudo obtener el usuario autenticado")
-        }
+        if (code.isNullOrBlank()) error("Este enlace no es válido. Solicita uno nuevo desde la app")
+        val verifier = SupabaseSession.codeVerifier
+            ?: error("Abre el enlace en el mismo teléfono donde lo solicitaste")
+        val session = apiCall { api.exchangeCodeForSession(json {
+            addProperty("auth_code", code)
+            addProperty("code_verifier", verifier)
+        }) }
+        SupabaseSession.saveCodeVerifier(appContext, null)
+        val accessToken = session.string("access_token")
+        if (accessToken.isNullOrBlank()) error("No se encontraron credenciales de autenticación en el enlace")
+        val refreshToken = session.string("refresh_token")
+        val userId = session.obj("user")?.string("id")
+            ?: apiCall { api.getUser("Bearer $accessToken") }.string("id")
+            ?: error("No se pudo obtener el usuario autenticado")
 
         SupabaseSession.save(appContext, accessToken, userId, refreshToken)
 
@@ -314,7 +295,11 @@ object SupabaseRepository : HuellaRepository {
         // y un trigger en auth.users lo copia al perfil cuando se confirma.
         val newEmail = email.trim()
         if (newEmail.isNotBlank() && !newEmail.equals(_currentUser.value?.email, ignoreCase = true)) {
-            apiCall { api.updateAuthUser(json { addProperty("email", newEmail) }) }
+            // PKCE también aquí: el enlace de confirmación vuelve con ?code= (handleAuthCallback solo acepta code).
+            apiCall { api.updateAuthUser(json {
+                addProperty("email", newEmail)
+                addPkceChallenge()
+            }) }
         }
         val profile = apiCall { api.getMyProfile() }.firstOrNull()
             ?: error("No se pudo actualizar el perfil")
