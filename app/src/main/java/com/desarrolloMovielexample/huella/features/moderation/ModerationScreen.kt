@@ -215,7 +215,7 @@ private fun ModerationListItem(item: ModerationItem, onClick: () -> Unit) {
                 .size(96.dp)
                 .clip(RoundedCornerShape(10.dp)),
         ) {
-            PetImage(pub, Modifier.matchParentSize(), showLabel = false)
+            PetImage(pub, Modifier.matchParentSize())
             CategoryChip(pub.category, Modifier.padding(6.dp), small = true)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {

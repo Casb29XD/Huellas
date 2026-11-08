@@ -330,7 +330,7 @@ private fun DetailBody(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(10.dp)
-                        .background(Color.White, HuellaShapes.Tag)
+                        .background(HuellaColors.Surface, HuellaShapes.Tag)
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
@@ -547,7 +547,7 @@ private fun RejectSheetContent(
             Modifier
                 .fillMaxWidth()
                 .clip(HuellaShapes.Card)
-                .background(Color.White)
+                .background(HuellaColors.Surface)
                 .border(1.dp, if (reasonError) HuellaColors.Error else HuellaColors.Divider, HuellaShapes.Card),
         ) {
             REJECT_REASONS.forEachIndexed { i, reason ->
@@ -606,7 +606,7 @@ private fun RadioDot(selected: Boolean) {
 
 private fun Modifier.outlinedWhite(): Modifier = this
     .clip(HuellaShapes.Card)
-    .background(Color.White)
+    .background(HuellaColors.Surface)
     .border(1.dp, HuellaColors.Divider, HuellaShapes.Card)
 
 @Preview(showBackground = true)
