@@ -178,6 +178,19 @@ interface SupabaseApiService {
         @Header("Prefer") prefer: String = "return=minimal",
     ): Response<Unit>
 
+    @PATCH("rest/v1/notifications")
+    suspend fun updateNotification(
+        @Query("id") id: String,
+        @Body body: JsonObject,
+        @Header("Prefer") prefer: String = "return=minimal",
+    ): Response<Unit>
+
+    @DELETE("rest/v1/notifications")
+    suspend fun deleteNotification(
+        @Query("id") id: String,
+        @Header("Prefer") prefer: String = "return=minimal",
+    ): Response<Unit>
+
     @GET("rest/v1/points_history")
     suspend fun getPointsHistory(
         @Query("select") select: String = "*",
