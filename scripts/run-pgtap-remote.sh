@@ -22,6 +22,8 @@ if isinstance(rows, dict):
 lines = [list(r.values())[0] for r in rows]
 bad = [l for l in lines if l.startswith("not ok")]
 print("\n".join(lines))
-print(f"\npgTAP: {sum(1 for l in lines if l.startswith('ok'))} ok, {len(bad)} not ok")
+sub = [l.strip() for l in lines if l.startswith("    ok") or l.startswith("    not ok")]
+print(f"\npgTAP: {sum(1 for l in lines if l.startswith('ok'))} ok, {len(bad)} not ok"
+      f" (aserciones: {sum(1 for l in sub if l.startswith('ok'))}/{len(sub)})")
 sys.exit(1 if bad else 0)
 EOF
