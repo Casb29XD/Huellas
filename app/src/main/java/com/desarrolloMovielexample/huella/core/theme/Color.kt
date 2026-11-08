@@ -23,6 +23,8 @@ object HuellaColors {
     // Brand
     val Primary = Color(0xFF2E7D5B)
     val PrimaryDark get() = pick(Color(0xFF1F5C41), Color(0xFF9ED7B8))
+    /** Primary como color de texto/enlace: en oscuro 2E7D5B daba 3.28:1 sobre Surface (ítem 59). */
+    val PrimaryText get() = pick(Primary, Color(0xFF9ED7B8))
     val PrimaryContainer get() = pick(Color(0xFFDCEBE2), Color(0xFF1F3D2E))   // selected pill / chip bg
     val PrimarySoft get() = pick(Color(0xFFE4F2EA), Color(0xFF1D3A2B))        // "Aprobada", "Vacunado" bg
     val PrimaryTint get() = pick(Color(0xFFF1F5F2), Color(0xFF1E2621))        // stripe light band
@@ -61,6 +63,10 @@ object HuellaColors {
     val Disabled get() = pick(Color(0xFFE3E5DF), Color(0xFF333B36))
     val Scrim = Color(0x8C1F2A24)
 
+    // Veterinaria: fondo suave y texto con contraste AA en ambos temas (ítem 59).
+    val VetSoft get() = pick(Color(0xFFE1F2EE), Color(0xFF14261F))
+    val VetText get() = pick(Color(0xFF177A6A), CatVeterinaria)
+
     // Categories
     val CatAdopcion = Color(0xFF2E7D5B)
     val CatPerdidos = Color(0xFFD64545)
@@ -96,7 +102,7 @@ val Level.color: Color
 val PostStatus.colors: Pair<Color, Color>
     get() = when (this) {
         PostStatus.EN_REVISION -> HuellaColors.WarningContainer to HuellaColors.WarningDark
-        PostStatus.APROBADA -> HuellaColors.PrimarySoft to HuellaColors.Primary
+        PostStatus.APROBADA -> HuellaColors.PrimarySoft to HuellaColors.PrimaryText
         PostStatus.RECHAZADA -> HuellaColors.ErrorContainer to HuellaColors.ErrorDark
     }
 
@@ -104,7 +110,7 @@ val PostStatus.colors: Pair<Color, Color>
 val RequestStatus.colors: Pair<Color, Color>
     get() = when (this) {
         RequestStatus.PENDIENTE -> HuellaColors.WarningContainer to HuellaColors.WarningDark
-        RequestStatus.ACEPTADA -> HuellaColors.PrimarySoft to HuellaColors.Primary
+        RequestStatus.ACEPTADA -> HuellaColors.PrimarySoft to HuellaColors.PrimaryText
         RequestStatus.RECHAZADA -> HuellaColors.ErrorContainer to HuellaColors.ErrorDark
     }
 

@@ -107,7 +107,7 @@ fun LoginScreen(
                 Text(
                     stringResource(R.string.login_forgot),
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                     modifier = Modifier
                         .align(Alignment.End)
                         .minimumInteractiveComponentSize()
@@ -136,7 +136,7 @@ fun LoginScreen(
                 Text(
                     stringResource(R.string.register_title),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                     modifier = Modifier
                         .minimumInteractiveComponentSize()
                         .clickable(onClick = onRegister),

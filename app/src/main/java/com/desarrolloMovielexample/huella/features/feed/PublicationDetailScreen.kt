@@ -100,8 +100,6 @@ import com.desarrolloMovielexample.huella.core.theme.toneColor
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Publication
 
-private val VetSoft = Color(0xFFE1F2EE)
-
 @Composable
 fun PublicationDetailScreen(
     publicationId: String,
@@ -632,14 +630,14 @@ private fun VetInfo(pub: Publication) {
             1 -> TextCell(stringResource(R.string.detail_schedule), pub.schedule.orEmpty(), m)
             2 -> TextCell(stringResource(R.string.detail_place), pub.place ?: pub.neighborhood, m)
             else -> Column(
-                m.clip(RoundedCornerShape(12.dp)).background(VetSoft).padding(12.dp),
+                m.clip(RoundedCornerShape(12.dp)).background(HuellaColors.VetSoft).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text(stringResource(R.string.detail_capacity), style = MaterialTheme.typography.labelSmall, color = HuellaColors.CatVeterinaria)
+                Text(stringResource(R.string.detail_capacity), style = MaterialTheme.typography.labelSmall, color = HuellaColors.VetText)
                 Text(
                     pluralStringResource(R.plurals.capacity_places, pub.capacity ?: 0, pub.capacity ?: 0),
                     style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp),
-                    color = HuellaColors.CatVeterinaria,
+                    color = HuellaColors.VetText,
                 )
             }
         }
@@ -652,13 +650,13 @@ private fun VetInfo(pub: Publication) {
                     Row(
                         Modifier
                             .clip(RoundedCornerShape(10.dp))
-                            .background(VetSoft)
+                            .background(HuellaColors.VetSoft)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Icon(Icons.Outlined.Check, contentDescription = null, tint = HuellaColors.CatVeterinaria, modifier = Modifier.size(16.dp))
-                        Text(optionLabel(s), style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp), color = HuellaColors.CatVeterinaria)
+                        Icon(Icons.Outlined.Check, contentDescription = null, tint = HuellaColors.VetText, modifier = Modifier.size(16.dp))
+                        Text(optionLabel(s), style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp), color = HuellaColors.VetText)
                     }
                 }
             }
@@ -688,7 +686,7 @@ private fun AuthorCard(pub: Publication, onOpenAuthor: (String) -> Unit) {
         Text(
             stringResource(R.string.view_profile),
             style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
-            color = HuellaColors.Primary,
+            color = HuellaColors.PrimaryText,
             modifier = Modifier
                 .minimumInteractiveComponentSize()
                 .clip(RoundedCornerShape(8.dp))
@@ -807,7 +805,7 @@ private fun CallDialog(name: String, phone: String, onDismiss: () -> Unit, onCal
                 Text(
                     stringResource(R.string.action_cancel),
                     style = Medium14,
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
                         .clickable(onClick = onDismiss)

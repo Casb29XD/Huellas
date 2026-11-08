@@ -396,7 +396,7 @@ private fun AiSuggestionCard(review: AiReview?, loading: Boolean, message: UiTex
                     Text(
                         stringResource(if (review == null) R.string.moderation_ai_analyze else R.string.moderation_ai_again),
                         style = MaterialTheme.typography.labelLarge,
-                        color = HuellaColors.Primary,
+                        color = HuellaColors.PrimaryText,
                     )
                 }
             }
@@ -450,7 +450,7 @@ private fun ReportRow(report: Report, resolving: Boolean, onResolve: () -> Unit)
                     if (resolving) {
                         CircularProgressIndicator(Modifier.size(16.dp), color = HuellaColors.Primary, strokeWidth = 2.dp)
                     } else {
-                        Text(stringResource(R.string.moderation_resolve_report), style = MaterialTheme.typography.labelLarge, color = HuellaColors.Primary)
+                        Text(stringResource(R.string.moderation_resolve_report), style = MaterialTheme.typography.labelLarge, color = HuellaColors.PrimaryText)
                     }
                 }
             }

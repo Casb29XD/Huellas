@@ -144,6 +144,6 @@ private fun BadgeChip(badge: Badge) {
             else -> Icons.Outlined.EmojiEvents
         }
         Icon(icon, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(16.dp))
-        Text(stringResource(badge.labelRes), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), color = HuellaColors.Primary)
+        Text(stringResource(badge.labelRes), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), color = HuellaColors.PrimaryText)
     }
 }

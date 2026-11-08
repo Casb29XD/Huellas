@@ -306,7 +306,7 @@ private fun AddPhotoTile(onClick: () -> Unit, modifier: Modifier) {
         verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
     ) {
         Icon(Icons.Outlined.AddAPhoto, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(28.dp))
-        Text(stringResource(R.string.create_add_photo), style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
+        Text(stringResource(R.string.create_add_photo), style = MaterialTheme.typography.labelMedium, color = HuellaColors.PrimaryText)
     }
 }
 
@@ -470,7 +470,7 @@ private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostV
                 withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(noSale) }
             },
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 19.5.sp),
-            color = Color(0xFF5C3D00),
+            color = HuellaColors.WarningDark, // 5C3D00 fijo era ilegible sobre WarningContainer oscuro (1.31:1)
         )
     }
 }

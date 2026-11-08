@@ -93,7 +93,7 @@ fun LevelsScreen(
                             Text(
                                 stringResource(R.string.points_plus, action.points),
                                 style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
-                                color = HuellaColors.Primary,
+                                color = HuellaColors.PrimaryText,
                                 modifier = Modifier
                                     .background(HuellaColors.PrimarySoft, RoundedCornerShape(8.dp))
                                     .padding(horizontal = 10.dp, vertical = 4.dp),
