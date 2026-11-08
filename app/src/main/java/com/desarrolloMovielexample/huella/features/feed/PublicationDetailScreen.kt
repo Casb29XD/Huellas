@@ -44,6 +44,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
@@ -59,6 +60,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -475,7 +478,8 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(HuellaColors.Surface.copy(alpha = 0.9f))
-                    .clickable(onClick = onShare),
+                    .clickable(onClick = onShare)
+                    .semantics { contentDescription = "Compartir" },
                 contentAlignment = Alignment.Center,
             ) {
                 HuellaIcon(R.drawable.icon_accion_compartir, tint = HuellaColors.TextPrimary, size = 29.dp)
@@ -671,6 +675,7 @@ private fun AuthorCard(pub: Publication, onOpenAuthor: (String) -> Unit) {
             style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
             color = HuellaColors.Primary,
             modifier = Modifier
+                .minimumInteractiveComponentSize()
                 .clip(RoundedCornerShape(8.dp))
                 .clickable { onOpenAuthor(author.userId) }
                 .padding(horizontal = 4.dp, vertical = 8.dp),
@@ -720,7 +725,8 @@ private fun ActionBar(
                     .size(48.dp)
                     .clip(CircleShape)
                     .border(1.dp, HuellaColors.Outline, CircleShape)
-                    .clickable(onClick = onReport),
+                    .clickable(onClick = onReport)
+                    .semantics { contentDescription = "Reportar publicación" },
                 contentAlignment = Alignment.Center,
             ) {
                 HuellaIcon(R.drawable.icon_accion_reportar, tint = HuellaColors.TextSecondary, size = 29.dp)

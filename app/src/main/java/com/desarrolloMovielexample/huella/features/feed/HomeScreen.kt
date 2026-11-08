@@ -56,6 +56,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -197,7 +199,12 @@ private fun FeedList(
                     }
                 }
                 Spacer(Modifier.size(4.dp))
-                Avatar(state.userInitials, state.userLevel, Modifier.clickable(onClick = onOpenProfile), size = 40.dp)
+                Avatar(
+                    state.userInitials,
+                    state.userLevel,
+                    Modifier.clickable(onClick = onOpenProfile).semantics { contentDescription = "Mi perfil" },
+                    size = 40.dp,
+                )
             }
         }
         item {
@@ -218,7 +225,8 @@ private fun FeedList(
                         .clip(CircleShape)
                         .background(HuellaColors.Surface)
                         .border(1.dp, HuellaColors.OutlineVariant, CircleShape)
-                        .clickable(onClick = onOpenMap),
+                        .clickable(onClick = onOpenMap)
+                        .semantics { contentDescription = "Ver mapa" },
                     contentAlignment = Alignment.Center,
                 ) {
                     HuellaIcon(R.drawable.icon_accion_mapa, tint = HuellaColors.Primary, size = 29.dp)
@@ -372,6 +380,7 @@ private fun SearchField(
                 Modifier
                     .clip(CircleShape)
                     .clickable(onClick = onOpenFilters)
+                    .semantics { contentDescription = "Filtros" }
                     .padding(6.dp),
             ) {
                 HuellaIcon(R.drawable.icon_accion_filtros, tint = HuellaColors.Primary, size = 29.dp)
