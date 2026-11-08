@@ -5,6 +5,8 @@
 #      scripts/apply-migrations-remote.sh --mark 20261101000000 20261103000000   (marca como aplicadas sin ejecutar)
 # Requiere SUPABASE_ACCESS_TOKEN y SUPABASE_PROJECT_REF (source C:\temp\huellas-audit\.env.remote).
 set -euo pipefail
+# Python en Windows lee stdin/argv en cp1252: sin esto el SQL con tildes llega con mojibake ("BogotÃ¡").
+export PYTHONUTF8=1
 cd "$(dirname "$0")/.."
 SQL=scripts/supabase-remote-sql.sh
 esc() { python -c 'import sys;print(sys.stdin.read().replace("\x27","\x27\x27"))' <<<"$1"; }
