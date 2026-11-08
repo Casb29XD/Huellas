@@ -76,10 +76,12 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
+import com.desarrolloMovielexample.huella.data.remote.AiReview
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.Report
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val DisabledReject = Color(0xFFE6B9B9)
 
@@ -161,7 +163,9 @@ fun ModerationDetailScreen(
                         )
                         CategoryChip(item.publication.category, Modifier.padding(10.dp))
                     }
-                    DetailBody(item, state.resolvingReportId, viewModel::resolveReport)
+                    DetailBody(item, state.resolvingReportId, viewModel::resolveReport) {
+                        AiSuggestionCard(state.aiReview, state.aiLoading, state.aiMessage, viewModel::analyzeWithAi)
+                    }
                 }
             }
         }
@@ -231,7 +235,12 @@ private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DetailBody(item: ModerationItem, resolvingReportId: String?, onResolve: (Report) -> Unit) {
+private fun DetailBody(
+    item: ModerationItem,
+    resolvingReportId: String?,
+    onResolve: (Report) -> Unit,
+    aiCard: @Composable () -> Unit,
+) {
     val pub = item.publication
     Column(
         Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
@@ -257,6 +266,8 @@ private fun DetailBody(item: ModerationItem, resolvingReportId: String?, onResol
                 .outlinedWhite()
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         )
+
+        aiCard()
 
         Section("Historial del autor") {
             Row(
@@ -322,6 +333,69 @@ private fun DetailBody(item: ModerationItem, resolvingReportId: String?, onResol
                         .background(Color.White, HuellaShapes.Tag)
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
+            }
+        }
+    }
+}
+
+/** Tarjeta "Sugerencia de IA": solo informa; la decisión sigue siendo del moderador. */
+@Composable
+private fun AiSuggestionCard(review: AiReview?, loading: Boolean, message: String?, onAnalyze: () -> Unit) {
+    Section("Sugerencia de IA") {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .outlinedWhite()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (review != null) {
+                val (label, color) = when (review.verdict) {
+                    "APROBAR" -> "Sugiere aprobar" to HuellaColors.Primary
+                    "RECHAZAR" -> "Sugiere rechazar" to HuellaColors.ErrorDark
+                    else -> "Sugiere revisar con cuidado" to HuellaColors.WarningDark
+                }
+                Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = color)
+                Text(
+                    "Riesgo: ${(review.risk * 100).roundToInt()} %",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HuellaColors.TextSecondary,
+                )
+                review.reasons.forEach { reason ->
+                    Text("• $reason", style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextBody)
+                }
+                if (review.verdict == "RECHAZAR" && !review.suggestedReason.isNullOrBlank()) {
+                    Text(
+                        "Motivo sugerido: ${review.suggestedReason}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HuellaColors.TextSecondary,
+                    )
+                }
+                Text(
+                    "Es solo una sugerencia: la decisión es tuya.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = HuellaColors.TextTertiary,
+                )
+            } else {
+                Text(
+                    "Pide a la IA una segunda opinión sobre esta publicación.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HuellaColors.TextSecondary,
+                )
+            }
+            if (message != null) {
+                Text(message, style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+            }
+            TextButton(onClick = onAnalyze, enabled = !loading, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                if (loading) {
+                    CircularProgressIndicator(Modifier.size(16.dp), color = HuellaColors.Primary, strokeWidth = 2.dp)
+                } else {
+                    Text(
+                        if (review == null) "Analizar con IA" else "Analizar de nuevo",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = HuellaColors.Primary,
+                    )
+                }
             }
         }
     }

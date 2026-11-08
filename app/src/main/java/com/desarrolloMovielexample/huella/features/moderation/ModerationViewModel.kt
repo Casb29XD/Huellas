@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.ModerationStats
 import com.desarrolloMovielexample.huella.domain.model.Report
+import com.desarrolloMovielexample.huella.data.remote.AiReview
+import com.desarrolloMovielexample.huella.data.remote.ModerationAiClient
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
@@ -87,6 +89,8 @@ class ModerationViewModel(private val repo: HuellaRepository = SupabaseRepositor
 
 val REJECT_REASONS = listOf("Venta de animales", "Contenido falso", "Fotos inadecuadas", "Duplicado", "Otro")
 
+const val AI_NOT_CONFIGURED = "La moderación con IA no está configurada (DEEPSEEK_API_KEY)"
+
 data class ModerationDetailUiState(
     val item: ModerationItem? = null,
     val loaded: Boolean = false,
@@ -99,12 +103,18 @@ data class ModerationDetailUiState(
     val isApproving: Boolean = false,
     val isRejecting: Boolean = false,
     val resolvingReportId: String? = null,
+    val aiReview: AiReview? = null,
+    val aiLoading: Boolean = false,
+    val aiMessage: String? = null,
     val finished: Boolean = false,
 ) {
     val busy: Boolean get() = isApproving || isRejecting || finished
 }
 
-class ModerationDetailViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
+class ModerationDetailViewModel(
+    private val repo: HuellaRepository = SupabaseRepository,
+    private val analyzeAi: suspend (String) -> AiReview? = ModerationAiClient::analyze,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(ModerationDetailUiState())
     val uiState: StateFlow<ModerationDetailUiState> = _uiState.asStateFlow()
 
@@ -149,9 +159,42 @@ class ModerationDetailViewModel(private val repo: HuellaRepository = SupabaseRep
         }
     }
 
+    /** La IA solo sugiere: nunca aprueba ni rechaza por sí misma. */
+    fun analyzeWithAi() {
+        val item = _uiState.value.item ?: return
+        if (_uiState.value.aiLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(aiLoading = true, aiMessage = null) }
+            val result = try {
+                Result.success(analyzeAi(item.id))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+            _uiState.update { state ->
+                result.fold(
+                    onSuccess = { review ->
+                        state.copy(aiLoading = false, aiReview = review, aiMessage = if (review == null) AI_NOT_CONFIGURED else null)
+                    },
+                    onFailure = { e ->
+                        state.copy(aiLoading = false, aiMessage = e.message ?: "No pudimos analizar con IA")
+                    },
+                )
+            }
+        }
+    }
+
     fun openRejectSheet() {
         if (_uiState.value.busy) return
-        _uiState.update { it.copy(showRejectSheet = true) }
+        _uiState.update { state ->
+            val ai = state.aiReview
+            // Si la IA sugiere rechazar, preselecciona su motivo (el moderador puede cambiarlo).
+            val suggested = if (state.rejectReason == null && ai?.verdict == "RECHAZAR") {
+                REJECT_REASONS.firstOrNull { it.equals(ai.suggestedReason?.trim(), ignoreCase = true) }
+            } else {
+                null
+            }
+            state.copy(showRejectSheet = true, rejectReason = suggested ?: state.rejectReason)
+        }
     }
 
     fun closeRejectSheet() {
