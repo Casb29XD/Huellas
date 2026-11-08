@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -37,6 +38,7 @@ import com.desarrolloMovielexample.huella.features.createpost.PostSentScreen
 import com.desarrolloMovielexample.huella.features.feed.HomeScreen
 import com.desarrolloMovielexample.huella.features.feed.MapScreen
 import com.desarrolloMovielexample.huella.features.feed.PublicationDetailScreen
+import com.desarrolloMovielexample.huella.features.legal.TermsScreen
 import com.desarrolloMovielexample.huella.features.moderation.ModerationDetailScreen
 import com.desarrolloMovielexample.huella.features.moderation.ModerationScreen
 import com.desarrolloMovielexample.huella.features.profile.EditProfileScreen
@@ -182,6 +184,7 @@ fun AppNavigation(
                 RegisterScreen(
                     onBack = { navController.popBackStack() },
                     onRegistered = { navController.navigateClearingStack(Routes.Home) },
+                    onOpenTerms = { navController.navigate(Routes.Terms) },
                 )
             }
             composable<Routes.ForgotPassword> {
@@ -299,6 +302,7 @@ fun AppNavigation(
                 )
             }
             composable<Routes.Settings> {
+                val user by SupabaseRepository.currentUser.collectAsStateWithLifecycle()
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onEditProfile = { navController.navigate(Routes.EditProfile) },
@@ -307,6 +311,8 @@ fun AppNavigation(
                         navController.navigate(if (signedIn) Routes.SetPassword else Routes.ForgotPassword)
                     },
                     onLoggedOut = { navController.navigateClearingStack(Routes.Login) },
+                    user = user,
+                    onOpenTerms = { navController.navigate(Routes.Terms) },
                 )
             }
 
@@ -326,9 +332,8 @@ fun AppNavigation(
                 )
             }
 
-            // F4: Terms
             composable<Routes.Terms> {
-                com.desarrolloMovielexample.huella.features.legal.TermsScreen(onBack = { navController.popBackStack() })
+                TermsScreen(onBack = { navController.popBackStack() })
             }
         }
     }
