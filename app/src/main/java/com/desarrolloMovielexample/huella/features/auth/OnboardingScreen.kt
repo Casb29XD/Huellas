@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.features.auth
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
@@ -24,7 +25,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,23 +44,23 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import kotlinx.coroutines.launch
 
-private data class OnboardingPage(@DrawableRes val illustration: Int, val title: String, val text: String)
+private data class OnboardingPage(@DrawableRes val illustration: Int, @StringRes val title: Int, @StringRes val text: Int)
 
 private val pages = listOf(
     OnboardingPage(
         R.drawable.illus_animal,
-        "Adopta, no compres",
-        "Miles de perros y gatos en Colombia esperan una familia. Encuéntralos cerca de ti.",
+        R.string.onboarding_1_title,
+        R.string.onboarding_1_text,
     ),
     OnboardingPage(
         R.drawable.illus_location,
-        "Ayuda a mascotas perdidas a volver a casa",
-        "Publica avistamientos, revisa el mapa y contacta a la familia en minutos.",
+        R.string.onboarding_2_title,
+        R.string.onboarding_2_text,
     ),
     OnboardingPage(
         R.drawable.illus_cool_guy,
-        "Sube de nivel ayudando",
-        "Cada adopción, hogar temporal o reporte suma puntos. De Amigo Animal a Héroe de las Mascotas.",
+        R.string.onboarding_3_title,
+        R.string.onboarding_3_text,
     ),
 )
 
@@ -93,7 +95,7 @@ fun OnboardingScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "Omitir",
+                    stringResource(R.string.onboarding_skip),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
                     color = HuellaColors.Primary,
                 )
@@ -116,13 +118,13 @@ fun OnboardingScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        page.title,
+                        stringResource(page.title),
                         style = MaterialTheme.typography.titleLarge.copy(lineHeight = 28.6.sp),
                         color = HuellaColors.TextPrimary,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        page.text,
+                        stringResource(page.text),
                         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
                         color = HuellaColors.TextSecondary,
                         textAlign = TextAlign.Center,
@@ -152,7 +154,7 @@ fun OnboardingScreen(
             }
             Spacer(Modifier.height(28.dp))
             PrimaryButton(
-                text = if (isLast) "Comenzar" else "Siguiente",
+                text = stringResource(if (isLast) R.string.onboarding_start else R.string.onboarding_next),
                 onClick = {
                     if (isLast) onFinish() else scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
                 },

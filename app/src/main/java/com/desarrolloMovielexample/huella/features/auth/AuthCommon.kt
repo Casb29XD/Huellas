@@ -15,26 +15,30 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /** Shows every one-shot message from a ViewModel in the screen's snackbar (newest replaces the current one). */
 @Composable
-internal fun CollectSnackbarMessages(messages: Flow<String>, hostState: SnackbarHostState) {
+internal fun CollectSnackbarMessages(messages: Flow<UiText>, hostState: SnackbarHostState) {
+    val resources = LocalContext.current.resources
     LaunchedEffect(messages) {
         messages.collect { message ->
             hostState.currentSnackbarData?.dismiss()
-            launch { hostState.showSnackbar(message) }
+            launch { hostState.showSnackbar(message.resolve(resources)) }
         }
     }
 }
@@ -45,7 +49,7 @@ internal fun AuthHeader(title: String, subtitle: String, modifier: Modifier = Mo
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Image(
             painter = painterResource(R.drawable.logo_huella),
-            contentDescription = "Huella",
+            contentDescription = stringResource(R.string.app_name),
             modifier = Modifier
                 .width(120.dp)
                 .aspectRatio(280f / 240f),
@@ -68,7 +72,7 @@ internal fun AuthHeader(title: String, subtitle: String, modifier: Modifier = Mo
 internal fun PasswordVisibilityToggle(visible: Boolean, onToggle: () -> Unit) {
     Icon(
         imageVector = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-        contentDescription = if (visible) "Ocultar contraseña" else "Mostrar contraseña",
+        contentDescription = stringResource(if (visible) R.string.password_hide else R.string.password_show),
         tint = HuellaColors.TextSecondary,
         modifier = Modifier
             .size(22.dp)

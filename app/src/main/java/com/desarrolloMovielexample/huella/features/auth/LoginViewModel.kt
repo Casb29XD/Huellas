@@ -2,7 +2,11 @@ package com.desarrolloMovielexample.huella.features.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.utils.isValidEmail
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
@@ -18,8 +22,8 @@ data class LoginUiState(
     val email: String = "",
     val password: String = "",
     val passwordVisible: Boolean = false,
-    val emailError: String? = null,
-    val passwordError: String? = null,
+    val emailError: UiText? = null,
+    val passwordError: UiText? = null,
     val isLoading: Boolean = false,
     val loggedIn: Boolean = false,
 )
@@ -28,38 +32,38 @@ class LoginViewModel(private val repo: HuellaRepository = SupabaseRepository) : 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, emailError = null) }
     fun onPasswordChange(value: String) = _uiState.update { it.copy(password = value, passwordError = null) }
     fun togglePasswordVisibility() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
-    fun onGoogleClick() { _messages.trySend("Próximamente") }
+    fun onGoogleClick() { _messages.trySend(uiText(R.string.msg_coming_soon)) }
 
     fun login() {
         val s = _uiState.value
         if (s.isLoading) return
         val emailError = when {
-            s.email.isBlank() -> "El correo electrónico es obligatorio"
-            !isValidEmail(s.email) -> "Ingresa un correo electrónico válido (ej. usuario@correo.com)"
+            s.email.isBlank() -> uiText(R.string.error_email_required)
+            !isValidEmail(s.email) -> uiText(R.string.error_email_invalid_example)
             else -> null
         }
-        val passwordError = if (s.password.isEmpty()) "La contraseña es obligatoria" else null
+        val passwordError = if (s.password.isEmpty()) uiText(R.string.error_password_required) else null
         if (emailError != null || passwordError != null) {
             _uiState.update { it.copy(emailError = emailError, passwordError = passwordError) }
-            _messages.trySend("Revisa los datos ingresados en el formulario")
+            _messages.trySend(uiText(R.string.msg_check_form))
             return
         }
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             repo.login(s.email.trim(), s.password)
                 .onSuccess { user ->
-                    _messages.trySend("¡Hola, ${user.name.substringBefore(' ')}!")
+                    _messages.trySend(uiText(R.string.msg_hello, user.name.substringBefore(' ')))
                     _uiState.update { it.copy(isLoading = false, loggedIn = true) }
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _messages.trySend(e.message ?: "No pudimos iniciar sesión")
+                    _messages.trySend(e.toUiText(R.string.error_login))
                 }
         }
     }

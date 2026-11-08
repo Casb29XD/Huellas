@@ -13,10 +13,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,11 +35,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextField
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
+import com.desarrolloMovielexample.huella.core.utils.asString
 import kotlinx.coroutines.flow.filter
 
 @Composable
@@ -73,14 +76,14 @@ fun LoginScreen(
                 .padding(start = 24.dp, end = 24.dp, top = 36.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            AuthHeader("Bienvenido de nuevo", "Ingresa para seguir ayudando")
+            AuthHeader(stringResource(R.string.login_title), stringResource(R.string.login_subtitle))
 
             HuellaTextField(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
-                label = "Correo",
-                placeholder = "mariana@correo.com",
-                error = state.emailError,
+                label = stringResource(R.string.field_email),
+                placeholder = stringResource(R.string.field_email_placeholder),
+                error = state.emailError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -89,9 +92,9 @@ fun LoginScreen(
                 HuellaTextField(
                     value = state.password,
                     onValueChange = viewModel::onPasswordChange,
-                    label = "Contraseña",
-                    placeholder = "Tu contraseña",
-                    error = state.passwordError,
+                    label = stringResource(R.string.field_password),
+                    placeholder = stringResource(R.string.field_password_placeholder),
+                    error = state.passwordError?.asString(),
                     visualTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
@@ -102,7 +105,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    "Olvidé mi contraseña",
+                    stringResource(R.string.login_forgot),
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
                     color = HuellaColors.Primary,
                     modifier = Modifier
@@ -113,7 +116,7 @@ fun LoginScreen(
             }
 
             PrimaryButton(
-                text = "Ingresar",
+                text = stringResource(R.string.login_submit),
                 onClick = {
                     focusManager.clearFocus()
                     viewModel.login()
@@ -129,9 +132,9 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("¿No tienes cuenta? ", style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
+                Text(stringResource(R.string.login_no_account), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
                 Text(
-                    "Crear cuenta",
+                    stringResource(R.string.register_title),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = HuellaColors.Primary,
                     modifier = Modifier
