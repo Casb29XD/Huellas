@@ -7,6 +7,7 @@ import com.desarrolloMovielexample.huella.domain.model.*
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -109,7 +110,7 @@ object SupabaseRepository : HuellaRepository {
                 refreshAll()
             }
         } else {
-            scope.launch { refreshFeed() }
+            scope.launch { quietly { refreshFeed() } }
         }
     }
 
@@ -129,7 +130,7 @@ object SupabaseRepository : HuellaRepository {
             ?: error("No encontramos el perfil asociado a esta cuenta")
         val user = profile.toUser()
         _currentUser.value = user
-        refreshAll()
+        scope.launch { refreshAll() }
         user
     }
 
@@ -156,7 +157,7 @@ object SupabaseRepository : HuellaRepository {
             ?: error("La cuenta se creó, pero aún no aparece su perfil")
         val user = profile.toUser()
         _currentUser.value = user
-        refreshAll()
+        scope.launch { refreshAll() }
         user
     }
 
@@ -213,7 +214,7 @@ object SupabaseRepository : HuellaRepository {
             initials = "UH",
         )
         _currentUser.value = user
-        refreshAll()
+        scope.launch { refreshAll() }
         user
     }
 
@@ -279,9 +280,8 @@ object SupabaseRepository : HuellaRepository {
         }
         val created = apiCall { api.createPublication(body) }.firstOrNull()
             ?: error("Supabase no devolvió la publicación creada")
-        refreshAll()
         created.toPublication()
-    }
+    }.onSuccess { quietly { refreshMyPublications() } }
 
     override suspend fun reportPublication(publicationId: String, reason: String, detail: String): Result<Unit> = result {
         val reporterId = requireUserId()
@@ -301,17 +301,15 @@ object SupabaseRepository : HuellaRepository {
             addProperty("applicant_id", applicantId)
             addProperty("message", message.trim())
         }) }
-        refreshRequests()
         Unit
-    }
+    }.onSuccess { quietly { refreshRequests() } }
 
     override suspend fun respondToRequest(applicantId: String, accept: Boolean): Result<Unit> = result {
         apiCall { api.updateAdoptionRequest("eq.$applicantId", json {
             addProperty("status", if (accept) RequestStatus.ACEPTADA.name else RequestStatus.RECHAZADA.name)
         }) }
-        refreshRequests()
         Unit
-    }
+    }.onSuccess { quietly { refreshRequests() } }
 
     override suspend fun closePublication(publicationId: String): Result<Unit> =
         Result.failure(IllegalStateException("El esquema de Supabase no incluye un estado para cerrar una publicación sin borrarla"))
@@ -359,9 +357,9 @@ object SupabaseRepository : HuellaRepository {
             addProperty("sender_id", senderId)
             addProperty("text", text.trim())
         }) }
-        messageFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }.value =
-            fetchMessages(conversationId)
         Unit
+    }.onSuccess {
+        quietly { messageFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }.value = fetchMessages(conversationId) }
     }
 
 
@@ -472,18 +470,31 @@ object SupabaseRepository : HuellaRepository {
                 addProperty("p_comment", comment)
             })
         }
-        refreshAll()
         Unit
+    }.onSuccess {
+        quietly { refreshModeration() }
+        quietly { refreshFeed() }
     }
 
+    /** Recarga todo lo visible; cada parte falla por separado sin tumbar a las demás. */
     private suspend fun refreshAll() {
-        refreshFeed()
-        refreshPointsHistory()
-        refreshMyPublications()
-        refreshRequests()
-        refreshNotifications()
-        refreshConversations()
-        refreshModeration()
+        quietly { refreshFeed() }
+        quietly { refreshPointsHistory() }
+        quietly { refreshMyPublications() }
+        quietly { refreshRequests() }
+        quietly { refreshNotifications() }
+        quietly { refreshConversations() }
+        if (_currentUser.value?.isModerator == true) quietly { refreshModeration() }
+    }
+
+    /** Refrescos después de una escritura: si fallan, la escritura sigue siendo un éxito (ítem 27). */
+    private suspend fun quietly(block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
     }
 
     private suspend fun refreshFeed() {
