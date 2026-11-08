@@ -76,3 +76,20 @@ BEGIN
         'storage_purge_failures no es accesible para clientes');
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION tests.test_47_triggers_sin_execute() RETURNS SETOF TEXT
+LANGUAGE plpgsql AS $$
+BEGIN
+    RETURN NEXT is((SELECT string_agg(DISTINCT rp.routine_name::text || ':' || rp.grantee::text, ', ')
+                      FROM information_schema.routine_privileges rp
+                      JOIN pg_proc p ON rp.specific_name = p.proname || '_' || p.oid
+                     WHERE rp.routine_schema = 'public' AND rp.privilege_type = 'EXECUTE'
+                       AND rp.grantee IN ('PUBLIC', 'anon', 'authenticated')
+                       AND p.prosecdef AND p.prorettype = 'trigger'::regtype),
+        NULL, 'ninguna función de trigger SECURITY DEFINER de public es ejecutable por PUBLIC, anon o authenticated');
+    RETURN NEXT is((SELECT count(*)::int FROM information_schema.routines
+                     WHERE routine_schema = 'public'
+                       AND routine_name IN ('handle_new_user', 'sync_profile_email', 'delete_publication_images')), 3,
+        'handle_new_user, sync_profile_email y delete_publication_images existen (el chequeo no es vacuo)');
+END;
+$$;
