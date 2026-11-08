@@ -56,9 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,7 +81,6 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Category
-import com.desarrolloMovielexample.huella.domain.repository.randomPhotoUrl
 
 /** Photo tile tones from the design (#D8E8DD, #E8DAD6, #D8E0EC, #E4DCEC, #EEE3D2). */
 private val PhotoTones = listOf(Color(0xFFD8E8DD), Color(0xFFE8DAD6), Color(0xFFD8E0EC), Color(0xFFE4DCEC), Color(0xFFEEE3D2))
@@ -269,15 +266,6 @@ private fun PhotoTile(seed: Uri, index: Int, onRemove: () -> Unit, modifier: Mod
         ) {
             Icon(Icons.Outlined.Close, contentDescription = "Quitar foto", tint = Color.White, modifier = Modifier.size(14.dp))
         }
-        Text(
-            "foto ${index + 1}",
-            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = HuellaColors.TextSecondary),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(6.dp)
-                .background(Color.White.copy(alpha = 0.75f), RoundedCornerShape(3.dp))
-                .padding(horizontal = 5.dp, vertical = 1.dp),
-        )
     }
 }
 

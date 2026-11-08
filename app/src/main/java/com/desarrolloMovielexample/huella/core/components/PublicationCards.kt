@@ -184,7 +184,7 @@ fun PublicationRowCard(
                 .size(96.dp)
                 .clip(RoundedCornerShape(10.dp)),
         ) {
-            PetImage(publication, Modifier.matchParentSize(), showLabel = false, showPhoto = showPhoto)
+            PetImage(publication, Modifier.matchParentSize(), showPhoto = showPhoto)
             CategoryChip(publication.category, Modifier.padding(6.dp), small = true)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
