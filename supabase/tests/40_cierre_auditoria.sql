@@ -90,3 +90,86 @@ BEGIN
         'Bogotá', 'la ciudad por defecto del alta es "Bogotá"');
 END;
 $$;
+
+-- ¿Se borró la foto? Sin Vault, purge_pet_images borra la fila; con Vault, encola el DELETE a la Storage API
+-- (fila + binario) y la fila sigue hasta que pg_net lo envía tras el COMMIT.
+CREATE OR REPLACE FUNCTION tests.tap_image_purged(p_name TEXT) RETURNS BOOLEAN
+LANGUAGE sql AS $$
+    SELECT NOT EXISTS (SELECT 1 FROM storage.objects WHERE bucket_id = 'pet-images' AND name = p_name)
+        OR EXISTS (SELECT 1 FROM net.http_request_queue
+                    WHERE method = 'DELETE' AND url LIKE '%/storage/v1/object/pet-images'
+                      AND convert_from(body, 'UTF8')::jsonb -> 'prefixes' ? p_name);
+$$;
+
+-- Vault de prueba dentro de la transacción del test (runtests la revierte; pg_net no envía nada).
+CREATE OR REPLACE FUNCTION tests.tap_vault() RETURNS VOID
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'huellas_project_url') THEN
+        PERFORM vault.create_secret('https://tap.invalid', 'huellas_project_url');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'huellas_service_role_key') THEN
+        PERFORM vault.create_secret('tap-key', 'huellas_service_role_key');
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION tests.test_43_storage_por_api() RETURNS SETOF TEXT
+LANGUAGE plpgsql AS $$
+DECLARE
+    a UUID := tests.tap_user('{"name":"tap A"}');
+    b UUID := tests.tap_user('{"name":"tap B"}');
+    p UUID := gen_random_uuid();
+    q_before BIGINT;
+BEGIN
+    -- (c) anon ya no lista el bucket; cada usuario ve solo su carpeta.
+    INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-images', a || '/tap.jpg'), ('pet-images', a || '/tap_queda.jpg');
+    PERFORM tests.tap_as(NULL);
+    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'pet-images'), 0, 'anon no lista pet-images');
+    PERFORM tests.tap_as(b);
+    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE name LIKE a || '/%'), 0, 'otro usuario no lista la carpeta ajena');
+    PERFORM tests.tap_as(a);
+    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE name LIKE a || '/%'), 2, 'el dueño lista su carpeta');
+    RESET ROLE;
+
+    -- (a) Con Vault: borrar la publicación pide a la Storage API borrar el archivo (no la fila por SQL).
+    PERFORM tests.tap_vault();
+    INSERT INTO public.publications (id, author_id, title, species, breed, size, city, description, status, image_url)
+    VALUES (p, a, 'tap', 'Perro', 'Criollo', 'Mediano', 'Medellín', 'tap', 'APROBADA',
+            'https://tap.supabase.co/storage/v1/object/public/pet-images/' || a || '/tap.jpg');
+    PERFORM tests.tap_as(a);
+    DELETE FROM public.publications WHERE id = p;
+    RESET ROLE;
+    RETURN NEXT ok(EXISTS (SELECT 1 FROM net.http_request_queue
+                            WHERE method = 'DELETE' AND url LIKE '%/storage/v1/object/pet-images'
+                              AND convert_from(body, 'UTF8')::jsonb -> 'prefixes' = jsonb_build_array(a || '/tap.jpg')
+                              AND headers ->> 'Authorization' LIKE 'Bearer %'),
+        'borrar la publicación encola DELETE /storage/v1/object/pet-images con la foto');
+    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE name = a || '/tap.jpg'), 1,
+        'la fila no se borra por SQL: la Storage API borra fila y binario');
+
+    -- delete_my_account encola el borrado de toda la carpeta.
+    INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-images', b || '/1.jpg'), ('pet-images', b || '/2.png');
+    PERFORM tests.tap_as(b);
+    PERFORM public.delete_my_account();
+    RESET ROLE;
+    RETURN NEXT ok(EXISTS (SELECT 1 FROM net.http_request_queue
+                            WHERE method = 'DELETE' AND url LIKE '%/storage/v1/object/pet-images'
+                              AND convert_from(body, 'UTF8')::jsonb -> 'prefixes' @> jsonb_build_array(b || '/1.jpg', b || '/2.png')),
+        'delete_my_account encola el borrado de su carpeta por la Storage API');
+
+    -- (b) Cada subida en pet-images se manda a verify-image (magic bytes).
+    SELECT count(*) INTO q_before FROM net.http_request_queue WHERE url LIKE '%/functions/v1/verify-image';
+    PERFORM tests.tap_as(a);
+    INSERT INTO storage.objects (bucket_id, name) VALUES ('pet-images', a || '/nueva.jpg');
+    RESET ROLE;
+    RETURN NEXT ok(EXISTS (SELECT 1 FROM net.http_request_queue
+                            WHERE method = 'POST' AND url LIKE '%/functions/v1/verify-image'
+                              AND convert_from(body, 'UTF8')::jsonb ->> 'name' = a || '/nueva.jpg'),
+        'una subida a pet-images llama a verify-image');
+    INSERT INTO storage.buckets (id, name) VALUES ('tap-otro', 'tap-otro');
+    INSERT INTO storage.objects (bucket_id, name) VALUES ('tap-otro', a || '/x.jpg');
+    RETURN NEXT is((SELECT count(*) FROM net.http_request_queue WHERE url LIKE '%/functions/v1/verify-image'), q_before + 1,
+        'otros buckets no pasan por verify-image');
+END;
+$$;

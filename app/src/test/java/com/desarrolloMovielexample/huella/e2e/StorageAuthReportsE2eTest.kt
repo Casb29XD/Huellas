@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.e2e
 
+import com.google.gson.JsonParser
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -81,5 +82,46 @@ class StorageAuthReportsE2eTest {
         E2eEnv.rest("rest/v1/publications?id=eq.$pubId", "PATCH", """{"title":"hackeado"}""", other.token)
         val row = E2eEnv.admin("rest/v1/publications?id=eq.$pubId&select=title").rows()
         assertEquals("la publicación ajena sigue intacta", listOf("E2E límites"), row.map { it.get("title").asString })
+    }
+
+    @Test
+    fun `anon no lista pet-images y el duenio solo ve su carpeta`() {
+        val user = E2eEnv.createUser(name = "Lista E2E")
+        val path = "${user.id}/e2e-${UUID.randomUUID()}.jpg"
+        try {
+            assertTrue(E2eEnv.restBytes("storage/v1/object/pet-images/$path", byteArrayOf(-1, -40, -1, -39), "image/jpeg", user.token).ok)
+            val body = """{"prefix":"${user.id}","limit":100}"""
+            val anon = E2eEnv.rest("storage/v1/object/list/pet-images", "POST", body)
+            assertTrue("anon listó la carpeta: ${anon.code} ${anon.body}", !anon.ok || JsonParser.parseString(anon.body).asJsonArray.size() == 0)
+            val own = E2eEnv.rest("storage/v1/object/list/pet-images", "POST", body, user.token)
+            assertTrue("el dueño no lista su carpeta: ${own.code} ${own.body}", own.ok && own.body.contains(path.substringAfter('/')))
+            assertEquals("la foto se sigue sirviendo en /object/public/", 200,
+                E2eEnv.rest("storage/v1/object/public/pet-images/$path").code)
+        } finally {
+            E2eEnv.admin("storage/v1/object/pet-images", "DELETE", """{"prefixes":["$path"]}""")
+        }
+    }
+
+    /** Ítem 18 (b): verify-image (desplegada) borra lo que no es JPEG/PNG/WebP aunque se declare image/jpeg. */
+    @Test
+    fun `verify-image borra un HTML subido como image-jpeg y conserva un JPEG real`() {
+        val user = E2eEnv.createUser(name = "Magic E2E")
+        val html = "${user.id}/e2e-${UUID.randomUUID()}.jpg"
+        val jpeg = "${user.id}/e2e-${UUID.randomUUID()}.jpg"
+        try {
+            assertTrue(E2eEnv.restBytes("storage/v1/object/pet-images/$html", "<html><script>alert(1)</script>".toByteArray(), "image/jpeg", user.token).ok)
+            assertTrue(E2eEnv.restBytes("storage/v1/object/pet-images/$jpeg", byteArrayOf(-1, -40, -1, -39), "image/jpeg", user.token).ok)
+            val anon = E2eEnv.rest("functions/v1/verify-image", "POST", """{"name":"$html"}""")
+            assertFalse("verify-image aceptó una llamada sin service_role: ${anon.code}", anon.ok)
+
+            // Con Vault configurado el trigger ya pudo haberlo borrado: "missing" también vale.
+            val r = E2eEnv.admin("functions/v1/verify-image", "POST", """{"name":"$html"}""")
+            assertTrue("verify-image ${r.code}: ${r.body}", r.ok && r.json().get("status").asString in setOf("removed", "missing"))
+            assertFalse("el HTML sigue servido", E2eEnv.rest("storage/v1/object/public/pet-images/$html").ok)
+            assertEquals("ok", E2eEnv.admin("functions/v1/verify-image", "POST", """{"name":"$jpeg"}""").json().get("status").asString)
+            assertEquals(200, E2eEnv.rest("storage/v1/object/public/pet-images/$jpeg").code)
+        } finally {
+            E2eEnv.admin("storage/v1/object/pet-images", "DELETE", """{"prefixes":["$html","$jpeg"]}""")
+        }
     }
 }

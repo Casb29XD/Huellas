@@ -171,10 +171,9 @@ BEGIN
     PERFORM tests.tap_as(a);
     RETURN NEXT lives_ok(format('DELETE FROM public.publications WHERE id = %L', p), 'el autor borra su publicación');
     RESET ROLE;
-    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'pet-images' AND name = a || '/tap.jpg'), 0,
-        'borrar la publicación borra su imagen de storage');
-    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'pet-images' AND name = a || '/tap_otra.jpg'), 1,
-        'las imágenes no citadas por la publicación se conservan');
+    -- tap_image_purged: fila borrada (sin Vault) o DELETE encolado a la Storage API (con Vault). Ver 40_.
+    RETURN NEXT ok(tests.tap_image_purged(a || '/tap.jpg'), 'borrar la publicación borra su imagen de storage');
+    RETURN NEXT ok(NOT tests.tap_image_purged(a || '/tap_otra.jpg'), 'las imágenes no citadas por la publicación se conservan');
 END;
 $$;
 

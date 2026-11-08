@@ -415,3 +415,6 @@ enabled = true
 
 [functions.moderate-ai]
 verify_jwt = true
+
+[functions.verify-image]
+verify_jwt = true
