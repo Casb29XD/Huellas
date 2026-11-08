@@ -298,6 +298,11 @@ object FakeRepository : HuellaRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun updatePassword(password: String): Result<Unit> {
+        delay(LATENCY)
+        return Result.success(Unit)
+    }
+
     override suspend fun updateProfile(name: String, email: String, city: String, phone: String, bio: String): Result<User> {
         delay(LATENCY)
         val current = _currentUser.value ?: return Result.failure(IllegalStateException("No autenticado"))

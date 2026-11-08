@@ -30,6 +30,7 @@ import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordScreen
 import com.desarrolloMovielexample.huella.features.auth.LoginScreen
 import com.desarrolloMovielexample.huella.features.auth.OnboardingScreen
 import com.desarrolloMovielexample.huella.features.auth.RegisterScreen
+import com.desarrolloMovielexample.huella.features.auth.SetPasswordScreen
 import com.desarrolloMovielexample.huella.features.auth.SplashScreen
 import com.desarrolloMovielexample.huella.features.createpost.CreatePostScreen
 import com.desarrolloMovielexample.huella.features.createpost.PostSentScreen
@@ -104,25 +105,14 @@ fun AppNavigation(
             ?.substringAfter("=")
         val type = deepLinkUri.getQueryParameter("type") ?: fragmentType
 
-        when (type) {
-            "recovery" -> {
-                navController.navigate(Routes.ForgotPassword) {
-                    popUpTo<Routes.Splash> { inclusive = true }
-                }
-            }
-            else -> {
-                val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
-                if (authResult.isSuccess) {
-                    navController.navigate(Routes.Home) {
-                        popUpTo<Routes.Splash> { inclusive = true }
-                    }
-                } else {
-                    navController.navigate(Routes.Login) {
-                        popUpTo<Routes.Splash> { inclusive = true }
-                    }
-                }
-            }
+        // Recuperación (ítem 11): se canjea el enlace y se pide la contraseña nueva en vez de reenviar el correo.
+        val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
+        val target = when {
+            authResult.isFailure -> Routes.Login
+            type == "recovery" -> Routes.SetPassword
+            else -> Routes.Home
         }
+        navController.navigateClearingStack(target)
     }
 
     Scaffold(
@@ -196,6 +186,11 @@ fun AppNavigation(
             }
             composable<Routes.ForgotPassword> {
                 ForgotPasswordScreen(onBack = { navController.popBackStack() })
+            }
+            composable<Routes.SetPassword> {
+                // Desde el enlace de recuperación la pila está vacía: al terminar se entra a Home.
+                val leave = { if (!navController.popBackStack()) navController.navigateClearingStack(Routes.Home) }
+                SetPasswordScreen(onBack = leave, onDone = leave)
             }
 
             // ---------- 02 Inicio y detalle ----------
@@ -307,7 +302,10 @@ fun AppNavigation(
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onEditProfile = { navController.navigate(Routes.EditProfile) },
-                    onChangePassword = { navController.navigate(Routes.ForgotPassword) },
+                    onChangePassword = {
+                        val signedIn = SupabaseRepository.currentUser.value != null
+                        navController.navigate(if (signedIn) Routes.SetPassword else Routes.ForgotPassword)
+                    },
                     onLoggedOut = { navController.navigateClearingStack(Routes.Login) },
                 )
             }

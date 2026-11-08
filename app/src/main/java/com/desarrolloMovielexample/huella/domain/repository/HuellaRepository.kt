@@ -26,6 +26,8 @@ interface HuellaRepository {
     suspend fun register(name: String, email: String, city: String, password: String): Result<User>
     suspend fun handleAuthCallback(uri: android.net.Uri): Result<User>
     suspend fun sendPasswordReset(email: String): Result<Unit>
+    /** Contraseña nueva para el usuario con sesión (incluida la sesión de recuperación). */
+    suspend fun updatePassword(password: String): Result<Unit>
     suspend fun updateProfile(name: String, email: String, city: String, phone: String, bio: String): Result<User>
     suspend fun deleteAccount(): Result<Unit>
     fun logout()

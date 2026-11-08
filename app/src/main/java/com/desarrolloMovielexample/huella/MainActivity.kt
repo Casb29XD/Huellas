@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
         SupabaseRepository.initialize(applicationContext)
 
         // Leer el deep link entrante (correo de confirmación o reset de contraseña).
-        // huella://auth/confirm?token_hash=XXX&type=signup|recovery
+        // PKCE: huella://auth/confirm?code=XXX[&type=recovery]; enlaces viejos: ?token_hash=XXX&type=signup|recovery
         val deepLinkUri = intent?.data
 
         setContent {

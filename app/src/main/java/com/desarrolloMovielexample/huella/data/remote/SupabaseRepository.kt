@@ -24,6 +24,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import retrofit2.Response
 import java.net.URLDecoder
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDateTime
@@ -43,6 +46,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * All write operations use the user's access token so Supabase RLS remains authoritative.
  */
 object SupabaseRepository : HuellaRepository {
+    /** Deep link de los correos de Auth (debe estar en las Redirect URLs del proyecto). */
+    private const val AUTH_REDIRECT = "huella://auth/confirm"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var appContext: Context
     private val api: SupabaseApiService get() = RetrofitClient.supabaseApi
@@ -170,8 +175,9 @@ object SupabaseRepository : HuellaRepository {
             addProperty("email", email.trim())
             addProperty("password", password)
             add("data", metadata)
+            addPkceChallenge()
         }
-        val response = apiCall { api.signUp(body) }
+        val response = apiCall { api.signUp(body, AUTH_REDIRECT) }
         val token = response.string("access_token")
             ?: error("Cuenta creada. Confirma tu correo y luego inicia sesión.")
         val userJson = response.obj("user") ?: error("Supabase no devolvió el usuario")
@@ -198,14 +204,31 @@ object SupabaseRepository : HuellaRepository {
             }
         }
 
+        params["error_description"]?.let { error(it) } // p. ej. enlace vencido
+
         var accessToken = params["access_token"]
         var refreshToken = params["refresh_token"]
         var userId: String? = null
 
+        val code = params["code"]
         val tokenHash = params["token_hash"] ?: params["token"]
-        if (accessToken.isNullOrBlank() && !tokenHash.isNullOrBlank()) {
-            val type = params["type"] ?: "signup"
-            val verified = apiCall { api.verifyOtp(tokenHash, type) }
+        if (accessToken.isNullOrBlank() && !code.isNullOrBlank()) {
+            // PKCE (ítems 11 y 36): otra app que intercepte huella://auth no tiene el verifier.
+            val verifier = SupabaseSession.codeVerifier
+                ?: error("Abre el enlace en el mismo teléfono donde lo solicitaste")
+            val session = apiCall { api.exchangeCodeForSession(json {
+                addProperty("auth_code", code)
+                addProperty("code_verifier", verifier)
+            }) }
+            SupabaseSession.saveCodeVerifier(appContext, null)
+            accessToken = session.string("access_token")
+            refreshToken = session.string("refresh_token")
+            userId = session.obj("user")?.string("id")
+        } else if (accessToken.isNullOrBlank() && !tokenHash.isNullOrBlank()) {
+            val verified = apiCall { api.verifyOtp(json {
+                addProperty("type", params["type"] ?: "signup")
+                addProperty("token_hash", tokenHash)
+            }) }
             accessToken = verified.string("access_token")
             refreshToken = verified.string("refresh_token")
             userId = verified.obj("user")?.string("id")
@@ -244,8 +267,33 @@ object SupabaseRepository : HuellaRepository {
 
     override suspend fun sendPasswordReset(email: String): Result<Unit> = result {
         requireConfigured()
-        apiCall { api.recoverPassword(json { addProperty("email", email.trim()) }) }
+        val body = json {
+            addProperty("email", email.trim())
+            addPkceChallenge()
+        }
+        // type=recovery viaja en el redirect para que AppNavigation abra SetPassword tras canjear el code.
+        apiCall { api.recoverPassword(body, "$AUTH_REDIRECT?type=recovery") }
         Unit
+    }
+
+    override suspend fun updatePassword(password: String): Result<Unit> = result {
+        requireUserId()
+        apiCall { api.updateAuthUser(json { addProperty("password", password) }) }
+        Unit
+    }
+
+    /**
+     * PKCE S256: guarda un code_verifier aleatorio en SupabaseSession y manda su challenge.
+     * GoTrue lee code_challenge del body (no de la URL) en signup y recover.
+     */
+    private fun JsonObject.addPkceChallenge() {
+        val verifier = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(ByteArray(32).also { SecureRandom().nextBytes(it) })
+        SupabaseSession.saveCodeVerifier(appContext, verifier)
+        val challenge = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)))
+        addProperty("code_challenge", challenge)
+        addProperty("code_challenge_method", "s256")
     }
 
     override suspend fun updateProfile(name: String, email: String, city: String, phone: String, bio: String): Result<User> = result {
