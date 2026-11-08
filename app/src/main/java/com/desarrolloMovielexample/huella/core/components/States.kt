@@ -25,7 +25,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -83,7 +84,7 @@ fun EmptyState(
 
 /** Red "Sin conexión a internet" banner. */
 @Composable
-fun OfflineBanner(modifier: Modifier = Modifier, text: String = "Sin conexión a internet") {
+fun OfflineBanner(modifier: Modifier = Modifier, text: String = stringResource(R.string.offline_banner)) {
     Row(
         modifier
             .fillMaxWidth()
@@ -102,8 +103,8 @@ fun OfflineBanner(modifier: Modifier = Modifier, text: String = "Sin conexión a
 fun ErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "No pudimos cargar las publicaciones",
-    text: String = "Revisa tu conexión e inténtalo de nuevo. Las publicaciones guardadas siguen disponibles sin internet.",
+    title: String = stringResource(R.string.load_error_title),
+    text: String = stringResource(R.string.load_error_text),
     showBanner: Boolean = true,
 ) {
     Column(modifier.fillMaxSize()) {
@@ -113,7 +114,7 @@ fun ErrorState(
                 illustration = R.drawable.illus_connection_lost,
                 title = title,
                 text = text,
-                actionText = "Reintentar",
+                actionText = stringResource(R.string.action_retry),
                 onAction = onRetry,
                 actionIcon = Icons.Outlined.Refresh,
             )

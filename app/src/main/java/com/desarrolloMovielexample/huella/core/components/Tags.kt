@@ -15,13 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -46,7 +47,7 @@ fun HuellaIcon(@DrawableRes res: Int, modifier: Modifier = Modifier, tint: Color
 @Composable
 fun CategoryChip(category: Category, modifier: Modifier = Modifier, small: Boolean = false) {
     Text(
-        text = category.label,
+        text = stringResource(category.labelRes),
         color = Color.White,
         style = if (small) TextStyle(fontSize = 10.sp, lineHeight = 10.sp) else MaterialTheme.typography.labelMedium.copy(lineHeight = 12.sp),
         fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
@@ -73,7 +74,7 @@ fun LevelBadge(level: Level, modifier: Modifier = Modifier, soft: Boolean = fals
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         HuellaIcon(R.drawable.icon_animal_otro, tint = fg, size = 18.dp)
-        Text(level.label, color = fg, style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(level.labelRes), color = fg, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -113,14 +114,14 @@ fun ModerationStatusTag(status: PostStatus, modifier: Modifier = Modifier, small
         PostStatus.APROBADA -> R.drawable.icon_estado_aprobada
         PostStatus.RECHAZADA -> R.drawable.icon_estado_rechazada
     }
-    StatusTag(status.label, bg, fg, modifier, icon = if (small) null else icon, small = small)
+    StatusTag(stringResource(status.labelRes), bg, fg, modifier, icon = if (small) null else icon, small = small)
 }
 
 /** Pendiente / Aceptada / Rechazada (Mis solicitudes · Enviadas). */
 @Composable
 fun RequestStatusTag(status: RequestStatus, modifier: Modifier = Modifier) {
     val (bg, fg) = status.colors
-    StatusTag(status.label, bg, fg, modifier, small = true)
+    StatusTag(stringResource(status.labelRes), bg, fg, modifier, small = true)
 }
 
 /**
@@ -153,7 +154,7 @@ fun HuellaFilterChip(
         if (onRemove != null) {
             Icon(
                 Icons.Outlined.Close,
-                contentDescription = "Quitar",
+                contentDescription = stringResource(R.string.action_remove),
                 tint = fg,
                 modifier = Modifier
                     .size(16.dp)

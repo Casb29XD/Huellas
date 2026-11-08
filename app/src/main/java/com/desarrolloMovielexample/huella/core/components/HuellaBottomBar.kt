@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.core.components
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -20,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,16 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 
-enum class BottomBarItem(val label: String, @DrawableRes val icon: Int) {
-    INICIO("Inicio", R.drawable.icon_nav_inicio),
-    BUSCAR("Buscar", R.drawable.icon_nav_buscar),
-    PUBLICAR("Publicar", R.drawable.icon_nav_publicar),
-    SOLICITUDES("Solicitudes", R.drawable.icon_nav_solicitudes),
-    PERFIL("Perfil", R.drawable.icon_nav_perfil),
+enum class BottomBarItem(@StringRes val label: Int, @DrawableRes val icon: Int) {
+    INICIO(R.string.nav_home, R.drawable.icon_nav_inicio),
+    BUSCAR(R.string.nav_explore, R.drawable.icon_nav_buscar),
+    PUBLICAR(R.string.nav_post, R.drawable.icon_nav_publicar),
+    SOLICITUDES(R.string.nav_requests, R.drawable.icon_nav_solicitudes),
+    PERFIL(R.string.nav_profile, R.drawable.icon_nav_perfil),
 }
 
 /**
@@ -67,6 +69,7 @@ fun HuellaBottomBar(
             BottomBarItem.entries.forEach { item ->
                 val isSelected = item == selected
                 val color = if (isSelected) HuellaColors.Primary else HuellaColors.TextSecondary
+                val label = stringResource(item.label)
                 Column(
                     Modifier
                         .weight(1f)
@@ -91,18 +94,18 @@ fun HuellaBottomBar(
                                     .shadow(10.dp, CircleShape, ambientColor = HuellaColors.Primary, spotColor = HuellaColors.Primary)
                                     .background(HuellaColors.Surface, CircleShape),
                             )
-                            Icon(painterResource(item.icon), contentDescription = item.label, tint = HuellaColors.Primary, modifier = Modifier.requiredSize(73.dp))
+                            Icon(painterResource(item.icon), contentDescription = label, tint = HuellaColors.Primary, modifier = Modifier.requiredSize(73.dp))
                         }
-                        Text(item.label, style = MaterialTheme.typography.labelMedium, color = color, modifier = Modifier.offset(y = (-10).dp))
+                        Text(label, style = MaterialTheme.typography.labelMedium, color = color, modifier = Modifier.offset(y = (-10).dp))
                     } else {
                         Box(
                             Modifier
                                 .background(if (isSelected) HuellaColors.PrimaryContainer else Color.Transparent, RoundedCornerShape(16.dp))
                                 .padding(horizontal = 18.dp, vertical = 4.dp),
                         ) {
-                            Icon(painterResource(item.icon), contentDescription = item.label, tint = color, modifier = Modifier.size(31.dp))
+                            Icon(painterResource(item.icon), contentDescription = label, tint = color, modifier = Modifier.size(31.dp))
                         }
-                        Text(item.label, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1)
+                        Text(label, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1)
                     }
                 }
             }
