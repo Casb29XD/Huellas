@@ -100,4 +100,19 @@ class RepoHygieneTest {
             assertFalse("versión fija en $path", "Huella 1.0" in strings)
         }
     }
+
+    // ponytail: guardas de código; Robolectric no da insets de barra de estado ni compara drawables con sentido.
+    @Test
+    fun `item 42 - el header del detalle pinta el alto de la barra de estado`() {
+        val detail = file("app/src/main/java/com/desarrolloMovielexample/huella/features/feed/PublicationDetailScreen.kt")
+        assertTrue("windowInsetsTopHeight(WindowInsets.statusBars)" in detail)
+    }
+
+    @Test
+    fun `item 47 - Castracion tiene icono propio distinto al de Vacunas`() {
+        val detail = file("app/src/main/java/com/desarrolloMovielexample/huella/features/feed/PublicationDetailScreen.kt")
+        val neutering = detail.lines().single { "R.string.detail_neutering" in it }
+        assertTrue(neutering, "icon_attr_castrado" in neutering && "icon_attr_vacunado" !in neutering)
+        assertTrue(File(root, "app/src/main/res/drawable/icon_attr_castrado.xml").exists())
+    }
 }
