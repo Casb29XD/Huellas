@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -112,5 +113,8 @@ class UxScreensRobolectricTest {
         }
         compose.onNodeWithText("ana@huella.test").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Eliminar cuenta").performScrollTo().assertIsDisplayed()
+        // Ítem 57: sin interruptores que fingen push o resumen por correo.
+        compose.onAllNodesWithText("Notificaciones push").assertCountEquals(0)
+        compose.onAllNodesWithText("Resumen por correo").assertCountEquals(0)
     }
 }
