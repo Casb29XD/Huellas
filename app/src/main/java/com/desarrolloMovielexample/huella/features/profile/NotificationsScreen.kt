@@ -76,7 +76,7 @@ fun NotificationsScreen(
         containerColor = HuellaColors.Background,
         topBar = {
             HuellaTopBar("Notificaciones", Modifier.statusBarsPadding(), onBack = onBack) {
-                if (!state.isEmpty) HuellaTextButton("Marcar le├¡das", viewModel::markAllRead)
+                if (!state.isEmpty) HuellaTextButton("Marcar leídas", viewModel::markAllRead)
             }
         },
     ) { inner ->
@@ -90,7 +90,7 @@ fun NotificationsScreen(
             ) {
                 EmptyState(
                     illustration = R.drawable.illus_empty_inbox,
-                    title = "Todo tranquilo por aqu├¡",
+                    title = "Todo tranquilo por aquí",
                     text = "Te avisaremos cuando alguien se interese en tus publicaciones o cuando subas de nivel.",
                     illustrationSize = 230.dp,
                 )
@@ -177,7 +177,7 @@ private fun NotificationCard(n: AppNotification, onClick: () -> Unit) {
     }
 }
 
-/** Confetti pieces of the "┬íSubiste de nivel!" card (positions from the design, in dp). */
+/** Confetti pieces of the "¡Subiste de nivel!" card (positions from the design, in dp). */
 private fun Modifier.confetti(): Modifier = drawBehind {
     fun piece(x: Float, y: Float, w: Float, h: Float, degrees: Float, color: Color, fromBottom: Boolean = false, round: Boolean = false) {
         val pw = w.dp.toPx()
