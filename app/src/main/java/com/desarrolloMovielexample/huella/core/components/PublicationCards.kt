@@ -18,13 +18,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,7 +76,7 @@ fun Modifier.huellaCard(): Modifier = this
 private fun VaccineBadge(vaccinated: Boolean, compact: Boolean) {
     val fg = if (vaccinated) HuellaColors.Primary else HuellaColors.NoVaccineFg
     val icon = if (vaccinated) R.drawable.icon_attr_vacunado else R.drawable.icon_attr_sin_vacunas
-    val text = if (vaccinated) "Vacunado" else "Sin vacunas"
+    val text = stringResource(if (vaccinated) R.string.vaccinated else R.string.not_vaccinated)
     Row(
         if (compact) Modifier else Modifier
             .background(if (vaccinated) HuellaColors.PrimarySoft else HuellaColors.NoVaccineBg, HuellaShapes.Tag)
@@ -139,9 +140,9 @@ fun PublicationCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                AttributeInline(speciesIcon(publication.species), publication.species)
+                AttributeInline(speciesIcon(publication.species), optionLabel(publication.species))
                 AttributeInline(R.drawable.icon_attr_raza_aproximada, publication.breed)
-                AttributeInline(sizeIcon(publication.size), publication.size)
+                AttributeInline(sizeIcon(publication.size), optionLabel(publication.size))
                 if (publication.category != Category.VETERINARIA) VaccineBadge(publication.vaccinated, compact = false)
             }
             CityAndTime(publication, compact = false, modifier = Modifier.fillMaxWidth())
@@ -205,11 +206,11 @@ fun PublicationRowCard(
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 val dot = @Composable { Text("·", style = MaterialTheme.typography.bodySmall, color = HuellaColors.Outline) }
-                Text(publication.species, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
+                Text(optionLabel(publication.species), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
                 dot()
                 Text(publication.breed, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
                 dot()
-                Text(publication.size, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
+                Text(optionLabel(publication.size), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
                 if (publication.category != Category.VETERINARIA) VaccineBadge(publication.vaccinated, compact = true)
             }
             CityAndTime(publication, compact = true)

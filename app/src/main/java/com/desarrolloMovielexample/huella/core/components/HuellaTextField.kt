@@ -1,5 +1,7 @@
 package com.desarrolloMovielexample.huella.core.components
 
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,7 +25,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 
@@ -144,7 +146,7 @@ fun HuellaDropdownField(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
     label: String? = null,
-    placeholder: String = "Selecciona",
+    placeholder: String = stringResource(R.string.select_placeholder),
     error: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
