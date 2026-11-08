@@ -61,8 +61,7 @@ fun SettingsScreen(
     onLoggedOut: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
     user: User? = null,
-    onOpenTerms: () -> Unit = viewModel::onTerms,
-    onSetPassword: () -> Unit = onChangePassword,
+    onOpenTerms: () -> Unit = {},
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -131,7 +130,7 @@ fun SettingsScreen(
                         HuellaIcon(R.drawable.icon_nav_perfil, tint = HuellaColors.TextSecondary, size = 29.dp)
                     }
                     HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                    LinkRow(stringResource(R.string.settings_change_password), onSetPassword) {
+                    LinkRow(stringResource(R.string.settings_change_password), onChangePassword) {
                         HuellaIcon(R.drawable.icon_estado_cerrada, tint = HuellaColors.TextSecondary, size = 29.dp)
                     }
                     HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)

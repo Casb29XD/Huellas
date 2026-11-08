@@ -26,10 +26,6 @@ class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository)
     fun setPush(enabled: Boolean) = _uiState.update { it.copy(pushEnabled = enabled) }
     fun setEmailDigest(enabled: Boolean) = _uiState.update { it.copy(emailDigestEnabled = enabled) }
 
-    fun onTerms() {
-        _messages.trySend("Los términos estarán disponibles pronto")
-    }
-
     fun logout() = repo.logout()
 
     fun deleteAccount(onSuccess: () -> Unit) {
