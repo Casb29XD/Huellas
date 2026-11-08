@@ -108,7 +108,7 @@ fun HuellaTextField(
                     Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = minHeight)
-                        .background(Color.White, HuellaShapes.Field)
+                        .background(HuellaColors.Surface, HuellaShapes.Field)
                         .border(borderWidth, borderColor, HuellaShapes.Field)
                         .padding(horizontal = 14.dp, vertical = if (singleLine) 0.dp else 14.dp),
                     verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
@@ -156,7 +156,7 @@ fun HuellaDropdownField(
                 Modifier
                     .fillMaxWidth()
                     .defaultMinSize(minHeight = 52.dp)
-                    .background(Color.White, HuellaShapes.Field)
+                    .background(HuellaColors.Surface, HuellaShapes.Field)
                     .border(if (isError) 2.dp else 1.dp, if (isError) HuellaColors.Error else HuellaColors.Outline, HuellaShapes.Field)
                     .clickable { expanded = true }
                     .padding(horizontal = 14.dp),
@@ -170,7 +170,7 @@ fun HuellaDropdownField(
                 )
                 Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = HuellaColors.TextSecondary)
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, containerColor = Color.White) {
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, containerColor = HuellaColors.Surface) {
                 options.forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option, style = MaterialTheme.typography.bodyMedium) },

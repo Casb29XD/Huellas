@@ -109,7 +109,7 @@ private fun LevelCard(level: Level, current: Boolean) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(if (current) level.color.copy(alpha = 0.07f) else Color.White)
+            .background(if (current) level.color.copy(alpha = 0.07f) else HuellaColors.Surface)
             .border(1.5.dp, if (current) level.color else HuellaColors.OutlineVariant, RoundedCornerShape(12.dp))
             .padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),

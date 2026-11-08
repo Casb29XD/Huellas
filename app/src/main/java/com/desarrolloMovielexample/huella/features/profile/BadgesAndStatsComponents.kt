@@ -41,7 +41,7 @@ fun DetailedStatsSection(stats: ProfileStats, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .border(1.dp, HuellaColors.Divider, RoundedCornerShape(14.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -102,7 +102,7 @@ fun BadgesSection(badges: List<Badge>, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .border(1.dp, HuellaColors.Divider, RoundedCornerShape(14.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)

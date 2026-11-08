@@ -187,7 +187,7 @@ private fun ReceivedGroupCard(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .border(1.dp, HuellaColors.Divider, RoundedCornerShape(12.dp))
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),

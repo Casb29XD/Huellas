@@ -49,7 +49,7 @@ fun VotesAndCommentsRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .border(1.dp, HuellaColors.Divider, RoundedCornerShape(12.dp))
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -154,7 +154,7 @@ fun CommentsSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White)
+                    .background(HuellaColors.Surface)
                     .border(1.dp, HuellaColors.Divider, RoundedCornerShape(12.dp))
             ) {
                 comments.forEachIndexed { index, comment ->

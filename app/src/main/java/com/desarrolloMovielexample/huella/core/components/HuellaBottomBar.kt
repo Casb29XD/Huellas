@@ -53,7 +53,7 @@ fun HuellaBottomBar(
     Column(
         modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .navigationBarsPadding(),
     ) {
         HorizontalDivider(color = HuellaColors.Divider, thickness = 1.dp)
@@ -89,7 +89,7 @@ fun HuellaBottomBar(
                                 Modifier
                                     .size(49.dp)
                                     .shadow(10.dp, CircleShape, ambientColor = HuellaColors.Primary, spotColor = HuellaColors.Primary)
-                                    .background(Color.White, CircleShape),
+                                    .background(HuellaColors.Surface, CircleShape),
                             )
                             Icon(painterResource(item.icon), contentDescription = item.label, tint = HuellaColors.Primary, modifier = Modifier.requiredSize(73.dp))
                         }

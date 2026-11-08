@@ -216,7 +216,7 @@ private fun FeedList(
                     Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color.White)
+                        .background(HuellaColors.Surface)
                         .border(1.dp, HuellaColors.OutlineVariant, CircleShape)
                         .clickable(onClick = onOpenMap),
                     contentAlignment = Alignment.Center,
@@ -325,7 +325,7 @@ private fun SearchField(
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .border(1.dp, if (active) HuellaColors.Primary else HuellaColors.OutlineVariant, RoundedCornerShape(24.dp))
             .padding(start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -395,7 +395,7 @@ private fun CategoryFilterChip(
         Modifier
             .height(34.dp)
             .clip(shape)
-            .background(if (selected) selectedColor else Color.White)
+            .background(if (selected) selectedColor else HuellaColors.Surface)
             .border(1.dp, if (selected) Color.Transparent else ChipBorder, shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),

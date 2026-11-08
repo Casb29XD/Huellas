@@ -58,7 +58,7 @@ fun SplashScreen(
             val window = (view.context as? Activity)?.window
             val controller = window?.let { WindowCompat.getInsetsController(it, view) }
             controller?.isAppearanceLightStatusBars = false
-            onDispose { controller?.isAppearanceLightStatusBars = true }
+            onDispose { controller?.isAppearanceLightStatusBars = !HuellaColors.isDark }
         }
     }
 

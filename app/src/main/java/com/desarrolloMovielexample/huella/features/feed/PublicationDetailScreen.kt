@@ -153,7 +153,7 @@ fun PublicationDetailScreen(
             Column {
                 if (state.isAuthorOrMod) {
                     Row(
-                        Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 6.dp),
+                        Modifier.fillMaxWidth().background(HuellaColors.Surface).padding(horizontal = 16.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
@@ -223,7 +223,7 @@ fun PublicationDetailScreen(
                                 Modifier
                                     .size(44.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White),
+                                    .background(HuellaColors.Surface),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 HuellaIcon(categoryIcon(pub.category, filled = true), tint = pub.category.color, size = 36.dp)
@@ -420,7 +420,7 @@ fun PublicationDetailScreen(
 
 private val Medium14: TextStyle @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
 
-private fun Modifier.softCard(background: Color = Color.White): Modifier = this
+private fun Modifier.softCard(background: Color = HuellaColors.Surface): Modifier = this
     .clip(RoundedCornerShape(12.dp))
     .background(background)
     .border(1.dp, HuellaColors.Divider, RoundedCornerShape(12.dp))
@@ -462,7 +462,7 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
                 Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.9f))
+                    .background(HuellaColors.Surface.copy(alpha = 0.9f))
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
@@ -474,7 +474,7 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
                     .padding(top = 48.dp)
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.9f))
+                    .background(HuellaColors.Surface.copy(alpha = 0.9f))
                     .clickable(onClick = onShare),
                 contentAlignment = Alignment.Center,
             ) {

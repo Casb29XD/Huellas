@@ -31,7 +31,7 @@ import com.desarrolloMovielexample.huella.core.theme.Manrope
 /** White card with the design's 1dp #ECEEEA border (profile / settings / levels lists). */
 internal fun Modifier.outlinedCard(): Modifier = this
     .clip(HuellaShapes.Card)
-    .background(Color.White)
+    .background(HuellaColors.Surface)
     .border(1.dp, HuellaColors.Divider, HuellaShapes.Card)
 
 /** Light tint of a level color (#F5E6D8 for Protector). */

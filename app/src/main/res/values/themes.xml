@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.Huella" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- DayNight (API 29+, minSdk 29): window and system UI follow the system dark mode like the Compose theme. -->
+    <style name="Theme.Huella" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/huella_background</item>
     </style>
 </resources>
