@@ -25,9 +25,12 @@ import kotlinx.coroutines.sync.withLock
 import retrofit2.Response
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -493,10 +496,20 @@ object SupabaseRepository : HuellaRepository {
 
     override fun markNotificationRead(id: String) {
         _notifications.update { list -> list.map { if (it.id == id) it.copy(read = true) else it } }
+        scope.launch {
+            runCatching { apiCall { api.updateNotification("eq.$id", json { addProperty("read", true) }) } }
+                .onFailure { quietly { refreshNotifications() } }
+        }
     }
 
+    // ponytail: el esquema no trae política DELETE en notifications; hasta que exista, PostgREST borra 0 filas
+    // sin error y la notificación vuelve en el siguiente refresco.
     override fun deleteNotification(id: String) {
         _notifications.update { list -> list.filterNot { it.id == id } }
+        scope.launch {
+            runCatching { apiCall { api.deleteNotification("eq.$id") } }
+                .onFailure { quietly { refreshNotifications() } }
+        }
     }
 
     override fun markAllNotificationsRead() {
@@ -624,10 +637,12 @@ object SupabaseRepository : HuellaRepository {
     }
 
     private suspend fun refreshNotifications() {
+        val now = System.currentTimeMillis()
         _notifications.value = apiCall { api.getNotifications() }.map { row ->
             AppNotification(
                 id = row.string("id").orEmpty(),
-                group = row.string("group_label") ?: "Hoy",
+                // group_label en BD es texto fijo ("Hoy") que caduca: el grupo se calcula con created_at.
+                group = notificationGroup(parseSupabaseDate(row.string("created_at")), now),
                 type = notificationType(row.string("type")),
                 title = row.string("title").orEmpty(),
                 text = row.string("text").orEmpty(),
@@ -896,4 +911,17 @@ internal fun parseSupabaseDate(value: String?): Long? {
     return runCatching { OffsetDateTime.parse(iso).toInstant().toEpochMilli() }
         .recoverCatching { LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC).toEpochMilli() }
         .getOrNull()
+}
+
+/** Sección de la lista de notificaciones según el día local de created_at: Hoy, Ayer, Esta semana o Antes. */
+internal fun notificationGroup(createdAt: Long?, now: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+    if (createdAt == null) return "Antes"
+    val day = Instant.ofEpochMilli(createdAt).atZone(zone).toLocalDate()
+    val days = ChronoUnit.DAYS.between(day, Instant.ofEpochMilli(now).atZone(zone).toLocalDate())
+    return when {
+        days <= 0 -> "Hoy"
+        days == 1L -> "Ayer"
+        days < 7 -> "Esta semana"
+        else -> "Antes"
+    }
 }

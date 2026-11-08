@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 
 data class NotificationsUiState(
-    /** Ordered groups: "Hoy", "Ayer", "Esta semana" (order of first appearance). */
+    /** Grupos "Hoy", "Ayer", "Esta semana", "Antes" en orden de aparición (la lista llega por created_at desc). */
     val groups: List<Pair<String, List<AppNotification>>> = emptyList(),
 ) {
     val isEmpty: Boolean get() = groups.isEmpty()

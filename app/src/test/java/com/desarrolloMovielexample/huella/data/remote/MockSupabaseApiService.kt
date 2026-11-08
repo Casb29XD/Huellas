@@ -193,6 +193,17 @@ class MockSupabaseApiService : SupabaseApiService {
         return Response.success(Unit)
     }
 
+    override suspend fun updateNotification(id: String, body: JsonObject, prefer: String): Response<Unit> {
+        mockNotifications.filter { it.get("id")?.asString == id.removePrefix("eq.") }
+            .forEach { row -> body.entrySet().forEach { (k, v) -> row.add(k, v) } }
+        return Response.success(Unit)
+    }
+
+    override suspend fun deleteNotification(id: String, prefer: String): Response<Unit> {
+        mockNotifications.removeAll { it.get("id")?.asString == id.removePrefix("eq.") }
+        return Response.success(Unit)
+    }
+
     override suspend fun getPointsHistory(select: String, order: String): Response<List<JsonObject>> {
         return Response.success(mockPointsHistory)
     }
