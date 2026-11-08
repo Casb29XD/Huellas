@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-// La app está en español; Robolectric arranca en en-US y LocalizedText traduciría los errores.
+// Robolectric arranca en en-US y tomaría values-en; estas pruebas verifican el copy en español.
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "es")
 class LoginScreenRobolectricTest {
