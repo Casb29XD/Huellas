@@ -10,6 +10,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -134,7 +135,7 @@ object SupabaseRepository : HuellaRepository {
             null
         } ?: return false
         _currentUser.value = profile.toUser()
-        scope.launch { refreshAll() }
+        startRefreshAll()
         return true
     }
 
@@ -159,7 +160,7 @@ object SupabaseRepository : HuellaRepository {
             ?: error("No encontramos el perfil asociado a esta cuenta")
         val user = profile.toUser()
         _currentUser.value = user
-        scope.launch { refreshAll() }
+        startRefreshAll()
         user
     }
 
@@ -187,7 +188,7 @@ object SupabaseRepository : HuellaRepository {
             ?: error("La cuenta se creó, pero aún no aparece su perfil")
         val user = profile.toUser()
         _currentUser.value = user
-        scope.launch { refreshAll() }
+        startRefreshAll()
         user
     }
 
@@ -261,7 +262,7 @@ object SupabaseRepository : HuellaRepository {
             initials = "UH",
         )
         _currentUser.value = user
-        scope.launch { refreshAll() }
+        startRefreshAll()
         user
     }
 
@@ -317,12 +318,28 @@ object SupabaseRepository : HuellaRepository {
     }
 
     override fun logout() {
+        // Un refresh en vuelo de esta cuenta no debe escribir después del logout (ni en la sesión siguiente).
+        refreshJob?.cancel()
+        refreshJob = null
         _currentUser.value = null
         SupabaseSession.clear(appContext)
         _sentRequests.value = emptyList()
         _receivedRequests.value = emptyList()
         _notifications.value = emptyList()
         _myPublications.value = emptyList()
+        cachedPointsHistory = emptyList()
+        userCache.clear()
+        authorPublications.clear()
+        messageFlows.clear()
+        commentFlows.clear()
+        conversations.clear()
+        clearModeration()
+    }
+
+    private fun clearModeration() {
+        _moderationQueue.value = emptyList()
+        _moderationReports.value = emptyList()
+        _moderationStats.value = ModerationStats(0, 0, 0)
     }
 
     override fun getUser(userId: String): User? =
@@ -683,6 +700,15 @@ object SupabaseRepository : HuellaRepository {
         quietly { refreshFeed() }
     }
 
+    @Volatile
+    private var refreshJob: Job? = null
+
+    /** Lanza refreshAll() cancelando el de la sesión anterior (login/logout rápidos no mezclan cuentas). */
+    private fun startRefreshAll() {
+        refreshJob?.cancel()
+        refreshJob = scope.launch { refreshAll() }
+    }
+
     /** Recarga todo lo visible; cada parte falla por separado sin tumbar a las demás. */
     private suspend fun refreshAll() {
         quietly { refreshFeed() }
@@ -691,7 +717,7 @@ object SupabaseRepository : HuellaRepository {
         quietly { refreshRequests() }
         quietly { refreshNotifications() }
         quietly { refreshConversations() }
-        if (_currentUser.value?.isModerator == true) quietly { refreshModeration() }
+        if (_currentUser.value?.isModerator == true) quietly { refreshModeration() } else clearModeration()
     }
 
     /** Refrescos después de una escritura: si fallan, la escritura sigue siendo un éxito (ítem 27). */
