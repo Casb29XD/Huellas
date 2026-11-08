@@ -1,4 +1,4 @@
--- Flujo de solicitudes, chat y eliminación de cuenta (ítems 7, 8, 19, 20). Usa helpers de 10_ y 20_.
+-- Flujo de solicitudes, chat y eliminación de cuenta (ítems 7, 8, 19, 20, 21). Usa helpers de 10_ y 20_.
 -- runtests() revierte cada test_*: nada queda en la BD compartida.
 
 CREATE OR REPLACE FUNCTION tests.test_30_solicitudes() RETURNS SETOF TEXT
@@ -21,8 +21,18 @@ BEGIN
     PERFORM tests.tap_as(c);
     RETURN NEXT lives_ok(format('INSERT INTO public.adoption_requests (publication_id, applicant_id, message) VALUES (%L, %L, ''tap'')', p, c),
         'c envía una solicitud');
+    -- Ítem 7: sin atajos por la Data API.
+    RETURN NEXT throws_ok(format('INSERT INTO public.adoption_requests (publication_id, applicant_id, message, status) VALUES (%L, %L, ''tap'', ''ACEPTADA'')', p, c),
+        '42501', NULL, 'INSERT con status ACEPTADA: el solicitante no se autoacepta');
+    PERFORM tests.tap_as(a);
+    RETURN NEXT throws_ok(format('INSERT INTO public.adoption_requests (publication_id, applicant_id, message) VALUES (%L, %L, ''tap'')', p, a),
+        '42501', NULL, 'el autor no solicita su propia publicación');
     RESET ROLE;
     SELECT id INTO rb FROM public.adoption_requests WHERE publication_id = p AND applicant_id = b;
+    PERFORM tests.tap_as(a);
+    RETURN NEXT throws_ok(format('UPDATE public.adoption_requests SET status = ''ACEPTADA'' WHERE id = %L', rb),
+        '42501', NULL, 'UPDATE directo del autor: solo respond_to_request cambia el estado');
+    RESET ROLE;
     SELECT id INTO rc FROM public.adoption_requests WHERE publication_id = p AND applicant_id = c;
     RETURN NEXT is(tests.tap_notifs(a, 'NEW_REQUEST'), 2, 'el autor recibe NEW_REQUEST por cada solicitud');
     RETURN NEXT is((SELECT target_id FROM public.notifications WHERE user_id = a AND type = 'NEW_REQUEST' LIMIT 1), p::text,
@@ -52,6 +62,15 @@ BEGIN
     INSERT INTO public.adoption_requests (publication_id, applicant_id, message) VALUES (p, b, 'tap') RETURNING id INTO rb;
     PERFORM tests.tap_as(a);
     RETURN NEXT is(public.respond_to_request(rb, TRUE), conv, 'se reutiliza la conversación existente');
+    RESET ROLE;
+
+    -- Ítem 7: no se solicita una publicación que no está aprobada.
+    INSERT INTO public.publications (id, author_id, title, species, breed, size, city, description, status)
+    VALUES (gen_random_uuid(), a, 'tap 3', 'Gato', 'Criollo', 'Mediano', 'Medellín', 'tap', 'EN_REVISION')
+    RETURNING id INTO p;
+    PERFORM tests.tap_as(c);
+    RETURN NEXT throws_ok(format('INSERT INTO public.adoption_requests (publication_id, applicant_id, message) VALUES (%L, %L, ''tap'')', p, c),
+        '42501', NULL, 'no se solicita una publicación en revisión');
     RESET ROLE;
 END;
 $$;
