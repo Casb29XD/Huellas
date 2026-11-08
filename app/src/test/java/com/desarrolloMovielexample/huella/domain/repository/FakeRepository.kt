@@ -7,10 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/** Random photo for a publication (Coil loads it; striped placeholder shows meanwhile). */
-fun randomPhotoUrl(seed: String): String = "https://picsum.photos/seed/huella$seed/600/400"
+/** Foto de muestra para los datos de prueba (solo tests). */
+private fun randomPhotoUrl(seed: String): String = "https://picsum.photos/seed/huella$seed/600/400"
 
 /**
+ * Repositorio en memoria solo para tests (no se compila en la app).
  * In-memory repository seeded with every sample shown in the design.
  * Single source of truth for publications, comments, votes, badges, and roles.
  * Demo login: mariana@correo.com / 12345678 (MODERADOR)
