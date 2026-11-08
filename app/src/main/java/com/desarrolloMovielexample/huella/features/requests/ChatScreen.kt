@@ -36,7 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,7 +75,8 @@ fun ChatScreen(
     val context = LocalContext.current
     val listState = rememberLazyListState()
     LaunchedEffect(conversationId) { viewModel.load(conversationId) }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
     // +1 for the "Hoy" chip at index 0.
     LaunchedEffect(state.messages.size) { if (state.messages.isNotEmpty()) listState.animateScrollToItem(state.messages.size) }
 
@@ -97,14 +99,14 @@ fun ChatScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = HuellaColors.TextPrimary)
                     }
                     if (conversation != null) {
                         Avatar(conversation.contact.initials, conversation.contact.level, size = 40.dp)
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            conversation?.contact?.name ?: "Conversación",
+                            conversation?.contact?.name ?: stringResource(R.string.chat_conversation),
                             style = MaterialTheme.typography.titleSmall,
                             color = HuellaColors.TextPrimary,
                             maxLines = 1,
@@ -148,7 +150,7 @@ fun ChatScreen(
                 ) {
                     Icon(
                         Icons.Outlined.AddPhotoAlternate,
-                        contentDescription = "Adjuntar foto",
+                        contentDescription = stringResource(R.string.chat_attach_photo),
                         tint = HuellaColors.TextSecondary,
                         modifier = Modifier.padding(8.dp).size(24.dp),
                     )
@@ -173,7 +175,7 @@ fun ChatScreen(
                                 contentAlignment = Alignment.CenterStart,
                             ) {
                                 if (state.text.isEmpty()) {
-                                    Text("Escribe un mensaje", style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextTertiary)
+                                    Text(stringResource(R.string.chat_placeholder), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextTertiary)
                                 }
                                 inner()
                             }
@@ -187,7 +189,7 @@ fun ChatScreen(
                             .clickable { viewModel.send() },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Enviar", tint = Color.White, modifier = Modifier.size(22.dp))
+                        Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = stringResource(R.string.action_send), tint = Color.White, modifier = Modifier.size(22.dp))
                     }
                 }
             }
@@ -204,7 +206,7 @@ fun ChatScreen(
             item {
                 Box(Modifier.fillMaxWidth().padding(bottom = 6.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        "Hoy",
+                        stringResource(R.string.group_today),
                         style = MaterialTheme.typography.labelSmall,
                         color = HuellaColors.TextTertiary,
                         modifier = Modifier

@@ -23,7 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +53,8 @@ import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
 import com.desarrolloMovielexample.huella.core.components.RequestStatusTag
 import com.desarrolloMovielexample.huella.core.components.SecondaryButton
 import com.desarrolloMovielexample.huella.core.components.StripedPlaceholder
+import com.desarrolloMovielexample.huella.core.components.labelRes
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
@@ -70,7 +74,8 @@ fun RequestsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(initialTab) { viewModel.setInitialTab(initialTab) }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
     LaunchedEffect(Unit) { viewModel.openChats.collect(onOpenChat) }
 
     Scaffold(
@@ -83,13 +88,13 @@ fun RequestsScreen(
                 .padding(inner),
         ) {
             Text(
-                "Mis solicitudes",
+                stringResource(R.string.requests_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = HuellaColors.TextPrimary,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
             )
             HuellaTabs(
-                tabs = listOf("Enviadas", "Recibidas"),
+                tabs = listOf(stringResource(R.string.requests_sent), stringResource(R.string.requests_received)),
                 selectedIndex = state.selectedTab,
                 onSelect = viewModel::selectTab,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
@@ -99,10 +104,10 @@ fun RequestsScreen(
                     CenteredEmpty {
                         EmptyState(
                             illustration = R.drawable.illus_relationship,
-                            title = "Aún no has enviado solicitudes",
-                            text = "Cuando encuentres una mascota que te robe el corazón, toca “Me interesa adoptar” y aparecerá aquí.",
+                            title = stringResource(R.string.requests_sent_empty_title),
+                            text = stringResource(R.string.requests_sent_empty_text),
                             illustrationSize = 230.dp,
-                            actionText = "Explorar mascotas",
+                            actionText = stringResource(R.string.requests_explore),
                             onAction = onExplore,
                         )
                     }
@@ -134,8 +139,8 @@ fun RequestsScreen(
                     CenteredEmpty {
                         EmptyState(
                             illustration = R.drawable.illus_relationship,
-                            title = "Aún no has recibido solicitudes",
-                            text = "Cuando alguien se interese en tus publicaciones, verás aquí su mensaje para que puedas responder.",
+                            title = stringResource(R.string.requests_received_empty_title),
+                            text = stringResource(R.string.requests_received_empty_text),
                             illustrationSize = 230.dp,
                         )
                     }
@@ -215,14 +220,14 @@ private fun ReceivedGroupCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "${p.species} · ${p.breed} · ${p.city.substringBefore(",")}",
+                    stringResource(R.string.requests_pub_summary, optionLabel(p.species), p.breed, p.city.substringBefore(",")),
                     style = MaterialTheme.typography.bodySmall,
                     color = HuellaColors.TextTertiary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Icon(Icons.Outlined.ChevronRight, contentDescription = "Ver publicación", tint = HuellaColors.TextTertiary, modifier = Modifier.size(22.dp))
+            Icon(Icons.Outlined.ChevronRight, contentDescription = stringResource(R.string.requests_view_post), tint = HuellaColors.TextTertiary, modifier = Modifier.size(22.dp))
         }
         group.applicants.forEach { applicant ->
             ApplicantCard(
@@ -262,7 +267,7 @@ private fun ApplicantCard(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     HuellaIcon(R.drawable.icon_animal_otro, tint = applicant.level.color, size = 18.dp)
-                    Text(applicant.level.label, style = MaterialTheme.typography.labelMedium, color = applicant.level.color)
+                    Text(stringResource(applicant.level.labelRes), style = MaterialTheme.typography.labelMedium, color = applicant.level.color)
                 }
             }
             Text(applicant.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
@@ -275,7 +280,7 @@ private fun ApplicantCard(
         when (applicant.status) {
             RequestStatus.PENDIENTE -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SecondaryButton(
-                    text = "Rechazar",
+                    text = stringResource(R.string.action_reject),
                     onClick = onReject,
                     modifier = Modifier.weight(1f),
                     enabled = !busy,
@@ -283,7 +288,7 @@ private fun ApplicantCard(
                     height = 40.dp,
                 )
                 PrimaryButton(
-                    text = "Aceptar",
+                    text = stringResource(R.string.action_accept),
                     onClick = onAccept,
                     modifier = Modifier.weight(1f),
                     loading = busy,
@@ -295,7 +300,7 @@ private fun ApplicantCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ResultTag("Aceptada", R.drawable.icon_estado_aprobada, HuellaColors.PrimarySoft, HuellaColors.Primary)
+                ResultTag(stringResource(R.string.request_status_accepted), R.drawable.icon_estado_aprobada, HuellaColors.PrimarySoft, HuellaColors.Primary)
                 Row(
                     Modifier.clickable(onClick = onContact),
                     verticalAlignment = Alignment.CenterVertically,
@@ -303,14 +308,14 @@ private fun ApplicantCard(
                 ) {
                     HuellaIcon(R.drawable.icon_accion_mensaje, tint = HuellaColors.Primary, size = 23.dp)
                     Text(
-                        "Contactar",
+                        stringResource(R.string.public_contact),
                         style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
                         color = HuellaColors.Primary,
                     )
                 }
             }
             RequestStatus.RECHAZADA ->
-                ResultTag("Rechazada", R.drawable.icon_estado_rechazada, HuellaColors.ErrorContainer, HuellaColors.ErrorDark)
+                ResultTag(stringResource(R.string.request_status_rejected), R.drawable.icon_estado_rechazada, HuellaColors.ErrorContainer, HuellaColors.ErrorDark)
         }
     }
 }
@@ -348,25 +353,25 @@ private fun RequestAcceptedDialog(
         ) {
             Icon(Icons.Outlined.Celebration, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(30.dp))
             Text(
-                "Solicitud aceptada",
+                stringResource(R.string.request_accepted_title),
                 style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp, lineHeight = 26.sp),
                 color = HuellaColors.TextPrimary,
             )
             Text(
-                "¿Deseas cerrar esta publicación? El esquema actual no registra el estado de adopción ni otorga puntos automáticamente.",
+                stringResource(R.string.request_accepted_text),
                 style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
                 color = HuellaColors.TextSecondary,
             )
             Column(Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 PrimaryButton(
-                    text = "Cerrar publicación",
+                    text = stringResource(R.string.request_close_post),
                     onClick = onClosePublication,
                     modifier = Modifier.fillMaxWidth(),
                     loading = closing,
                     height = 44.dp,
                 )
                 HuellaTextButton(
-                    text = "Mantener abierta",
+                    text = stringResource(R.string.request_keep_open),
                     onClick = onKeepOpen,
                     modifier = Modifier
                         .fillMaxWidth()

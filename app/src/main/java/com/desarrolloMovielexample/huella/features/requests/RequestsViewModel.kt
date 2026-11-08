@@ -2,6 +2,10 @@ package com.desarrolloMovielexample.huella.features.requests
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Applicant
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.domain.model.ReceivedRequestGroup
@@ -35,8 +39,8 @@ data class RequestsUiState(
 class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
 
     private val local = MutableStateFlow(RequestsUiState())
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
     private val _openChats = Channel<String>(Channel.BUFFERED)
     val openChats: Flow<String> = _openChats.receiveAsFlow()
 
@@ -71,11 +75,11 @@ class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository)
             repo.respondToRequest(applicant.id, accept)
                 .onSuccess {
                     local.update { it.copy(busyApplicantId = null, acceptedPublicationId = if (accept) publicationId else null) }
-                    if (!accept) _messages.send("Solicitud de ${applicant.name} rechazada")
+                    if (!accept) _messages.send(uiText(R.string.msg_request_rejected, applicant.name))
                 }
                 .onFailure { e ->
                     local.update { it.copy(busyApplicantId = null) }
-                    _messages.send(e.message ?: "No pudimos responder la solicitud")
+                    _messages.send(e.toUiText(R.string.error_respond_request))
                 }
         }
     }
@@ -84,7 +88,7 @@ class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository)
         viewModelScope.launch {
             repo.openConversation(applicant.userId, publicationId)
                 .onSuccess { _openChats.send(it) }
-                .onFailure { e -> _messages.send(e.message ?: "No pudimos abrir la conversación") }
+                .onFailure { e -> _messages.send(e.toUiText(R.string.error_open_chat)) }
         }
     }
 
@@ -95,17 +99,17 @@ class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository)
             repo.closePublication(id)
                 .onSuccess {
                     local.update { it.copy(isClosing = false, acceptedPublicationId = null) }
-                    _messages.send("Publicación finalizada. ¡Gracias por ayudar!")
+                    _messages.send(uiText(R.string.msg_post_closed))
                 }
                 .onFailure { e ->
                     local.update { it.copy(isClosing = false) }
-                    _messages.send(e.message ?: "No pudimos cerrar la publicación")
+                    _messages.send(e.toUiText(R.string.error_close_post))
                 }
         }
     }
 
     fun keepOpen() {
         local.update { it.copy(acceptedPublicationId = null) }
-        _messages.trySend("La publicación sigue abierta")
+        _messages.trySend(uiText(R.string.msg_post_still_open))
     }
 }
