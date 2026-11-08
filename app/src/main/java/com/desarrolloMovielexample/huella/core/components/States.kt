@@ -41,8 +41,8 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 
 /**
- * "Estado vacío": illustration, title 16/500, text 14/400 #5F6A63, optional 44dp green action
- * and optional text action below (e.g. "Limpiar filtros" + "Crear alerta").
+ * "Estado vacío": illustration, title 16/500, text 14/400 #5F6A63, optional full-width 48dp green action
+ * and optional outlined secondary action below (e.g. "Limpiar filtros" + "Crear alerta").
  * Illustrations: R.drawable.illus_searching, illus_relationship, illus_empty_inbox, illus_tasks,
  * illus_connection_lost, illus_message_sent...
  */
@@ -70,13 +70,13 @@ fun EmptyState(
         Text(text, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary, textAlign = TextAlign.Center)
         if (actionText != null && onAction != null) {
             if (actionOutlined) {
-                SecondaryButton(actionText, onAction, height = 44.dp, icon = actionIcon)
+                SecondaryButton(actionText, onAction, Modifier.fillMaxWidth(), icon = actionIcon)
             } else {
-                PrimaryButton(actionText, onAction, height = 44.dp, icon = actionIcon)
+                PrimaryButton(actionText, onAction, Modifier.fillMaxWidth(), icon = actionIcon)
             }
         }
         if (secondaryActionText != null && onSecondaryAction != null) {
-            HuellaTextButton(secondaryActionText, onSecondaryAction)
+            SecondaryButton(secondaryActionText, onSecondaryAction, Modifier.fillMaxWidth())
         }
     }
 }
