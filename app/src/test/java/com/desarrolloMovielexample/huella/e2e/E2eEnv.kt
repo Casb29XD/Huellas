@@ -12,13 +12,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assume
 
 /**
- * Entorno para pruebas contra un Supabase real (local: `supabase start`).
- * Lee SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY y SUPABASE_SERVICE_ROLE_KEY; si falta alguna, la prueba se salta.
- * Usuarios semilla (supabase/seed.sql).
+ * Entorno para pruebas contra un Supabase real (por defecto el proyecto hosted; ver docs/PRUEBAS.md).
+ * Lee SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY (o SUPABASE_ANON_KEY) y SUPABASE_SERVICE_ROLE_KEY; si falta alguna, la prueba se salta.
+ * La BD es compartida: cada prueba crea sus propios usuarios con [createUser] (correos e2e+<nanoTime>@huella.test)
+ * y cada clase llama a [cleanup] en su @AfterClass, que borra los usuarios (y por cascada sus filas).
  */
 object E2eEnv {
-    val LAURA = "laura@ejemplo.com" to "Laura1234!"
-    val CARLOS = "carlos@ejemplo.com" to "Carlos1234!"
+    const val PASSWORD = "E2e-Test-1234!"
 
     data class Resp(val code: Int, val body: String) {
         val ok get() = code in 200..299
@@ -26,17 +26,27 @@ object E2eEnv {
         fun rows(): List<JsonObject> = JsonParser.parseString(body).asJsonArray.map { it.asJsonObject }
     }
 
+    data class TestUser(val id: String, val email: String, val name: String) {
+        /** access_token de una sesión real (password grant). */
+        val token: String by lazy { login(email, PASSWORD).first }
+    }
+
     private fun env(name: String) = System.getenv(name)?.takeIf { it.isNotBlank() }
     private val http = OkHttpClient()
+    private val createdUsers = mutableListOf<String>()
 
     val url: String get() = env("SUPABASE_URL")!!.trimEnd('/')
-    val key: String get() = env("SUPABASE_PUBLISHABLE_KEY")!!
+    val key: String get() = (env("SUPABASE_PUBLISHABLE_KEY") ?: env("SUPABASE_ANON_KEY"))!!
     private val serviceKey: String get() = env("SUPABASE_SERVICE_ROLE_KEY")!!
 
     /** Salta la prueba si no hay Supabase configurado; si lo hay, apunta la app a él. */
     fun assumeConfigured() {
-        val vars = listOf("SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY")
-        Assume.assumeTrue("Faltan variables ${vars.filter { env(it) == null }}: corre scripts/test-all.sh", vars.all { env(it) != null })
+        val missing = buildList {
+            if (env("SUPABASE_URL") == null) add("SUPABASE_URL")
+            if (env("SUPABASE_PUBLISHABLE_KEY") == null && env("SUPABASE_ANON_KEY") == null) add("SUPABASE_PUBLISHABLE_KEY")
+            if (env("SUPABASE_SERVICE_ROLE_KEY") == null) add("SUPABASE_SERVICE_ROLE_KEY")
+        }
+        Assume.assumeTrue("Faltan variables $missing: ver docs/PRUEBAS.md", missing.isEmpty())
         SupabaseConfig.override(url, key)
     }
 
@@ -45,6 +55,8 @@ object E2eEnv {
         assumeConfigured()
         return RetrofitClient.supabaseApi
     }
+
+    fun uniqueEmail() = "e2e+${System.nanoTime()}@huella.test"
 
     /** Petición cruda a Supabase con la publishable key; `token` va como Bearer si se pasa. */
     fun rest(
@@ -67,17 +79,46 @@ object E2eEnv {
         return http.newCall(req).execute().use { Resp(it.code, it.body?.string().orEmpty()) }
     }
 
+    /** POST rest/v1/rpc/<fn> con el token del usuario (o anónimo si es null). */
+    fun rpc(fn: String, body: String = "{}", token: String? = null): Resp = rest("rest/v1/rpc/$fn", "POST", body, token)
+
     /** Sesión de un usuario: devuelve (access_token, user id). */
-    fun login(email: String, password: String): Pair<String, String> {
+    fun login(email: String, password: String = PASSWORD): Pair<String, String> {
         val r = rest("auth/v1/token?grant_type=password", "POST", """{"email":"$email","password":"$password"}""")
         check(r.ok) { "Login de $email falló (${r.code}): ${r.body}" }
         val json = r.json()
         return json.get("access_token").asString to json.getAsJsonObject("user").get("id").asString
     }
 
-    fun loginToken(email: String, password: String): String = login(email, password).first
+    /** Como service_role (salta RLS) para preparar datos y verificar el estado real de la BD. */
+    fun admin(path: String, method: String = "GET", body: String? = null, contentType: String = "application/json"): Resp =
+        rest(path, method, body, token = serviceKey, apikey = serviceKey, contentType = contentType,
+            headers = mapOf("Prefer" to "return=representation"))
 
-    /** Consulta/escritura como service_role (salta RLS) para verificar el estado real de la BD. */
-    fun adminQuery(path: String, method: String = "GET", body: String? = null): Resp =
-        rest(path, method, body, token = serviceKey, apikey = serviceKey, headers = mapOf("Prefer" to "return=representation"))
+    /** Usuario confirmado creado con la Admin API (sin correo); se borra en [cleanup]. */
+    fun createUser(name: String = "E2E", city: String = "Medellín"): TestUser {
+        val email = uniqueEmail()
+        val r = admin(
+            "auth/v1/admin/users", "POST",
+            """{"email":"$email","password":"$PASSWORD","email_confirm":true,"user_metadata":{"name":"$name","city":"$city"}}""",
+        )
+        check(r.ok) { "Admin API no creó $email (${r.code}): ${r.body}" }
+        return TestUser(track(r.json().get("id").asString), email, name)
+    }
+
+    /** Registra un usuario creado por otra vía (p. ej. signup público) para borrarlo en [cleanup]. */
+    fun track(userId: String): String = userId.also { synchronized(createdUsers) { createdUsers += it } }
+
+    /** Marca al usuario de prueba como moderador (service_role: RLS y triggers de perfil no aplican). */
+    fun makeModerator(user: TestUser) {
+        val r = admin("rest/v1/profiles?id=eq.${user.id}", "PATCH", """{"is_moderator":true}""")
+        check(r.ok && r.rows().size == 1) { "No se pudo hacer moderador a ${user.email} (${r.code}): ${r.body}" }
+    }
+
+    /** Borra los usuarios creados por la clase (DELETE admin/users/<id>; profiles y demás caen por ON DELETE CASCADE). */
+    fun cleanup() {
+        val ids = synchronized(createdUsers) { createdUsers.toList().also { createdUsers.clear() } }
+        val failed = ids.map { it to admin("auth/v1/admin/users/$it", "DELETE") }.filterNot { it.second.ok }
+        check(failed.isEmpty()) { "No se borraron usuarios e2e: ${failed.map { "${it.first} ${it.second.code} ${it.second.body}" }}" }
+    }
 }
