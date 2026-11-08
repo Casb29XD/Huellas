@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -148,123 +150,135 @@ fun PublicationDetailScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { HuellaSnackbarHost(screenHost) },
         bottomBar = {
-            if (state.isAuthorOrMod) {
-                Row(
-                    Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
-                    PillButton("Eliminar", onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
+            Column {
+                if (state.isAuthorOrMod) {
+                    Row(
+                        Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        PrimaryButton("Editar", onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
+                        PillButton("Eliminar", onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
+                    }
                 }
-            }
-            if (showDeleteConfirm) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { showDeleteConfirm = false },
-                    title = { Text("¿Eliminar publicación?") },
-                    text = { Text("Esta acción eliminará la publicación definitivamente.") },
-                    confirmButton = {
-                        androidx.compose.material3.TextButton(onClick = {
-                            showDeleteConfirm = false
-                            viewModel.deleteCurrentPublication(onSuccess = onBack)
-                        }) {
-                            Text("Eliminar", color = HuellaColors.ErrorDark)
+                ActionBar(
+                    pub = pub,
+                    requestSent = state.requestSent,
+                    onCta = {
+                        when {
+                            pub.category.isAdoption -> viewModel.openSheet(DetailSheet.INTERES)
+                            pub.category.isLostFound -> viewModel.openSheet(DetailSheet.VISTO)
+                            else -> onOpenMap()
                         }
                     },
-                    dismissButton = {
-                        androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) {
-                            Text("Cancelar")
-                        }
-                    }
+                    onCall = { viewModel.openSheet(DetailSheet.LLAMAR) },
+                    onReport = { viewModel.openSheet(DetailSheet.REPORTAR) },
                 )
             }
-            ActionBar(
-                pub = pub,
-                requestSent = state.requestSent,
-                onCta = {
-                    when {
-                        pub.category.isAdoption -> viewModel.openSheet(DetailSheet.INTERES)
-                        pub.category.isLostFound -> viewModel.openSheet(DetailSheet.VISTO)
-                        else -> onOpenMap()
-                    }
-                },
-                onCall = { viewModel.openSheet(DetailSheet.LLAMAR) },
-                onReport = { viewModel.openSheet(DetailSheet.REPORTAR) },
-            )
         },
     ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Gallery(pub, onBack = onBack, onShare = share)
+        val scroll = rememberScrollState()
+        Box(Modifier.fillMaxSize().padding(padding)) {
             Column(
-                Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scroll),
             ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    CategoryChip(pub.category)
-                    Spacer(Modifier.weight(1f))
-                    Icon(Icons.Outlined.Schedule, contentDescription = null, tint = HuellaColors.TextTertiary, modifier = Modifier.size(15.dp))
-                    Text(pub.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary, modifier = Modifier.padding(start = 4.dp))
-                }
-                Text(
-                    pub.title,
-                    style = MaterialTheme.typography.titleLarge.copy(lineHeight = 28.6.sp),
-                    color = HuellaColors.TextPrimary,
-                )
-                when {
-                    pub.category.isLostFound -> LostFoundInfo(pub)
-                    pub.category == Category.VETERINARIA -> VetInfo(pub)
-                    else -> AdoptionInfo(pub)
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Descripción", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
-                    Text(pub.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.4.sp), color = HuellaColors.TextBody)
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Ubicación", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable(onClick = onOpenMap),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        MapBackground(Modifier.fillMaxSize())
+                Gallery(pub, onBack = onBack, onShare = share)
+                Column(
+                    Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        CategoryChip(pub.category)
+                        Spacer(Modifier.weight(1f))
+                        Icon(Icons.Outlined.Schedule, contentDescription = null, tint = HuellaColors.TextTertiary, modifier = Modifier.size(15.dp))
+                        Text(pub.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary, modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Text(
+                        pub.title,
+                        style = MaterialTheme.typography.titleLarge.copy(lineHeight = 28.6.sp),
+                        color = HuellaColors.TextPrimary,
+                    )
+                    when {
+                        pub.category.isLostFound -> LostFoundInfo(pub)
+                        pub.category == Category.VETERINARIA -> VetInfo(pub)
+                        else -> AdoptionInfo(pub)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Descripción", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+                        Text(pub.description, style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.4.sp), color = HuellaColors.TextBody)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Ubicación", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
                         Box(
                             Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(Color.White),
+                                .fillMaxWidth()
+                                .height(140.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(onClick = onOpenMap),
                             contentAlignment = Alignment.Center,
                         ) {
-                            HuellaIcon(categoryIcon(pub.category, filled = true), tint = pub.category.color, size = 36.dp)
+                            MapBackground(Modifier.fillMaxSize())
+                            Box(
+                                Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                HuellaIcon(categoryIcon(pub.category, filled = true), tint = pub.category.color, size = 36.dp)
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            HuellaIcon(R.drawable.icon_attr_ubicacion, tint = HuellaColors.TextSecondary, size = 21.dp)
+                            Text(pub.neighborhood, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextSecondary)
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        HuellaIcon(R.drawable.icon_attr_ubicacion, tint = HuellaColors.TextSecondary, size = 21.dp)
-                        Text(pub.neighborhood, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextSecondary)
-                    }
+                    VotesAndCommentsRow(
+                        publication = pub,
+                        onVote = viewModel::vote,
+                        onOpenComments = { viewModel.openSheet(DetailSheet.COMENTARIOS) }
+                    )
+                    AuthorCard(pub, onOpenAuthor)
+                    CommentsSection(
+                        comments = state.comments,
+                        draft = state.commentDraft,
+                        onDraftChange = viewModel::onCommentDraftChange,
+                        onSend = viewModel::addComment,
+                        onDeleteComment = viewModel::deleteComment,
+                        canDeleteAny = state.isAuthorOrMod
+                    )
                 }
-                VotesAndCommentsRow(
-                    publication = pub,
-                    onVote = viewModel::vote,
-                    onOpenComments = { viewModel.openSheet(DetailSheet.COMENTARIOS) }
-                )
-                AuthorCard(pub, onOpenAuthor)
-                CommentsSection(
-                    comments = state.comments,
-                    draft = state.commentDraft,
-                    onDraftChange = viewModel::onCommentDraftChange,
-                    onSend = viewModel::addComment,
-                    onDeleteComment = viewModel::deleteComment,
-                    canDeleteAny = state.isAuthorOrMod
-                )
             }
+            // Edge-to-edge header: as the photo scrolls away, fill the status bar so the title never sits under it.
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                    .background(HuellaColors.Background.copy(alpha = (scroll.value / 300f).coerceIn(0f, 1f))),
+            )
         }
+    }
+
+    if (showDeleteConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("¿Eliminar publicación?") },
+            text = { Text("Esta acción eliminará la publicación definitivamente.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.deleteCurrentPublication(onSuccess = onBack)
+                }) {
+                    Text("Eliminar", color = HuellaColors.ErrorDark)
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancelar")
+                }
+            },
+        )
     }
 
     when (state.sheet) {

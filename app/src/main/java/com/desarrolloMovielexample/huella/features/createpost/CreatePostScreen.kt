@@ -100,7 +100,15 @@ fun CreatePostScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scroll = rememberScrollState()
 
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { msg ->
+            // Field errors are already shown inline under each field; the snackbar only carries the rest.
+            val s = viewModel.uiState.value
+            if (msg !in listOfNotNull(s.breedError, s.ageError, s.titleError, s.descriptionError, s.eventDateError)) {
+                snackbarHostState.showSnackbar(msg)
+            }
+        }
+    }
     LaunchedEffect(state.published) { if (state.published) onPublished() }
     LaunchedEffect(state.step) { scroll.scrollTo(0) }
 
