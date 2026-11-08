@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.features.moderation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -21,8 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,13 +39,13 @@ import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTabs
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
-import com.desarrolloMovielexample.huella.core.components.ModerationStatusTag
-import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
+import com.desarrolloMovielexample.huella.core.components.CategoryChip
+import com.desarrolloMovielexample.huella.core.components.PetImage
+import com.desarrolloMovielexample.huella.core.components.huellaCard
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
-import com.desarrolloMovielexample.huella.domain.model.PostStatus
 
 /** 06 · Panel de moderación (Pendientes / Reportes) + "Cola al día" empty state. */
 @Composable
@@ -192,23 +197,49 @@ private fun StatCard(value: Int, label: String, background: Color, content: Colo
     }
 }
 
+/** Fila propia del panel: título a 2 líneas y una sola métrica de tiempo (ítems 45 y 43). */
 @Composable
 private fun ModerationListItem(item: ModerationItem, onClick: () -> Unit) {
-    val pendingTag: (@Composable () -> Unit)? =
-        if (item.isReported) null else ({ ModerationStatusTag(PostStatus.EN_REVISION, small = true) })
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        PublicationRowCard(publication = item.publication, onClick = onClick, trailingTag = pendingTag)
-        Row(
+    val pub = item.publication
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .huellaCard()
+            .clickable(onClick = onClick)
+            .padding(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
             Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .size(96.dp)
+                .clip(RoundedCornerShape(10.dp)),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                HuellaIcon(R.drawable.icon_estado_en_revision, tint = HuellaColors.TextTertiary, size = 18.dp)
-                Text(item.waitTime, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
-            }
+            PetImage(pub, Modifier.matchParentSize(), showLabel = false)
+            CategoryChip(pub.category, Modifier.padding(6.dp), small = true)
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                pub.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = HuellaColors.TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                listOf(pub.species, pub.breed, pub.city).filter { it.isNotBlank() }.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = HuellaColors.TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "Publicada ${pub.timeAgo} · ${pub.author.name}",
+                style = MaterialTheme.typography.bodySmall,
+                color = HuellaColors.TextTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             if (item.isReported) {
                 val count = item.reports.size
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -217,11 +248,9 @@ private fun ModerationListItem(item: ModerationItem, onClick: () -> Unit) {
                         if (count == 1) "1 denuncia" else "$count denuncias",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = HuellaColors.Error,
+                        color = HuellaColors.ErrorDark,
                     )
                 }
-            } else {
-                Text(item.publication.author.name, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
             }
         }
     }
