@@ -673,7 +673,7 @@ private fun AuthorCard(pub: Publication, onOpenAuthor: (String) -> Unit) {
             Text(author.name, style = Medium14, color = HuellaColors.TextPrimary)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 HuellaIcon(R.drawable.icon_animal_otro, tint = author.level.color, size = 18.dp)
-                Text(author.level.label, style = MaterialTheme.typography.labelMedium, color = author.level.color)
+                Text(stringResource(author.level.labelRes), style = MaterialTheme.typography.labelMedium, color = author.level.color)
             }
         }
         Text(

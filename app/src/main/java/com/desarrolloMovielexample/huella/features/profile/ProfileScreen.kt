@@ -173,7 +173,7 @@ private fun ProfileHeader(user: User, onOpenLevels: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HuellaIcon(R.drawable.icon_animal_otro, tint = Color.White, size = 26.dp)
-            Text(level.label, style = MaterialTheme.typography.labelLarge, color = Color.White)
+            Text(stringResource(level.labelRes), style = MaterialTheme.typography.labelLarge, color = Color.White)
         }
     }
 }
