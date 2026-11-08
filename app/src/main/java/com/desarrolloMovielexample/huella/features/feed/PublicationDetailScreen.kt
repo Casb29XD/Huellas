@@ -164,7 +164,9 @@ fun PublicationDetailScreen(
                         Modifier.fillMaxWidth().background(HuellaColors.Surface).padding(horizontal = 16.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        PrimaryButton(stringResource(R.string.action_edit), onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
+                        if (state.isAuthor) {
+                            PrimaryButton(stringResource(R.string.action_edit), onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
+                        }
                         PillButton(stringResource(R.string.action_delete), onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
                     }
                 }

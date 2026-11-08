@@ -35,6 +35,8 @@ data class PublicationDetailUiState(
     val comments: List<Comment> = emptyList(),
     val commentDraft: String = "",
     val isAuthorOrMod: Boolean = false,
+    /** Solo el autor edita (ítem 9); el moderador puede borrar pero no reescribir el post. */
+    val isAuthor: Boolean = false,
 )
 
 class PublicationDetailViewModel(
@@ -64,7 +66,7 @@ class PublicationDetailViewModel(
                 val pub = _uiState.value.publication
                 val isAuthor = user != null && pub != null && user.id == pub.author.userId
                 val isMod = user?.isModerator == true
-                _uiState.update { it.copy(isAuthorOrMod = isAuthor || isMod) }
+                _uiState.update { it.copy(isAuthorOrMod = isAuthor || isMod, isAuthor = isAuthor) }
             }
         }
         viewModelScope.launch {

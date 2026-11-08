@@ -115,6 +115,7 @@ fun CreatePostScreen(
             }
         }
     }
+    LaunchedEffect(editPublicationId) { editPublicationId?.let(viewModel::loadForEdit) }
     LaunchedEffect(state.published) { if (state.published) onPublished() }
     LaunchedEffect(state.step) { scroll.scrollTo(0) }
 
@@ -136,7 +137,7 @@ fun CreatePostScreen(
                     )
                 } else {
                     PrimaryButton(
-                        text = stringResource(R.string.action_publish),
+                        text = stringResource(if (state.editingId != null) R.string.action_save_changes else R.string.action_publish),
                         onClick = viewModel::publish,
                         loading = state.isLoading,
                         icon = Icons.Outlined.Publish,

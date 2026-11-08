@@ -45,6 +45,8 @@ data class CreatePostUiState(
     val titleError: UiText? = null,
     val descriptionError: UiText? = null,
     val eventDateError: UiText? = null,
+    /** Id de la publicación que se edita; null = publicación nueva. */
+    val editingId: String? = null,
     val isLoading: Boolean = false,
     val published: Boolean = false,
 ) {
@@ -71,6 +73,25 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
     val cities: List<String> get() = repo.cities
     val species: List<String> get() = repo.species
     val breedSuggestions: List<String> get() = repo.breedSuggestions
+
+    /** Modo edición (ítem 9): precarga el borrador con la publicación del autor; publish() hará PATCH. */
+    fun loadForEdit(publicationId: String) {
+        if (_uiState.value.editingId == publicationId) return
+        val p = repo.getPublication(publicationId)
+        if (p == null) {
+            _messages.trySend(uiText(R.string.detail_unavailable))
+            return
+        }
+        _uiState.update {
+            it.copy(
+                editingId = p.id, category = p.category, photos = listOfNotNull(p.imageUrl?.let(Uri::parse)),
+                species = p.species, breed = p.breed, size = p.size, vaccinated = p.vaccinated,
+                sterilized = p.sterilized == true, age = p.age.orEmpty(), sex = p.sex ?: it.sex, title = p.title,
+                description = p.description, city = repo.cities.firstOrNull { c -> c.substringBefore(",") == p.city } ?: p.city,
+                eventDate = p.eventDate.orEmpty(),
+            )
+        }
+    }
 
     fun onCategory(c: Category) = _uiState.update { it.copy(category = c, eventDateError = null) }
     fun addPhotos(uris: List<Uri>) = _uiState.update {
@@ -143,15 +164,19 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
         viewModelScope.launch {
             // ponytail: `location` is not in PublicationDraft yet (no maps this phase); add it with the map picker.
             val result = runCatching {
-                val imageUrl = SupabaseRepository.uploadPublicationImage(s.photos.first())
-                repo.createPublication(
-                PublicationDraft(
+                // Al editar, la foto que ya está en pet-images (http/https) no se vuelve a subir.
+                val photo = s.photos.first()
+                val imageUrl = if (photo.scheme == "http" || photo.scheme == "https") photo.toString()
+                else SupabaseRepository.uploadPublicationImage(photo)
+                val draft = PublicationDraft(
                     category = s.category, title = s.title, description = s.description, species = s.species,
                     breed = s.breed, size = s.size, vaccinated = s.vaccinated, sterilized = s.sterilized,
                     age = s.age, sex = s.sex, city = s.city, eventDate = s.eventDate.takeIf { s.needsDate },
                     imageUrl = imageUrl,
-                ),
-            ).getOrThrow()
+                )
+                val editingId = s.editingId
+                if (editingId != null) repo.updatePublication(editingId, draft).getOrThrow()
+                else repo.createPublication(draft).getOrThrow()
             }
             result.onSuccess { _uiState.update { it.copy(isLoading = false, published = true) } }
                 .onFailure { e ->
