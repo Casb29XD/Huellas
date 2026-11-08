@@ -111,8 +111,10 @@ data class ModerationDetailUiState(
     val aiReview: AiReview? = null,
     val aiLoading: Boolean = false,
     val aiMessage: UiText? = null,
-    val finished: Boolean = false,
+    /** Confirmación de la decisión; no nulo = terminado y la pantalla sale mostrando el aviso en el destino. */
+    val doneMessage: UiText? = null,
 ) {
+    val finished: Boolean get() = doneMessage != null
     val busy: Boolean get() = isApproving || isRejecting || finished
 }
 
@@ -138,11 +140,12 @@ class ModerationDetailViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isApproving = true) }
             val result = repo.approve(item.id)
-            _uiState.update { it.copy(isApproving = false, finished = result.isSuccess) }
-            _messages.send(
-                if (result.isSuccess) uiText(R.string.msg_post_approved)
-                else result.exceptionOrNull()?.toUiText(R.string.error_approve) ?: uiText(R.string.error_approve),
-            )
+            if (result.isSuccess) {
+                _uiState.update { it.copy(isApproving = false, doneMessage = uiText(R.string.msg_post_approved)) }
+            } else {
+                _uiState.update { it.copy(isApproving = false) }
+                _messages.send(result.exceptionOrNull()?.toUiText(R.string.error_approve) ?: uiText(R.string.error_approve))
+            }
         }
     }
 
@@ -232,8 +235,7 @@ class ModerationDetailViewModel(
             _uiState.update { it.copy(isRejecting = true, rejectError = null) }
             val result = repo.reject(item.id, reason, state.rejectComment.trim())
             if (result.isSuccess) {
-                _uiState.update { it.copy(isRejecting = false, finished = true, showRejectSheet = false) }
-                _messages.send(uiText(R.string.msg_post_rejected))
+                _uiState.update { it.copy(isRejecting = false, doneMessage = uiText(R.string.msg_post_rejected), showRejectSheet = false) }
             } else {
                 val msg = result.exceptionOrNull()?.toUiText(R.string.error_reject) ?: uiText(R.string.error_reject)
                 _uiState.update { it.copy(isRejecting = false, rejectError = msg) }

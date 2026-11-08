@@ -27,19 +27,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextField
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.utils.asString
-import kotlinx.coroutines.delay
 
 /** Mismo lenguaje visual que "Recupera tu contraseña": logo, campos de 52dp y botón verde. */
 @Composable
 fun SetPasswordScreen(
     onBack: () -> Unit,
-    onDone: () -> Unit,
+    /** Recibe la confirmación para mostrarla en la pantalla de destino. */
+    onDone: (UiText) -> Unit,
     viewModel: SetPasswordViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,8 +50,7 @@ fun SetPasswordScreen(
     CollectSnackbarMessages(viewModel.messages, snackbarHostState)
     LaunchedEffect(state.saved) {
         if (state.saved) {
-            delay(800) // deja ver "Contraseña actualizada"
-            onDone()
+            onDone(uiText(R.string.msg_password_updated))
         }
     }
     val transformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation()

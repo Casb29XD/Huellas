@@ -3,6 +3,7 @@ package com.desarrolloMovielexample.huella.features.moderation
 import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.data.remote.AiReview
 import com.desarrolloMovielexample.huella.domain.repository.FakeRepository
+import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -65,5 +66,18 @@ class ModerationDetailViewModelTest {
         vm.confirmReject()
         assertEquals(true, vm.uiState.value.reasonError)
         assertNull(vm.uiState.value.rejectReason)
+    }
+
+    @Test
+    fun `item 56 - aprobar termina al instante y entrega la confirmacion al destino`() = runTest(dispatcher) {
+        // approve() sin tocar FakeRepository (compartido): "102" debe seguir en la cola para los demás tests.
+        val repo = object : HuellaRepository by FakeRepository {
+            override suspend fun approve(itemId: String) = Result.success(Unit)
+        }
+        val vm = ModerationDetailViewModel(repo) { null }.also { it.load("102") }
+        vm.approve()
+        advanceUntilIdle()
+        assertEquals(true, vm.uiState.value.finished)
+        assertEquals(UiText.Res(com.desarrolloMovielexample.huella.R.string.msg_post_approved), vm.uiState.value.doneMessage)
     }
 }
