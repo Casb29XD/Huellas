@@ -40,6 +40,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TextButton
 import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -160,7 +161,7 @@ fun ModerationDetailScreen(
                         )
                         CategoryChip(item.publication.category, Modifier.padding(10.dp))
                     }
-                    DetailBody(item)
+                    DetailBody(item, state.resolvingReportId, viewModel::resolveReport)
                 }
             }
         }
@@ -230,7 +231,7 @@ private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DetailBody(item: ModerationItem) {
+private fun DetailBody(item: ModerationItem, resolvingReportId: String?, onResolve: (Report) -> Unit) {
     val pub = item.publication
     Column(
         Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
@@ -290,7 +291,7 @@ private fun DetailBody(item: ModerationItem) {
                 Column(Modifier.fillMaxWidth().outlinedWhite()) {
                     item.reports.forEachIndexed { i, report ->
                         if (i > 0) HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                        ReportRow(report)
+                        ReportRow(report, resolving = resolvingReportId == report.id, onResolve = { onResolve(report) })
                     }
                 }
             }
@@ -347,7 +348,7 @@ private fun SmallTag(text: String, background: Color, content: Color) {
 }
 
 @Composable
-private fun ReportRow(report: Report) {
+private fun ReportRow(report: Report, resolving: Boolean, onResolve: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -366,6 +367,15 @@ private fun ReportRow(report: Report) {
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 18.sp),
                     color = HuellaColors.TextSecondary,
                 )
+            }
+            if (report.id.isNotBlank()) {
+                TextButton(onClick = onResolve, enabled = !resolving, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    if (resolving) {
+                        CircularProgressIndicator(Modifier.size(16.dp), color = HuellaColors.Primary, strokeWidth = 2.dp)
+                    } else {
+                        Text("Marcar reporte como resuelto", style = MaterialTheme.typography.labelLarge, color = HuellaColors.Primary)
+                    }
+                }
             }
         }
     }
