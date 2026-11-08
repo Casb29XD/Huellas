@@ -32,6 +32,8 @@ data class PublicationDetailUiState(
     val reportDetail: String = "",
     val sightingText: String = "",
     val isSending: Boolean = false,
+    /** Error de validación del sheet abierto, mostrado inline bajo su campo (ítem 44). */
+    val sheetError: UiText? = null,
     val comments: List<Comment> = emptyList(),
     val commentDraft: String = "",
     val isAuthorOrMod: Boolean = false,
@@ -83,13 +85,13 @@ class PublicationDetailViewModel(
         }
     }
 
-    fun openSheet(sheet: DetailSheet) = _uiState.update { it.copy(sheet = sheet) }
-    fun closeSheet() = _uiState.update { it.copy(sheet = null, isSending = false) }
+    fun openSheet(sheet: DetailSheet) = _uiState.update { it.copy(sheet = sheet, sheetError = null) }
+    fun closeSheet() = _uiState.update { it.copy(sheet = null, isSending = false, sheetError = null) }
 
-    fun onInterestMessageChange(text: String) = _uiState.update { it.copy(interestMessage = text) }
-    fun onReportReasonChange(reason: String) = _uiState.update { it.copy(reportReason = reason) }
+    fun onInterestMessageChange(text: String) = _uiState.update { it.copy(interestMessage = text, sheetError = null) }
+    fun onReportReasonChange(reason: String) = _uiState.update { it.copy(reportReason = reason, sheetError = null) }
     fun onReportDetailChange(text: String) = _uiState.update { it.copy(reportDetail = text) }
-    fun onSightingChange(text: String) = _uiState.update { it.copy(sightingText = text) }
+    fun onSightingChange(text: String) = _uiState.update { it.copy(sightingText = text, sheetError = null) }
     fun onCommentDraftChange(text: String) = _uiState.update { it.copy(commentDraft = text) }
 
     fun vote(value: Int) {
@@ -141,7 +143,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.interestMessage.length > 500) {
-            _messages.trySend(uiText(R.string.error_message_too_long))
+            _uiState.update { it.copy(sheetError = uiText(R.string.error_message_too_long)) }
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -165,7 +167,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.reportReason == null) {
-            _messages.trySend(uiText(R.string.error_report_reason))
+            _uiState.update { it.copy(sheetError = uiText(R.string.error_report_reason)) }
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -186,7 +188,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.sightingText.isBlank()) {
-            _messages.trySend(uiText(R.string.error_sighting_empty))
+            _uiState.update { it.copy(sheetError = uiText(R.string.error_sighting_empty)) }
             return
         }
         _uiState.update { it.copy(isSending = true) }
