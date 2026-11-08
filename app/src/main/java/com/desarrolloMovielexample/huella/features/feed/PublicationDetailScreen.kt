@@ -56,8 +56,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -89,7 +89,6 @@ import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Publication
-import com.desarrolloMovielexample.huella.domain.repository.randomPhotoUrl
 
 private val VetSoft = Color(0xFFE1F2EE)
 
@@ -425,18 +424,19 @@ private fun SheetBody(host: SnackbarHostState, gap: Dp = 16.dp, content: @Compos
     }
 }
 
-/** 4:3 pager with 3 photos, back + share buttons, "foto n/3" label and page dots. */
+/** 4:3 pager with the publication's real photos (placeholder slide if none), back + share buttons, page dots. */
 @Composable
 private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
-    val urls = listOf(pub.imageUrl, randomPhotoUrl("${pub.id}b"), randomPhotoUrl("${pub.id}c"))
+    // ponytail: the model has a single imageUrl; turn this into pub.imageUrls when several photos are stored.
+    val urls = listOf(pub.imageUrl)
     val pager = rememberPagerState(pageCount = { urls.size })
     Box(
         Modifier
             .fillMaxWidth()
             .aspectRatio(4f / 3f),
     ) {
-        HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
-            PetImage(urls[page], toneColor(pub.tone), Modifier.fillMaxSize(), contentDescription = pub.title)
+        HorizontalPager(pager, Modifier.fillMaxSize().testTag("gallery")) { page ->
+            PetImage(urls[page], toneColor(pub.tone), Modifier.fillMaxSize().testTag("gallery_slide"), contentDescription = pub.title)
         }
         Box(
             Modifier
@@ -454,18 +454,6 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
             ) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
             }
-            Text(
-                "foto ${pager.currentPage + 1}/${urls.size}: ${pub.photoLabel}",
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
-                color = HuellaColors.TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(start = 56.dp, top = 2.dp)
-                    .background(Color.White.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            )
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
@@ -479,7 +467,7 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
                 HuellaIcon(R.drawable.icon_accion_compartir, tint = HuellaColors.TextPrimary, size = 29.dp)
             }
         }
-        Row(
+        if (urls.size > 1) Row(
             Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 12.dp),

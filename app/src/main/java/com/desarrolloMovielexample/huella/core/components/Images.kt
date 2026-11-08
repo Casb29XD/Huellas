@@ -5,10 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,7 +17,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,53 +30,35 @@ import com.desarrolloMovielexample.huella.domain.model.Level
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import kotlin.math.sqrt
 
-/**
- * Design photo placeholder: 135° stripes, 8dp [tone] / 8dp #F1F5F2, optional monospace label
- * ("foto: Luna busca un hogar tranquilo") at [labelAlignment].
- */
+/** Design photo placeholder: 135° stripes, 8dp [tone] / 8dp #F1F5F2. */
 @Composable
 fun StripedPlaceholder(
     tone: Color,
     modifier: Modifier = Modifier,
-    label: String? = null,
-    labelAlignment: Alignment = Alignment.BottomEnd,
 ) {
-    Box(modifier.clipToBounds()) {
-        Canvas(Modifier.fillMaxSize()) {
-            drawRect(HuellaColors.PrimaryTint)
-            val band = 8.dp.toPx()
-            val step = band * 2 * sqrt(2f)
-            var c = 0f
-            val limit = size.width + size.height
-            while (c <= limit + step) {
-                // line x + y = c, drawn as a band of width [band]
-                drawLine(
-                    color = tone,
-                    start = Offset(c, 0f),
-                    end = Offset(c - size.height, size.height),
-                    strokeWidth = band,
-                )
-                c += step
-            }
-        }
-        if (label != null) {
-            Text(
-                label,
-                style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = HuellaColors.TextSecondary),
-                maxLines = 1,
-                modifier = Modifier
-                    .align(labelAlignment)
-                    .padding(8.dp)
-                    .background(Color.White.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
+    Canvas(modifier.clipToBounds()) {
+        drawRect(HuellaColors.PrimaryTint)
+        val band = 8.dp.toPx()
+        val step = band * 2 * sqrt(2f)
+        var c = 0f
+        val limit = size.width + size.height
+        while (c <= limit + step) {
+            // line x + y = c, drawn as a band of width [band]
+            drawLine(
+                color = tone,
+                start = Offset(c, 0f),
+                end = Offset(c - size.height, size.height),
+                strokeWidth = band,
             )
+            c += step
         }
     }
 }
 
 /**
- * Publication photo: striped placeholder (design look) with the random photo from Coil on top.
+ * Publication photo: striped placeholder with the photo from Coil on top.
  * Set [showPhoto] = false to render exactly the design placeholder.
+ * [label] is only a screen-reader fallback; nothing is drawn over the photo.
  */
 @Composable
 fun PetImage(
@@ -91,11 +70,11 @@ fun PetImage(
     contentDescription: String? = null,
 ) {
     Box(modifier.clipToBounds()) {
-        StripedPlaceholder(tone = tone, label = label, modifier = Modifier.fillMaxSize())
+        StripedPlaceholder(tone = tone, modifier = Modifier.fillMaxSize())
         if (showPhoto && imageUrl != null) {
             AsyncImage(
                 model = imageUrl,
-                contentDescription = contentDescription,
+                contentDescription = contentDescription ?: label,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -103,18 +82,16 @@ fun PetImage(
     }
 }
 
-/** Convenience overload for a [Publication]. Label "foto: <title>" is only visible while the photo is missing. */
+/** Convenience overload for a [Publication]. */
 @Composable
 fun PetImage(
     publication: Publication,
     modifier: Modifier = Modifier,
-    showLabel: Boolean = true,
     showPhoto: Boolean = true,
 ) {
     PetImage(
         imageUrl = publication.imageUrl,
         tone = toneColor(publication.tone),
-        label = if (showLabel) "foto: ${publication.photoLabel}" else null,
         showPhoto = showPhoto,
         contentDescription = publication.title,
         modifier = modifier,
