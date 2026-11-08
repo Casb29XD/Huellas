@@ -37,7 +37,7 @@ class NotificationsViewModel(private val repo: HuellaRepository = SupabaseReposi
 
     fun deleteNotification(id: String) {
         repo.deleteNotification(id)
-        _messages.trySend("Notificación eliminada")
+        _messages.trySend("NotificaciÃ³n eliminada")
     }
 
     fun markAllRead() {

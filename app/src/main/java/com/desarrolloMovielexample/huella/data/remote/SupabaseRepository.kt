@@ -388,7 +388,7 @@ object SupabaseRepository : HuellaRepository {
         }
         val updated = apiCall { api.createPublication(body) }.firstOrNull() // fallback postgrest
         refreshAll()
-        getPublication(publicationId) ?: error("No se pudo actualizar la publicaci�n")
+        getPublication(publicationId) ?: error("No se pudo actualizar la publicación")
     }
 
     override suspend fun deletePublication(publicationId: String): Result<Unit> = result {
@@ -407,7 +407,7 @@ object SupabaseRepository : HuellaRepository {
     }
 
     override suspend fun addComment(publicationId: String, text: String): Result<Comment> = result {
-        val user = _currentUser.value ?: error("Inicia sesi�n")
+        val user = _currentUser.value ?: error("Inicia sesión")
         val comment = Comment(
             id = "c_${System.currentTimeMillis()}",
             publicationId = publicationId,
