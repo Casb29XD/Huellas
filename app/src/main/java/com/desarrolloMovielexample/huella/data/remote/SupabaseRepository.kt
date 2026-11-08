@@ -612,6 +612,11 @@ object SupabaseRepository : HuellaRepository {
         return updateModeration(itemId, PostStatus.RECHAZADA, reason, comment)
     }
 
+    override suspend fun resolveReport(reportId: String): Result<Unit> = result {
+        apiCall { api.resolveReport(json { addProperty("p_report_id", reportId) }) }
+        Unit
+    }.onSuccess { quietly { refreshModeration() } }
+
     private suspend fun updateModeration(
         id: String,
         status: PostStatus,
@@ -746,6 +751,7 @@ object SupabaseRepository : HuellaRepository {
                         who = row.obj("reporter")?.string("name") ?: "Anónimo",
                         reason = row.string("reason").orEmpty(),
                         detail = row.string("detail").orEmpty(),
+                        id = row.string("id").orEmpty(),
                     )
                 }
                 ModerationItem(

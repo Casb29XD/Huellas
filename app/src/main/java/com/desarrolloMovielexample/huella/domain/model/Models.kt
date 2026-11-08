@@ -205,7 +205,7 @@ data class AppNotification(
     val targetId: String? = null, // publication id / conversation id depending on type
 )
 
-data class Report(val who: String, val reason: String, val detail: String)
+data class Report(val who: String, val reason: String, val detail: String, val id: String = "")
 
 data class ModerationItem(
     val publication: Publication,
