@@ -2,6 +2,10 @@ package com.desarrolloMovielexample.huella.features.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.domain.model.User
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
@@ -24,8 +28,8 @@ class PublicProfileViewModel(private val repo: HuellaRepository = SupabaseReposi
     private val _uiState = MutableStateFlow(PublicProfileUiState())
     val uiState: StateFlow<PublicProfileUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
     private val _openChats = Channel<String>(Channel.BUFFERED)
     val openChats: Flow<String> = _openChats.receiveAsFlow()
 
@@ -46,7 +50,7 @@ class PublicProfileViewModel(private val repo: HuellaRepository = SupabaseReposi
         viewModelScope.launch {
             repo.openConversation(userId)
                 .onSuccess { _openChats.send(it) }
-                .onFailure { e -> _messages.send(e.message ?: "No pudimos abrir la conversación") }
+                .onFailure { e -> _messages.send(e.toUiText(R.string.error_open_chat)) }
         }
     }
 
@@ -57,13 +61,13 @@ class PublicProfileViewModel(private val repo: HuellaRepository = SupabaseReposi
     fun report() {
         val latest = _uiState.value.publications.firstOrNull()
         if (latest == null) {
-            _messages.trySend("Este perfil no tiene publicaciones visibles para reportar")
+            _messages.trySend(uiText(R.string.msg_profile_nothing_to_report))
             return
         }
         viewModelScope.launch {
             repo.reportPublication(latest.id, "Perfil reportado", "Reporte enviado desde el perfil público")
-                .onSuccess { _messages.send("Gracias. Un moderador revisará este perfil") }
-                .onFailure { e -> _messages.send(e.message ?: "No pudimos enviar el reporte") }
+                .onSuccess { _messages.send(uiText(R.string.msg_profile_report_sent)) }
+                .onFailure { e -> _messages.send(e.toUiText(R.string.error_send_report)) }
         }
     }
 }

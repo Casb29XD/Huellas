@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +30,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +43,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextButton
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
@@ -58,7 +61,8 @@ fun NotificationsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
 
     fun open(n: AppNotification) {
         when (n.type) {
@@ -77,8 +81,8 @@ fun NotificationsScreen(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
         topBar = {
-            HuellaTopBar("Notificaciones", Modifier.statusBarsPadding(), onBack = onBack) {
-                if (!state.isEmpty) HuellaTextButton("Marcar leídas", viewModel::markAllRead)
+            HuellaTopBar(stringResource(R.string.notifications_title), Modifier.statusBarsPadding(), onBack = onBack) {
+                if (!state.isEmpty) HuellaTextButton(stringResource(R.string.notifications_mark_read), viewModel::markAllRead)
             }
         },
     ) { inner ->
@@ -92,8 +96,8 @@ fun NotificationsScreen(
             ) {
                 EmptyState(
                     illustration = R.drawable.illus_empty_inbox,
-                    title = "Todo tranquilo por aquí",
-                    text = "Te avisaremos cuando alguien se interese en tus publicaciones o cuando subas de nivel.",
+                    title = stringResource(R.string.notifications_empty_title),
+                    text = stringResource(R.string.notifications_empty_text),
                     illustrationSize = 230.dp,
                 )
             }
@@ -109,7 +113,7 @@ fun NotificationsScreen(
             state.groups.forEach { (day, items) ->
                 item(key = day) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GroupCaption(day)
+                        GroupCaption(optionLabel(day))
                         items.forEach { n -> NotificationCard(n, onClick = { viewModel.markAsRead(n.id); open(n) }) }
                     }
                 }
