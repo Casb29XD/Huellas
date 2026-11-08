@@ -161,8 +161,8 @@ fun PublicationDetailScreen(
             if (showDeleteConfirm) {
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { showDeleteConfirm = false },
-                    title = { Text("�Eliminar publicaci�n?") },
-                    text = { Text("Esta acci�n eliminar� la publicaci�n definitivamente.") },
+                    title = { Text("¿Eliminar publicación?") },
+                    text = { Text("Esta acción eliminará la publicación definitivamente.") },
                     confirmButton = {
                         androidx.compose.material3.TextButton(onClick = {
                             showDeleteConfirm = false

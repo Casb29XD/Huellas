@@ -64,7 +64,7 @@ fun DetailedStatsSection(stats: ProfileStats, modifier: Modifier = Modifier) {
             )
             StatPill(
                 count = stats.pendingCount,
-                label = "En revisi�n",
+                label = "En revisión",
                 containerColor = HuellaColors.WarningContainer,
                 contentColor = HuellaColors.WarningDark,
                 modifier = Modifier.weight(1f)
