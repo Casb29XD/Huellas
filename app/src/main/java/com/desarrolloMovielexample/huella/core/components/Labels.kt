@@ -32,6 +32,23 @@ val Level.labelRes: Int
     }
 
 @get:StringRes
+val Level.rangeRes: Int
+    get() = when (this) {
+        Level.AMIGO_ANIMAL -> R.string.level_range_animal_friend
+        Level.PROTECTOR -> R.string.level_range_protector
+        Level.GUARDIAN -> R.string.level_range_guardian
+        Level.HEROE -> R.string.level_range_hero
+    }
+
+val Level.benefitsRes: List<Int>
+    get() = when (this) {
+        Level.AMIGO_ANIMAL -> listOf(R.string.level_benefit_post_request, R.string.level_benefit_favorites)
+        Level.PROTECTOR -> listOf(R.string.level_benefit_badge, R.string.level_benefit_5_posts)
+        Level.GUARDIAN -> listOf(R.string.level_benefit_featured, R.string.level_benefit_priority)
+        Level.HEROE -> listOf(R.string.level_benefit_unlimited, R.string.level_benefit_events, R.string.level_benefit_recognition)
+    }
+
+@get:StringRes
 val PostStatus.labelRes: Int
     get() = when (this) {
         PostStatus.EN_REVISION -> R.string.post_status_review
@@ -57,7 +74,7 @@ val Badge.labelRes: Int
         Badge.MODERADOR -> R.string.badge_moderator
     }
 
-/** Valores fijos que viajan en español a la BD (especie, tamaño, sexo, motivos). Lo desconocido se muestra tal cual. */
+/** Valores fijos en español que llegan de la BD o del repositorio (especie, tamaño, sexo, motivos, grupos). Lo desconocido se muestra tal cual. */
 @Composable
 fun optionLabel(value: String): String {
     val res = when (value) {
@@ -85,6 +102,10 @@ fun optionLabel(value: String): String {
         "Castración" -> R.string.service_neutering
         "Desparasitación" -> R.string.service_deworming
         "Vacunación" -> R.string.service_vaccination
+        "Hoy" -> R.string.group_today
+        "Ayer" -> R.string.group_yesterday
+        "Esta semana" -> R.string.group_this_week
+        "Antes" -> R.string.group_earlier
         else -> null
     }
     return if (res != null) stringResource(res) else value

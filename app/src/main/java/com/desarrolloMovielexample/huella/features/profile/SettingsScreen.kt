@@ -24,7 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,7 +69,8 @@ fun SettingsScreen(
     var selectedLanguage by remember { mutableStateOf(AppLanguage.selected(context)) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
 
     Scaffold(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
@@ -148,7 +149,7 @@ fun SettingsScreen(
                     ) {
                         Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
                         Text(
-                            "Eliminar cuenta",
+                            stringResource(R.string.settings_delete_account),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
                             color = HuellaColors.ErrorDark,
@@ -181,8 +182,8 @@ fun SettingsScreen(
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("¿Eliminar tu cuenta?") },
-                    text = { Text("Esta acción es irreversible. Se eliminarán tus publicaciones, solicitudes y datos.") },
+                    title = { Text(stringResource(R.string.settings_delete_title)) },
+                    text = { Text(stringResource(R.string.settings_delete_text)) },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -190,12 +191,12 @@ fun SettingsScreen(
                                 viewModel.deleteAccount(onSuccess = onLoggedOut)
                             }
                         ) {
-                            Text("Eliminar definitivamente", color = HuellaColors.ErrorDark)
+                            Text(stringResource(R.string.settings_delete_confirm), color = HuellaColors.ErrorDark)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDeleteDialog = false }) {
-                            Text("Cancelar")
+                            Text(stringResource(R.string.action_cancel))
                         }
                     }
                 )

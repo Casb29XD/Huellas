@@ -2,6 +2,9 @@ package com.desarrolloMovielexample.huella.features.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
@@ -28,8 +31,8 @@ class NotificationsViewModel(private val repo: HuellaRepository = SupabaseReposi
         .map(::toState)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), toState(repo.notifications.value))
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun markAsRead(id: String) {
         repo.markNotificationRead(id)
@@ -37,15 +40,15 @@ class NotificationsViewModel(private val repo: HuellaRepository = SupabaseReposi
 
     fun deleteNotification(id: String) {
         repo.deleteNotification(id)
-        _messages.trySend("Notificación eliminada")
+        _messages.trySend(uiText(R.string.msg_notification_deleted))
     }
 
     fun markAllRead() {
         if (!uiState.value.hasUnread) {
-            _messages.trySend("No tienes notificaciones sin leer")
+            _messages.trySend(uiText(R.string.msg_no_unread))
             return
         }
         repo.markAllNotificationsRead()
-        _messages.trySend("Notificaciones marcadas como leídas")
+        _messages.trySend(uiText(R.string.msg_marked_read))
     }
 }

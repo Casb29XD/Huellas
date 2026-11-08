@@ -22,15 +22,18 @@ import androidx.compose.material.icons.outlined.MilitaryTech
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.components.labelRes
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.domain.model.Badge
 import com.desarrolloMovielexample.huella.domain.model.ProfileStats
@@ -46,25 +49,25 @@ fun DetailedStatsSection(stats: ProfileStats, modifier: Modifier = Modifier) {
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text("Estado de publicaciones", style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = HuellaColors.TextPrimary)
+        Text(stringResource(R.string.stats_title), style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = HuellaColors.TextPrimary)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatPill(
                 count = stats.activeCount,
-                label = "Activas",
+                label = stringResource(R.string.stats_active),
                 containerColor = HuellaColors.PrimarySoft,
                 contentColor = HuellaColors.Primary,
                 modifier = Modifier.weight(1f)
             )
             StatPill(
                 count = stats.finishedCount,
-                label = "Finalizadas",
+                label = stringResource(R.string.stats_finished),
                 containerColor = HuellaColors.PrimaryContainer,
                 contentColor = HuellaColors.PrimaryDark,
                 modifier = Modifier.weight(1f)
             )
             StatPill(
                 count = stats.pendingCount,
-                label = "En revisión",
+                label = stringResource(R.string.post_status_review),
                 containerColor = HuellaColors.WarningContainer,
                 contentColor = HuellaColors.WarningDark,
                 modifier = Modifier.weight(1f)
@@ -109,7 +112,7 @@ fun BadgesSection(badges: List<Badge>, modifier: Modifier = Modifier) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Icon(Icons.Outlined.MilitaryTech, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(20.dp))
-            Text("Insignias obtenidas (${badges.size})", style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = HuellaColors.TextPrimary)
+            Text(stringResource(R.string.badges_title, badges.size), style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = HuellaColors.TextPrimary)
         }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -141,6 +144,6 @@ private fun BadgeChip(badge: Badge) {
             else -> Icons.Outlined.EmojiEvents
         }
         Icon(icon, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(16.dp))
-        Text(badge.label, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), color = HuellaColors.Primary)
+        Text(stringResource(badge.labelRes), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), color = HuellaColors.Primary)
     }
 }

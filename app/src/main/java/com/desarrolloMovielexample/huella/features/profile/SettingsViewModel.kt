@@ -1,5 +1,9 @@
 package com.desarrolloMovielexample.huella.features.profile
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import kotlinx.coroutines.launch
 
 import androidx.lifecycle.ViewModel
@@ -20,8 +24,8 @@ class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository)
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun setPush(enabled: Boolean) = _uiState.update { it.copy(pushEnabled = enabled) }
     fun setEmailDigest(enabled: Boolean) = _uiState.update { it.copy(emailDigestEnabled = enabled) }
@@ -32,11 +36,11 @@ class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository)
         viewModelScope.launch {
             repo.deleteAccount()
                 .onSuccess {
-                    _messages.send("Cuenta eliminada exitosamente")
+                    _messages.send(uiText(R.string.msg_account_deleted))
                     onSuccess()
                 }
                 .onFailure {
-                    _messages.send(it.message ?: "No se pudo eliminar la cuenta")
+                    _messages.send(it.toUiText(R.string.error_delete_account))
                 }
         }
     }
