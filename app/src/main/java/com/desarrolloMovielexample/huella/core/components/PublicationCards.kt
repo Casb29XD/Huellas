@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.core.components
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -102,7 +103,7 @@ private fun CityAndTime(publication: Publication, compact: Boolean, modifier: Mo
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Icon(Icons.Outlined.Schedule, contentDescription = null, tint = HuellaColors.TextTertiary, modifier = Modifier.size(if (compact) 14.dp else 15.dp))
-            Text(publication.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+            Text(publication.timeAgo.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
         }
     }
 }

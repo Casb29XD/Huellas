@@ -1,10 +1,13 @@
 package com.desarrolloMovielexample.huella.ui
 
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -16,7 +19,14 @@ import com.desarrolloMovielexample.huella.features.auth.LoginScreen
 import com.desarrolloMovielexample.huella.features.auth.LoginViewModel
 import com.desarrolloMovielexample.huella.features.feed.HomeScreen
 import com.desarrolloMovielexample.huella.features.feed.HomeViewModel
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.components.PublicationCard
+import com.desarrolloMovielexample.huella.core.utils.AppError
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
+import com.desarrolloMovielexample.huella.data.remote.relativeTimeText
+import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
+import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordScreen
+import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordViewModel
 import com.desarrolloMovielexample.huella.features.profile.LevelsScreen
 import com.desarrolloMovielexample.huella.features.profile.LevelsViewModel
 import com.desarrolloMovielexample.huella.features.profile.SettingsScreen
@@ -96,5 +106,31 @@ class EnglishLocaleRobolectricTest {
             compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(it))
             compose.onNodeWithText(it).assertExists()
         }
+    }
+
+    @Test
+    fun `tarjeta con tiempo relativo y error del repositorio en ingles (item 37)`() {
+        val now = System.currentTimeMillis()
+        val pub = FakeRepository.publications.value.first().copy(timeAgo = relativeTimeText(now - 2 * 3_600_000L, now))
+        // El repositorio falla con un AppError: el texto sale de values-en, no un literal en español.
+        val failing = object : HuellaRepository by FakeRepository {
+            override suspend fun sendPasswordReset(email: String): Result<Unit> = Result.failure(AppError(R.string.err_no_connection))
+        }
+        val vm = ForgotPasswordViewModel(failing)
+        compose.setContent {
+            HuellaTheme(darkTheme = false) {
+                androidx.compose.foundation.layout.Column {
+                    PublicationCard(publication = pub, onClick = {})
+                    ForgotPasswordScreen(onBack = {}, viewModel = vm)
+                }
+            }
+        }
+        compose.onNodeWithText("2 h ago").assertExists()
+        vm.onEmailChange("ana@huella.test")
+        vm.sendLink()
+        ShadowLooper.idleMainLooper(1, TimeUnit.SECONDS)
+        compose.waitForIdle()
+        compose.onAllNodesWithText("We could not reach the server. Check your connection").onFirst().assertExists()
+        compose.onAllNodesWithText("hace", substring = true).assertCountEquals(0)
     }
 }

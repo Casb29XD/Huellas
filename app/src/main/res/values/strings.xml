@@ -465,4 +465,43 @@
     <string name="points_action_sighting">Reportar un avistamiento</string>
     <string name="points_action_adoption">Adopción concretada</string>
     <string name="error_load_feed">No se pudo cargar el feed</string>
+    <!-- Errores del repositorio (ítem 37) -->
+    <string name="err_image_type">Selecciona un archivo de imagen</string>
+    <string name="err_image_read">No se pudo leer la imagen seleccionada</string>
+    <string name="err_image_empty">La imagen está vacía</string>
+    <string name="err_image_size">La imagen debe pesar menos de 5 MB</string>
+    <string name="err_unexpected_response">El servidor respondió algo inesperado. Intenta de nuevo</string>
+    <string name="err_profile_missing">No encontramos el perfil asociado a esta cuenta</string>
+    <string name="err_confirm_email">Cuenta creada. Confirma tu correo y luego inicia sesión.</string>
+    <string name="err_profile_pending">La cuenta se creó, pero aún no aparece su perfil</string>
+    <string name="err_link_invalid">Este enlace no es válido. Solicita uno nuevo desde la app</string>
+    <string name="err_link_other_device">Abre el enlace en el mismo teléfono donde lo solicitaste</string>
+    <string name="err_profile_update">No se pudo actualizar el perfil</string>
+    <string name="err_profile_not_found">No encontramos este perfil</string>
+    <string name="err_chat_self">No puedes iniciar un chat contigo mismo</string>
+    <string name="err_publication_update">No se pudo actualizar la publicación</string>
+    <string name="err_publication_delete">No se pudo eliminar la publicación</string>
+    <string name="err_comment_delete">No se pudo eliminar el comentario</string>
+    <string name="err_login_required">Inicia sesión para continuar</string>
+    <string name="err_server_code">Error del servidor (%1$d)</string>
+    <string name="err_no_connection">No pudimos conectar con el servidor. Revisa tu conexión</string>
+    <string name="err_duplicate">Ya lo habías enviado antes</string>
+    <!-- Tiempo relativo (ítems 37 y 60) -->
+    <string name="time_now">ahora</string>
+    <string name="time_today">hoy</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">hace %1$d min</item>
+        <item quantity="many">hace %1$d min</item>
+        <item quantity="other">hace %1$d min</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">hace %1$d h</item>
+        <item quantity="many">hace %1$d h</item>
+        <item quantity="other">hace %1$d h</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">hace %1$d día</item>
+        <item quantity="many">hace %1$d días</item>
+        <item quantity="other">hace %1$d días</item>
+    </plurals>
 </resources>

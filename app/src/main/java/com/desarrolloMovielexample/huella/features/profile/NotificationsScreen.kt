@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.profile
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -174,7 +175,7 @@ private fun NotificationCard(n: AppNotification, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Text(n.time, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = HuellaColors.TextTertiary, maxLines = 1)
+                Text(n.time.asString(), style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = HuellaColors.TextTertiary, maxLines = 1)
             }
             Text(
                 n.text,

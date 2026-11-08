@@ -56,7 +56,7 @@ class ForgotPasswordViewModel(private val repo: HuellaRepository = SupabaseRepos
                     _messages.trySend(uiText(R.string.msg_link_sent, s.email.trim()))
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, emailError = e.message?.let { m -> UiText.Raw(m) }) }
+                    _uiState.update { it.copy(isLoading = false, emailError = e.toUiText(R.string.error_send_link)) }
                     _messages.trySend(e.toUiText(R.string.error_send_link))
                 }
         }

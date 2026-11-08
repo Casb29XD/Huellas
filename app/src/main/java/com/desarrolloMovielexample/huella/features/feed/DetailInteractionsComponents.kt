@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.feed
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -172,7 +173,7 @@ fun CommentsSection(
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(comment.author.name, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 13.sp), color = HuellaColors.TextPrimary)
-                                Text(comment.timeAgo, style = MaterialTheme.typography.labelSmall, color = HuellaColors.TextTertiary)
+                                Text(comment.timeAgo.asString(), style = MaterialTheme.typography.labelSmall, color = HuellaColors.TextTertiary)
                             }
                             Text(comment.text, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextBody)
                         }

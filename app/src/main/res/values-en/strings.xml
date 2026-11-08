@@ -458,4 +458,38 @@
     <string name="points_action_sighting">Report a sighting</string>
     <string name="points_action_adoption">Adoption completed</string>
     <string name="error_load_feed">Could not load the feed</string>
+    <string name="err_image_type">Select an image file</string>
+    <string name="err_image_read">Could not read the selected image</string>
+    <string name="err_image_empty">The image is empty</string>
+    <string name="err_image_size">The image must be smaller than 5 MB</string>
+    <string name="err_unexpected_response">The server sent an unexpected response. Please try again</string>
+    <string name="err_profile_missing">We could not find the profile for this account</string>
+    <string name="err_confirm_email">Account created. Confirm your email and then sign in.</string>
+    <string name="err_profile_pending">The account was created, but its profile is not available yet</string>
+    <string name="err_link_invalid">This link is not valid. Request a new one from the app</string>
+    <string name="err_link_other_device">Open the link on the same phone where you requested it</string>
+    <string name="err_profile_update">Could not update the profile</string>
+    <string name="err_profile_not_found">We could not find this profile</string>
+    <string name="err_chat_self">You cannot start a chat with yourself</string>
+    <string name="err_publication_update">Could not update the post</string>
+    <string name="err_publication_delete">Could not delete the post</string>
+    <string name="err_comment_delete">Could not delete the comment</string>
+    <string name="err_login_required">Sign in to continue</string>
+    <string name="err_server_code">Server error (%1$d)</string>
+    <string name="err_no_connection">We could not reach the server. Check your connection</string>
+    <string name="err_duplicate">You already sent this before</string>
+    <string name="time_now">now</string>
+    <string name="time_today">today</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%1$d min ago</item>
+        <item quantity="other">%1$d min ago</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%1$d h ago</item>
+        <item quantity="other">%1$d h ago</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
 </resources>

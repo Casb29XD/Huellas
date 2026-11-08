@@ -1,5 +1,7 @@
 package com.desarrolloMovielexample.huella.e2e
 
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import android.content.Context
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
@@ -77,7 +79,10 @@ class RepositoryFlowsE2eTest {
         val created = repo.createPublication(draft).getOrThrow()
         val pubId = created.id
         assertEquals(PostStatus.EN_REVISION, created.status)
-        assertTrue("timeAgo de una publicación recién creada: ${created.timeAgo}", created.timeAgo in setOf("ahora", "hace 1 min"))
+        assertTrue(
+            "timeAgo de una publicación recién creada: ${created.timeAgo}",
+            created.timeAgo in setOf(UiText.Res(R.string.time_now), UiText.Plural(R.plurals.time_minutes_ago, 1)),
+        )
         assertTrue(one("rest/v1/publications?id=eq.$pubId&select=latitude").get("latitude").isJsonNull)
 
         // Editar actualiza la misma fila (ítem 9).

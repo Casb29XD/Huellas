@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.feed
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -202,7 +203,7 @@ fun PublicationDetailScreen(
                         CategoryChip(pub.category)
                         Spacer(Modifier.weight(1f))
                         Icon(Icons.Outlined.Schedule, contentDescription = null, tint = HuellaColors.TextTertiary, modifier = Modifier.size(15.dp))
-                        Text(pub.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary, modifier = Modifier.padding(start = 4.dp))
+                        Text(pub.timeAgo.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary, modifier = Modifier.padding(start = 4.dp))
                     }
                     Text(
                         pub.title,

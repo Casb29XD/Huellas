@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.domain.repository
 
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.domain.model.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,7 +81,7 @@ object FakeRepository : HuellaRepository {
             Publication(
                 id = "1", category = Category.ADOPCION, title = "Mía, cachorrita juguetona", species = "Perro", breed = "Criollo",
                 size = "Mediano", vaccinated = true, sterilized = false, age = "4 meses", sex = "Hembra", city = "Medellín",
-                neighborhood = "Poblado, Medellín", timeAgo = "hace 2 h",
+                neighborhood = "Poblado, Medellín", timeAgo = UiText.Raw("hace 2 h"),
                 description = "Mía fue rescatada hace dos semanas en las afueras de Medellín. Es curiosa, alegre, convive bien con otros perros y adora correr en parques.",
                 imageUrl = randomPhotoUrl("1"), tone = 0xFFD8E8DD, author = author("u_camila", "Camila Restrepo", Level.PROTECTOR, "CR"),
                 status = PostStatus.APROBADA, lifecycle = LifecycleStatus.ACTIVA, votesCount = 8, commentsCount = 3,
@@ -89,7 +90,7 @@ object FakeRepository : HuellaRepository {
             Publication(
                 id = "2", category = Category.TEMPORAL, title = "Simba busca hogar temporal por 3 semanas", species = "Gato", breed = "Criollo",
                 size = "Pequeño", vaccinated = true, sterilized = true, age = "2 años", sex = "Macho", city = "Envigado",
-                neighborhood = "Zona Centro, Envigado", timeAgo = "hace 4 h",
+                neighborhood = "Zona Centro, Envigado", timeAgo = UiText.Raw("hace 4 h"),
                 description = "Simba es un gato dócil y tranquilo. Su rescatista viajará tres semanas y busca una familia temporal sin perros que pueda cuidarlo.",
                 imageUrl = randomPhotoUrl("2"), tone = 0xFFD8DDE8, author = author("u_andres", "Andrés Gómez", Level.AMIGO_ANIMAL, "AG"),
                 status = PostStatus.APROBADA, lifecycle = LifecycleStatus.ACTIVA, votesCount = 3, commentsCount = 1,
@@ -98,7 +99,7 @@ object FakeRepository : HuellaRepository {
             Publication(
                 id = "3", category = Category.PERDIDOS, title = "Lucas se extravió cerca del parque", species = "Perro", breed = "Golden retriever",
                 size = "Grande", vaccinated = true, sterilized = true, age = "4 años", sex = "Macho", city = "Medellín",
-                neighborhood = "Laureles, Medellín", timeAgo = "hace 5 h",
+                neighborhood = "Laureles, Medellín", timeAgo = UiText.Raw("hace 5 h"),
                 description = "Lucas se asustó con pólvora y corrió hacia el Parque Primer Parque de Laureles. Llevaba collar azul sin placa.",
                 imageUrl = randomPhotoUrl("3"), tone = 0xFFE8D8D8, author = author("u_sofia", "Sofía Henao", Level.GUARDIAN, "SH"),
                 status = PostStatus.APROBADA, lifecycle = LifecycleStatus.ACTIVA, votesCount = 12, commentsCount = 4,
@@ -108,21 +109,21 @@ object FakeRepository : HuellaRepository {
             Publication(
                 id = "101", category = Category.ADOPCION, title = "Max, beagle juguetón", species = "Perro", breed = "Beagle",
                 size = "Mediano", vaccinated = true, sterilized = true, age = "3 años", sex = "Macho", city = "Medellín",
-                timeAgo = "hace 3 d", description = "Max es un beagle lleno de energía que adora olfatear todo. Busca una familia activa con patio.",
+                timeAgo = UiText.Raw("hace 3 d"), description = "Max es un beagle lleno de energía que adora olfatear todo. Busca una familia activa con patio.",
                 imageUrl = randomPhotoUrl("101"), tone = 0xFFE5DED0, author = mariana,
                 status = PostStatus.APROBADA, lifecycle = LifecycleStatus.ACTIVA, votesCount = 5, commentsCount = 2,
             ),
             Publication(
                 id = "102", category = Category.TEMPORAL, title = "Pelusa, hogar de paso 2 semanas", species = "Gato", breed = "Criollo",
                 size = "Pequeño", vaccinated = true, sterilized = true, age = "2 años", sex = "Hembra", city = "Medellín",
-                timeAgo = "hace 4 h", description = "Pelusa necesita un hogar de paso por dos semanas mientras me mudo. Es tranquila y usa arenero.",
+                timeAgo = UiText.Raw("hace 4 h"), description = "Pelusa necesita un hogar de paso por dos semanas mientras me mudo. Es tranquila y usa arenero.",
                 imageUrl = randomPhotoUrl("102"), tone = 0xFFE4DCEC, author = mariana,
                 status = PostStatus.EN_REVISION, lifecycle = LifecycleStatus.ACTIVA, votesCount = 0, commentsCount = 0,
             ),
             Publication(
                 id = "103", category = Category.ADOPCION, title = "Kira, pastora mestiza", species = "Perro", breed = "Pastor mestizo",
                 size = "Grande", vaccinated = false, sterilized = false, age = "1 año", sex = "Hembra", city = "Medellín",
-                timeAgo = "hace 1 sem", description = "Kira es protectora y muy leal. Necesita espacio y paseos largos.",
+                timeAgo = UiText.Raw("hace 1 sem"), description = "Kira es protectora y muy leal. Necesita espacio y paseos largos.",
                 imageUrl = randomPhotoUrl("103"), tone = 0xFFDDE3DA, author = mariana,
                 status = PostStatus.RECHAZADA, lifecycle = LifecycleStatus.ACTIVA, votesCount = 1, commentsCount = 0,
             ),
@@ -176,9 +177,9 @@ object FakeRepository : HuellaRepository {
 
     private fun seedInitialComments() {
         val list1 = listOf(
-            Comment("c1", "1", author("u_andres", "Andrés Gómez", Level.AMIGO_ANIMAL, "AG"), "¿Convive bien con gatos?", "hace 1 h"),
-            Comment("c2", "1", author("u_camila", "Camila Restrepo", Level.PROTECTOR, "CR"), "¡Sí! En su hogar temporal convive con 2 mininos sin problema.", "hace 45 min", isMine = false),
-            Comment("c3", "1", mariana, "Hermosa Mía, compartida en mis redes ❤️", "hace 20 min", isMine = true)
+            Comment("c1", "1", author("u_andres", "Andrés Gómez", Level.AMIGO_ANIMAL, "AG"), "¿Convive bien con gatos?", UiText.Raw("hace 1 h")),
+            Comment("c2", "1", author("u_camila", "Camila Restrepo", Level.PROTECTOR, "CR"), "¡Sí! En su hogar temporal convive con 2 mininos sin problema.", UiText.Raw("hace 45 min"), isMine = false),
+            Comment("c3", "1", mariana, "Hermosa Mía, compartida en mis redes ❤️", UiText.Raw("hace 20 min"), isMine = true)
         )
         commentsStorage["1"] = MutableStateFlow(list1)
     }
@@ -186,8 +187,8 @@ object FakeRepository : HuellaRepository {
     // ---------- Requests ----------
     private val _sentRequests = MutableStateFlow(
         listOf(
-            SentRequest("s1", "1", RequestStatus.PENDIENTE, "Enviada hace 2 h", "Hola Camila, me encantaría darle un hogar a Mía."),
-            SentRequest("s2", "3", RequestStatus.ACEPTADA, "Enviada ayer", "Hola Sofía, creo que vi a Lucas por la 70."),
+            SentRequest("s1", "1", RequestStatus.PENDIENTE, UiText.Raw("Enviada hace 2 h"), "Hola Camila, me encantaría darle un hogar a Mía."),
+            SentRequest("s2", "3", RequestStatus.ACEPTADA, UiText.Raw("Enviada ayer"), "Hola Sofía, creo que vi a Lucas por la 70."),
         )
     )
     override val sentRequests: StateFlow<List<SentRequest>> = _sentRequests.asStateFlow()
@@ -197,8 +198,8 @@ object FakeRepository : HuellaRepository {
             ReceivedRequestGroup(
                 publicationId = "101",
                 applicants = listOf(
-                    Applicant("a1", "u_carlos", "Carlos Pérez", Level.PROTECTOR, "CP", "Tengo casa con jardín amplio y tiempo para paseos.", "hace 1 h"),
-                    Applicant("a2", "u_laura", "Laura Martínez", Level.AMIGO_ANIMAL, "LM", "He tenido beagles antes, conozco bien la raza.", "hace 3 h"),
+                    Applicant("a1", "u_carlos", "Carlos Pérez", Level.PROTECTOR, "CP", "Tengo casa con jardín amplio y tiempo para paseos.", UiText.Raw("hace 1 h")),
+                    Applicant("a2", "u_laura", "Laura Martínez", Level.AMIGO_ANIMAL, "LM", "He tenido beagles antes, conozco bien la raza.", UiText.Raw("hace 3 h")),
                 ),
             ),
         ),
@@ -215,10 +216,10 @@ object FakeRepository : HuellaRepository {
     // ---------- Notifications ----------
     private val _notifications = MutableStateFlow(
         listOf(
-            AppNotification("n1", "Hoy", NotificationType.NEW_COMMENT, "Nuevo comentario", "Mariana comentó en tu publicación \"Mía, cachorrita juguetona\".", "hace 20 min", false, "1"),
-            AppNotification("n2", "Hoy", NotificationType.NEW_REQUEST, "Nueva solicitud para Max", "Carlos Pérez envió una solicitud de adopción.", "hace 1 h", false, "101"),
-            AppNotification("n3", "Hoy", NotificationType.POST_APPROVED, "Publicación aprobada", "Max ya está visible para toda la comunidad.", "hace 3 h", true, "101"),
-            AppNotification("n4", "Ayer", NotificationType.LEVEL_UP, "¡Subiste de nivel!", "Alcanzaste el nivel Protector con 155 puntos.", "ayer", true, null),
+            AppNotification("n1", "Hoy", NotificationType.NEW_COMMENT, "Nuevo comentario", "Mariana comentó en tu publicación \"Mía, cachorrita juguetona\".", UiText.Raw("hace 20 min"), false, "1"),
+            AppNotification("n2", "Hoy", NotificationType.NEW_REQUEST, "Nueva solicitud para Max", "Carlos Pérez envió una solicitud de adopción.", UiText.Raw("hace 1 h"), false, "101"),
+            AppNotification("n3", "Hoy", NotificationType.POST_APPROVED, "Publicación aprobada", "Max ya está visible para toda la comunidad.", UiText.Raw("hace 3 h"), true, "101"),
+            AppNotification("n4", "Ayer", NotificationType.LEVEL_UP, "¡Subiste de nivel!", "Alcanzaste el nivel Protector con 155 puntos.", UiText.Raw("ayer"), true, null),
         ),
     )
     override val notifications: StateFlow<List<AppNotification>> = _notifications.asStateFlow()
@@ -228,7 +229,7 @@ object FakeRepository : HuellaRepository {
         listOf(
             ModerationItem(
                 publication = allPublications.value.first { it.id == "102" },
-                waitTime = "hace 4 h en espera",
+                waitTime = UiText.Raw("hace 4 h en espera"),
                 authorApproved = 2,
                 authorRejected = 1,
             ),
@@ -246,9 +247,9 @@ object FakeRepository : HuellaRepository {
 
     // ---------- Points ----------
     override val pointsHistory: List<PointsEntry> = listOf(
-        PointsEntry("Publicación aprobada · Max", 10, "hace 3 d"),
-        PointsEntry("Hogar temporal completado", 50, "hace 2 sem"),
-        PointsEntry("Registro en Huella", 20, "hace 1 mes"),
+        PointsEntry("Publicación aprobada · Max", 10, UiText.Raw("hace 3 d")),
+        PointsEntry("Hogar temporal completado", 50, UiText.Raw("hace 2 sem")),
+        PointsEntry("Registro en Huella", 20, UiText.Raw("hace 1 mes")),
     )
 
     override val pointsActions: List<PointsAction> = listOf(
@@ -351,13 +352,13 @@ object FakeRepository : HuellaRepository {
         val pub = Publication(
             id = id, category = draft.category, title = draft.title.trim(), species = draft.species, breed = draft.breed.trim(),
             size = draft.size, vaccinated = draft.vaccinated, sterilized = draft.sterilized, age = draft.age.trim(),
-            sex = draft.sex, city = draft.city.substringBefore(","), neighborhood = draft.city, timeAgo = "ahora",
+            sex = draft.sex, city = draft.city.substringBefore(","), neighborhood = draft.city, timeAgo = UiText.Raw("ahora"),
             description = draft.description.trim(), imageUrl = draft.imageUrl ?: randomPhotoUrl(id), tone = 0xFFD8E8DD,
             author = user?.let { Author(it.id, it.name, it.level, it.initials) } ?: mariana,
             status = PostStatus.EN_REVISION, lifecycle = LifecycleStatus.ACTIVA, eventDate = draft.eventDate,
         )
         allPublications.update { listOf(pub) + it }
-        _moderationQueue.update { it + ModerationItem(pub, "Recién enviada", authorApproved = 1, authorRejected = 0) }
+        _moderationQueue.update { it + ModerationItem(pub, UiText.Raw("Recién enviada"), authorApproved = 1, authorRejected = 0) }
         _moderationStats.update { it.copy(pending = it.pending + 1) }
         syncDerivedPublications()
         return Result.success(pub)
@@ -383,7 +384,7 @@ object FakeRepository : HuellaRepository {
             status = PostStatus.EN_REVISION // Al editar vuelve a revisión
         )
         allPublications.update { list -> list.map { if (it.id == publicationId) updated else it } }
-        _moderationQueue.update { it + ModerationItem(updated, "Editada por autor", authorApproved = 1, authorRejected = 0) }
+        _moderationQueue.update { it + ModerationItem(updated, UiText.Raw("Editada por autor"), authorApproved = 1, authorRejected = 0) }
         syncDerivedPublications()
         return Result.success(updated)
     }
@@ -426,7 +427,7 @@ object FakeRepository : HuellaRepository {
             publicationId = publicationId,
             author = Author(user.id, user.name, user.level, user.initials),
             text = text.trim(),
-            timeAgo = "ahora",
+            timeAgo = UiText.Raw("ahora"),
             isMine = true
         )
         val flow = commentsStorage.getOrPut(publicationId) { MutableStateFlow(emptyList()) }
@@ -447,7 +448,7 @@ object FakeRepository : HuellaRepository {
                 type = NotificationType.NEW_COMMENT,
                 title = "Nuevo comentario",
                 text = "${user.name} comentó en tu publicación \"${pub.title}\"",
-                time = "ahora",
+                time = UiText.Raw("ahora"),
                 read = false,
                 targetId = publicationId
             )
@@ -485,7 +486,7 @@ object FakeRepository : HuellaRepository {
         if (_sentRequests.value.any { it.publicationId == publicationId }) {
             return Result.failure(IllegalStateException("Ya enviaste una solicitud para esta publicación"))
         }
-        _sentRequests.update { listOf(SentRequest("s${System.currentTimeMillis()}", publicationId, RequestStatus.PENDIENTE, "Enviada ahora", message)) + it }
+        _sentRequests.update { listOf(SentRequest("s${System.currentTimeMillis()}", publicationId, RequestStatus.PENDIENTE, UiText.Raw("ahora"), message)) + it }
         return Result.success(Unit)
     }
 
@@ -559,7 +560,7 @@ object FakeRepository : HuellaRepository {
         if (pub != null) {
             _notifications.update {
                 listOf(
-                    AppNotification("n_${System.currentTimeMillis()}", "Hoy", NotificationType.POST_APPROVED, "Publicación aprobada", "${pub.title} ya está visible para todos.", "ahora", false, itemId)
+                    AppNotification("n_${System.currentTimeMillis()}", "Hoy", NotificationType.POST_APPROVED, "Publicación aprobada", "${pub.title} ya está visible para todos.", UiText.Raw("ahora"), false, itemId)
                 ) + it
             }
         }
@@ -579,7 +580,7 @@ object FakeRepository : HuellaRepository {
         if (pub != null) {
             _notifications.update {
                 listOf(
-                    AppNotification("n_${System.currentTimeMillis()}", "Hoy", NotificationType.POST_REJECTED, "Publicación rechazada", "${pub.title} fue rechazada. Motivo: $reason", "ahora", false, itemId)
+                    AppNotification("n_${System.currentTimeMillis()}", "Hoy", NotificationType.POST_REJECTED, "Publicación rechazada", "${pub.title} fue rechazada. Motivo: $reason", UiText.Raw("ahora"), false, itemId)
                 ) + it
             }
         }

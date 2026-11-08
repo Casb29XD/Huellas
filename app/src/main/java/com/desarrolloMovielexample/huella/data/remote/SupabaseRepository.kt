@@ -2,6 +2,10 @@ package com.desarrolloMovielexample.huella.data.remote
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.StringRes
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.AppError
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import com.desarrolloMovielexample.huella.domain.model.*
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
@@ -58,11 +62,12 @@ object SupabaseRepository : HuellaRepository {
         requireUserId()
         requireConfigured()
         val mimeType = appContext.contentResolver.getType(uri) ?: "image/jpeg"
-        require(mimeType.startsWith("image/")) { "Selecciona un archivo de imagen" }
+        if (!mimeType.startsWith("image/")) fail(R.string.err_image_type)
         val bytes = appContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: error("No se pudo leer la imagen seleccionada")
-        require(bytes.isNotEmpty()) { "La imagen está vacía" }
-        require(bytes.size <= 10 * 1024 * 1024) { "Cada imagen debe pesar menos de 10 MB" }
+            ?: fail(R.string.err_image_read)
+        if (bytes.isEmpty()) fail(R.string.err_image_empty)
+        // Mismo límite que el bucket pet-images (file_size_limit 5242880).
+        if (bytes.size > 5 * 1024 * 1024) fail(R.string.err_image_size)
         val ext = when (mimeType.substringAfter('/', "jpeg").lowercase()) {
             "jpeg" -> "jpg"
             else -> mimeType.substringAfter('/').substringBefore(';').lowercase()
@@ -156,12 +161,12 @@ object SupabaseRepository : HuellaRepository {
         }
         val auth = apiCall { api.signIn(body) }
         val token = auth.string("access_token")
-            ?: error("Supabase no devolvió el token de acceso")
-        val userJson = auth.obj("user") ?: error("Supabase no devolvió el usuario")
-        val id = userJson.string("id") ?: error("El usuario no tiene un identificador")
+            ?: fail(R.string.err_unexpected_response)
+        val userJson = auth.obj("user") ?: fail(R.string.err_unexpected_response)
+        val id = userJson.string("id") ?: fail(R.string.err_unexpected_response)
         SupabaseSession.save(appContext, token, id, auth.string("refresh_token"))
         val profile = apiCall { api.getMyProfile() }.firstOrNull()
-            ?: error("No encontramos el perfil asociado a esta cuenta")
+            ?: fail(R.string.err_profile_missing)
         val user = profile.toUser()
         _currentUser.value = user
         startRefreshAll()
@@ -184,12 +189,12 @@ object SupabaseRepository : HuellaRepository {
         }
         val response = apiCall { api.signUp(body, AUTH_REDIRECT) }
         val token = response.string("access_token")
-            ?: error("Cuenta creada. Confirma tu correo y luego inicia sesión.")
-        val userJson = response.obj("user") ?: error("Supabase no devolvió el usuario")
-        val id = userJson.string("id") ?: error("El usuario no tiene un identificador")
+            ?: fail(R.string.err_confirm_email)
+        val userJson = response.obj("user") ?: fail(R.string.err_unexpected_response)
+        val id = userJson.string("id") ?: fail(R.string.err_unexpected_response)
         SupabaseSession.save(appContext, token, id, response.string("refresh_token"))
         val profile = apiCall { api.getMyProfile() }.firstOrNull()
-            ?: error("La cuenta se creó, pero aún no aparece su perfil")
+            ?: fail(R.string.err_profile_pending)
         val user = profile.toUser()
         _currentUser.value = user
         startRefreshAll()
@@ -214,20 +219,20 @@ object SupabaseRepository : HuellaRepository {
         // Ítem 36: solo PKCE. huella:// lo puede registrar otra app; un code interceptado no sirve sin el
         // code_verifier que guarda esta app, pero un token_hash o un access_token sí darían sesión: se rechazan.
         val code = params["code"]
-        if (code.isNullOrBlank()) error("Este enlace no es válido. Solicita uno nuevo desde la app")
+        if (code.isNullOrBlank()) fail(R.string.err_link_invalid)
         val verifier = SupabaseSession.codeVerifier
-            ?: error("Abre el enlace en el mismo teléfono donde lo solicitaste")
+            ?: fail(R.string.err_link_other_device)
         val session = apiCall { api.exchangeCodeForSession(json {
             addProperty("auth_code", code)
             addProperty("code_verifier", verifier)
         }) }
         SupabaseSession.saveCodeVerifier(appContext, null)
         val accessToken = session.string("access_token")
-        if (accessToken.isNullOrBlank()) error("No se encontraron credenciales de autenticación en el enlace")
+        if (accessToken.isNullOrBlank()) fail(R.string.err_link_invalid)
         val refreshToken = session.string("refresh_token")
         val userId = session.obj("user")?.string("id")
             ?: apiCall { api.getUser("Bearer $accessToken") }.string("id")
-            ?: error("No se pudo obtener el usuario autenticado")
+            ?: fail(R.string.err_unexpected_response)
 
         SupabaseSession.save(appContext, accessToken, userId, refreshToken)
 
@@ -302,7 +307,7 @@ object SupabaseRepository : HuellaRepository {
             }) }
         }
         val profile = apiCall { api.getMyProfile() }.firstOrNull()
-            ?: error("No se pudo actualizar el perfil")
+            ?: fail(R.string.err_profile_update)
         profile.toUser().also { _currentUser.value = it }
     }
 
@@ -337,7 +342,7 @@ object SupabaseRepository : HuellaRepository {
     /** Perfil público (solo columnas públicas) y publicaciones aprobadas de [userId], en caché (ítem 28). */
     override suspend fun refreshUser(userId: String): Result<User> = result {
         val user = apiCall { api.getProfile(userId = "eq.$userId") }.firstOrNull()?.toUser()
-            ?: error("No encontramos este perfil")
+            ?: fail(R.string.err_profile_not_found)
         val publications = apiCall { api.getPublications(authorId = "eq.$userId") }.map { it.toPublication() }
         userCache[userId] = user
         authorPublications[userId] = publications
@@ -395,7 +400,7 @@ object SupabaseRepository : HuellaRepository {
             addProperty("image_url", draft.imageUrl)
         }
         val created = apiCall { api.createPublication(body) }.firstOrNull()
-            ?: error("Supabase no devolvió la publicación creada")
+            ?: fail(R.string.err_unexpected_response)
         created.toPublication()
     }.onSuccess { quietly { refreshMyPublications() } }
 
@@ -453,7 +458,7 @@ object SupabaseRepository : HuellaRepository {
 
     override suspend fun openConversation(contactUserId: String, publicationId: String?): Result<String> = result {
         val currentId = requireUserId()
-        require(contactUserId != currentId) { "No puedes iniciar un chat contigo mismo" }
+        if (contactUserId == currentId) fail(R.string.err_chat_self)
         // El servidor filtra el par (en cualquier orden) y la publicación: no se descargan todas las conversaciones.
         val existing = apiCall {
             api.getConversations(
@@ -464,7 +469,7 @@ object SupabaseRepository : HuellaRepository {
         }.firstOrNull()
         if (existing != null) {
             cacheConversation(existing, currentId)
-            existing.string("id") ?: error("La conversación no tiene identificador")
+            existing.string("id") ?: fail(R.string.err_unexpected_response)
         } else {
             val publication = publicationId?.let { getPublication(it) }
             val body = json {
@@ -474,8 +479,8 @@ object SupabaseRepository : HuellaRepository {
                 addProperty("about", publication?.let { "Sobre: ${it.title}" } ?: "Conversación de Huella")
             }
             val created = apiCall { api.createConversation(body) }.firstOrNull()
-                ?: error("Supabase no devolvió la conversación creada")
-            val createdId = created.string("id") ?: error("La conversación no tiene identificador")
+                ?: fail(R.string.err_unexpected_response)
+            val createdId = created.string("id") ?: fail(R.string.err_unexpected_response)
             val hydrated = apiCall { api.getConversations(id = "eq.$createdId") }.firstOrNull()
             cacheConversation(hydrated ?: created, currentId)
             createdId
@@ -540,7 +545,7 @@ object SupabaseRepository : HuellaRepository {
         }
         // El servidor devuelve la fila editada de vuelta en EN_REVISION: el autor no elige el estado.
         val updated = apiCall { api.updatePublication("eq.$publicationId", body) }.firstOrNull()
-            ?: error("No se pudo actualizar la publicación")
+            ?: fail(R.string.err_publication_update)
         val publication = updated.toPublication()
         _myPublications.update { list -> list.map { if (it.id == publicationId) publication else it } }
         _publications.update { list ->
@@ -552,7 +557,7 @@ object SupabaseRepository : HuellaRepository {
 
     override suspend fun deletePublication(publicationId: String): Result<Unit> = result {
         val deleted = apiCall { api.deletePublication("eq.$publicationId") }
-        check(deleted.isNotEmpty()) { "No se pudo eliminar la publicación" }
+        if (deleted.isEmpty()) fail(R.string.err_publication_delete)
         _publications.update { list -> list.filterNot { it.id == publicationId } }
         _myPublications.update { list -> list.filterNot { it.id == publicationId } }
         _moderationQueue.update { list -> list.filterNot { it.id == publicationId } }
@@ -564,7 +569,7 @@ object SupabaseRepository : HuellaRepository {
     /** Mismo botón otra vez = quitar el voto (igual que FakeRepository). */
     override suspend fun votePublication(publicationId: String, value: Int): Result<Unit> = result {
         val userId = requireUserId()
-        require(value in -1..1) { "Voto inválido" }
+        if (value !in -1..1) fail(R.string.err_unexpected_response)
         val newVote = if (value == getPublication(publicationId)?.userVote) 0 else value
         if (newVote == 0) {
             apiCall { api.deleteVote("eq.$publicationId", "eq.$userId") }
@@ -608,7 +613,7 @@ object SupabaseRepository : HuellaRepository {
             addProperty("publication_id", publicationId)
             addProperty("author_id", authorId)
             addProperty("text", text.trim())
-        }) }.firstOrNull() ?: error("Supabase no devolvió el comentario")
+        }) }.firstOrNull() ?: fail(R.string.err_unexpected_response)
         created.toComment()
     }.onSuccess { comment ->
         commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }.update { it + comment }
@@ -618,7 +623,7 @@ object SupabaseRepository : HuellaRepository {
 
     override suspend fun deleteComment(publicationId: String, commentId: String): Result<Unit> = result {
         val deleted = apiCall { api.deleteComment("eq.$commentId") }
-        check(deleted.isNotEmpty()) { "No se pudo eliminar el comentario" }
+        if (deleted.isEmpty()) fail(R.string.err_comment_delete)
         commentFlows[publicationId]?.update { list -> list.filterNot { it.id == commentId } }
         Unit
     }.onSuccess { refreshPublication(publicationId) }
@@ -685,7 +690,7 @@ object SupabaseRepository : HuellaRepository {
         updateModeration(itemId, PostStatus.APROBADA, null, null)
 
     override suspend fun reject(itemId: String, reason: String, comment: String): Result<Unit> {
-        if (reason.isBlank()) return Result.failure(IllegalArgumentException("Selecciona un motivo de rechazo"))
+        if (reason.isBlank()) return Result.failure(AppError(R.string.moderation_reason_required))
         return updateModeration(itemId, PostStatus.RECHAZADA, reason, comment)
     }
 
@@ -849,7 +854,7 @@ object SupabaseRepository : HuellaRepository {
                 )
             }
         _moderationQueue.value = pending.map {
-            ModerationItem(it, "En revisión", authorApproved = 0, authorRejected = 0)
+            ModerationItem(it, UiText.Res(R.string.post_status_review), authorApproved = 0, authorRejected = 0)
         }
         _moderationReports.value = reported
         val midnightUtc = SimpleDateFormat("yyyy-MM-dd'T'00:00:00'Z'", Locale.US).apply {
@@ -901,15 +906,24 @@ object SupabaseRepository : HuellaRepository {
 
     private fun requireUserId(): String {
         requireConfigured()
-        return SupabaseSession.userId ?: error("Inicia sesión para continuar")
+        return SupabaseSession.userId ?: fail(R.string.err_login_required)
     }
 
     private suspend fun <T> result(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AppError) {
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Result.failure(AppError(R.string.err_no_connection)) // sin red: no mostrar el texto técnico de OkHttp
         } catch (e: Exception) {
-            Result.failure(IllegalStateException(errorMessage(e), e))
+            Result.failure(e.message?.takeIf { it.isNotBlank() }?.let { IllegalStateException(it, e) } ?: AppError(R.string.err_no_connection))
         }
+
+    /** Error con texto en recursos: la UI lo muestra en su idioma (ítem 37). */
+    private fun fail(@StringRes res: Int): Nothing = throw AppError(res)
 
     private suspend fun <T> apiCall(call: suspend () -> Response<T>): T {
         val tokenUsed = SupabaseSession.accessToken
@@ -919,7 +933,7 @@ object SupabaseRepository : HuellaRepository {
         }
         if (!response.isSuccessful) {
             val serverText = runCatching { response.errorBody()?.string() }.getOrNull()
-            throw IllegalStateException(parseError(serverText) ?: "Error de Supabase (${response.code()})")
+            throw parseError(serverText)?.let { IllegalStateException(it) } ?: AppError(R.string.err_server_code, response.code())
         }
         return response.body() ?: Unit as T
     }
@@ -953,17 +967,13 @@ object SupabaseRepository : HuellaRepository {
         false
     }
 
-    private fun errorMessage(error: Exception): String =
-        error.message?.takeIf { it.isNotBlank() } ?: "No pudimos conectar con Supabase"
-
+    /** Mensaje del servidor tal cual (se muestra Raw); null si no hay. Un UNIQUE repetido lanza AppError. */
     private fun parseError(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
-        return runCatching {
-            val json = com.google.gson.JsonParser.parseString(raw).asJsonObject
-            // 23505: restricción UNIQUE (reporte o solicitud repetidos).
-            if (json.string("code") == "23505") "Ya lo habías enviado antes"
-            else json.string("message") ?: json.string("msg") ?: json.string("error_description")
-        }.getOrNull()
+        val json = runCatching { com.google.gson.JsonParser.parseString(raw).asJsonObject }.getOrNull() ?: return null
+        // 23505: restricción UNIQUE (reporte o solicitud repetidos).
+        if (json.string("code") == "23505") throw AppError(R.string.err_duplicate)
+        return json.string("message") ?: json.string("msg") ?: json.string("error_description")
     }
 
     private fun JsonObject.toUser() = User(
@@ -1033,16 +1043,7 @@ object SupabaseRepository : HuellaRepository {
     private fun notificationType(value: String?) =
         runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
 
-    private fun relativeTime(value: String?): String {
-        val time = parseSupabaseDate(value) ?: return "hoy"
-        val minutes = ((System.currentTimeMillis() - time) / 60_000L).coerceAtLeast(0)
-        return when {
-            minutes < 1 -> "ahora"
-            minutes < 60 -> "hace $minutes min"
-            minutes < 1440 -> "hace ${minutes / 60} h"
-            else -> "hace ${minutes / 1440} d"
-        }
-    }
+    private fun relativeTime(value: String?): UiText = relativeTimeText(parseSupabaseDate(value), System.currentTimeMillis())
 
     private fun clockLabel(value: String?): String {
         val date = parseSupabaseDate(value) ?: return ""
@@ -1089,6 +1090,21 @@ internal fun parseSupabaseDate(value: String?): Long? {
     return runCatching { OffsetDateTime.parse(iso).toInstant().toEpochMilli() }
         .recoverCatching { LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC).toEpochMilli() }
         .getOrNull()
+}
+
+/**
+ * Tiempo relativo como texto de recursos ("ahora", "hace 3 h" / "now", "3 h ago"): la UI lo resuelve en su
+ * idioma (ítems 37 y 60). Sin fecha devuelve "hoy".
+ */
+internal fun relativeTimeText(time: Long?, now: Long): UiText {
+    if (time == null) return UiText.Res(R.string.time_today)
+    val minutes = ((now - time) / 60_000L).coerceAtLeast(0)
+    return when {
+        minutes < 1 -> UiText.Res(R.string.time_now)
+        minutes < 60 -> UiText.Plural(R.plurals.time_minutes_ago, minutes.toInt())
+        minutes < 1440 -> UiText.Plural(R.plurals.time_hours_ago, (minutes / 60).toInt())
+        else -> UiText.Plural(R.plurals.time_days_ago, (minutes / 1440).toInt())
+    }
 }
 
 /** Sección de la lista de notificaciones según el día local de created_at: Hoy, Ayer, Esta semana o Antes. */
