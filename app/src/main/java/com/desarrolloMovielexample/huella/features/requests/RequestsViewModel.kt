@@ -95,7 +95,7 @@ class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository)
             repo.closePublication(id)
                 .onSuccess {
                     local.update { it.copy(isClosing = false, acceptedPublicationId = null) }
-                    _messages.send("Publicación retirada")
+                    _messages.send("Publicación finalizada. ¡Gracias por ayudar!")
                 }
                 .onFailure { e ->
                     local.update { it.copy(isClosing = false) }
