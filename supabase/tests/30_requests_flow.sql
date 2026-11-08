@@ -135,7 +135,7 @@ BEGIN
     RETURN NEXT is((SELECT count(*)::int FROM public.publications WHERE author_id = b), 0, 'sus publicaciones borradas');
     RETURN NEXT is((SELECT count(*)::int FROM public.adoption_requests WHERE applicant_id = b), 0, 'sus solicitudes borradas');
     RETURN NEXT is((SELECT count(*)::int FROM public.conversations WHERE b IN (participant_one, participant_two)), 0, 'sus conversaciones borradas');
-    RETURN NEXT is((SELECT count(*)::int FROM storage.objects WHERE bucket_id = 'pet-images' AND name LIKE b || '/%'), 0, 'sus fotos borradas');
+    RETURN NEXT ok(tests.tap_image_purged(b || '/tap.jpg'), 'sus fotos borradas');
     RETURN NEXT is((SELECT comments_count FROM public.publications WHERE id = p), 0, 'el contador de comentarios ajeno se recalcula');
     RETURN NEXT is((SELECT count(*)::int FROM public.profiles WHERE id = a), 1, 'el otro usuario sigue intacto');
 END;
