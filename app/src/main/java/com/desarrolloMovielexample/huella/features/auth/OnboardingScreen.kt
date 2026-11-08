@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 
 private data class OnboardingPage(@DrawableRes val illustration: Int, @StringRes val title: Int, @StringRes val text: Int)
 
+// Ilustraciones acordes al copy (ítem 49): hogar con mascota para "volver a casa", comunidad para "ayudando".
 private val pages = listOf(
     OnboardingPage(
         R.drawable.illus_animal,
@@ -53,12 +54,12 @@ private val pages = listOf(
         R.string.onboarding_1_text,
     ),
     OnboardingPage(
-        R.drawable.illus_location,
+        R.drawable.illus_family,
         R.string.onboarding_2_title,
         R.string.onboarding_2_text,
     ),
     OnboardingPage(
-        R.drawable.illus_cool_guy,
+        R.drawable.illus_friends,
         R.string.onboarding_3_title,
         R.string.onboarding_3_text,
     ),
