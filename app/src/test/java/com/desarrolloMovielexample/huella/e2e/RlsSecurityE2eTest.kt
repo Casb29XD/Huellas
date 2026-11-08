@@ -10,7 +10,7 @@ import org.junit.Test
 import java.util.UUID
 
 /**
- * Exploits reproducidos en la auditoría (ítems 1-4, 18 y 23). Cada prueba ASSERTA que el ataque está bloqueado.
+ * Exploits reproducidos en la auditoría (ítems 1-4, 7, 18 y 23). Cada prueba ASSERTA que el ataque está bloqueado.
  * Hoy fallan (rojo) a propósito: las migraciones de roles/RLS/storage las ponen en verde. No marcar @Ignore.
  * Cada prueba usa usuarios propios (E2eEnv.createUser) que se borran en @AfterClass.
  */
@@ -113,5 +113,43 @@ class RlsSecurityE2eTest {
         val other = E2eEnv.uniqueEmail()
         E2eEnv.rest("rest/v1/profiles?id=eq.${laura.id}", "PATCH", """{"email":"$other"}""", laura.token)
         assertEquals("profiles.email divergió de auth.users.email", laura.email, profile(laura.id, "email").get("email").asString)
+    }
+
+    /** Ítem 7: el estado de una solicitud solo cambia por respond_to_request (notifica y abre la conversación). */
+    @Test
+    fun `g - solicitud sin autoaceptacion ni PATCH directo del estado`() {
+        val author = E2eEnv.createUser(name = "Autor Sol E2E")
+        val applicant = E2eEnv.createUser(name = "Solicita E2E")
+        val pub = E2eEnv.admin("rest/v1/publications", "POST",
+            """{"author_id":"${author.id}","title":"E2E solicitud","species":"Perro","breed":"Criollo","size":"Mediano","city":"Medellín","description":"e2e","status":"APROBADA"}""")
+        assertTrue("crear publicación ${pub.code}: ${pub.body}", pub.ok)
+        val pubId = pub.rows().single().get("id").asString
+
+        val selfAccept = E2eEnv.rest("rest/v1/adoption_requests", "POST",
+            """{"publication_id":"$pubId","applicant_id":"${applicant.id}","message":"e2e","status":"ACEPTADA"}""", applicant.token)
+        assertFalse("el solicitante insertó con status ACEPTADA: ${selfAccept.code} ${selfAccept.body}", selfAccept.ok)
+
+        val req = E2eEnv.rest("rest/v1/adoption_requests", "POST",
+            """{"publication_id":"$pubId","applicant_id":"${applicant.id}","message":"e2e"}""", applicant.token,
+            headers = mapOf("Prefer" to "return=representation"))
+        assertTrue("solicitud normal ${req.code}: ${req.body}", req.ok)
+        val reqId = req.rows().single().get("id").asString
+        E2eEnv.rest("rest/v1/adoption_requests?id=eq.$reqId", "PATCH", """{"status":"ACEPTADA"}""", author.token)
+        val status = E2eEnv.admin("rest/v1/adoption_requests?id=eq.$reqId&select=status").rows().single().get("status").asString
+        assertEquals("el autor cambió el estado sin respond_to_request", "PENDIENTE", status)
+        val own = E2eEnv.rest("rest/v1/adoption_requests", "POST",
+            """{"publication_id":"$pubId","applicant_id":"${author.id}","message":"e2e"}""", author.token)
+        assertFalse("el autor solicitó su propia publicación: ${own.code}", own.ok)
+    }
+
+    /** Ítem 23: los campos editables del perfil tienen tope en el servidor. */
+    @Test
+    fun `h - PATCH de perfil con nombre de 5000 caracteres se rechaza`() {
+        val user = E2eEnv.createUser(name = "Largo E2E")
+        val r = E2eEnv.rest("rest/v1/profiles?id=eq.${user.id}", "PATCH", """{"name":"${"N".repeat(5000)}"}""", user.token)
+        assertFalse("aceptó un nombre de 5000 caracteres: ${r.code}", r.ok)
+        assertEquals("Largo E2E", profile(user.id, "name").get("name").asString)
+        val bio = E2eEnv.rest("rest/v1/profiles?id=eq.${user.id}", "PATCH", """{"bio":"${"b".repeat(501)}"}""", user.token)
+        assertFalse("aceptó una bio de 501 caracteres: ${bio.code}", bio.ok)
     }
 }
