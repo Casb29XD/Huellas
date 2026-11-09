@@ -1,5 +1,11 @@
 package com.desarrolloMovielexample.huella.features.feed
 
+import com.google.android.gms.maps.GoogleMapOptions
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.rememberCameraPositionState
 import com.desarrolloMovielexample.huella.core.utils.asString
 import android.content.Intent
 import androidx.annotation.DrawableRes
@@ -229,7 +235,7 @@ fun PublicationDetailScreen(
                                 .clickable(onClickLabel = stringResource(R.string.home_view_map), onClick = onOpenMap),
                             contentAlignment = Alignment.Center,
                         ) {
-                            MapBackground(Modifier.fillMaxSize())
+                            DetailMiniMap(pub, onOpenMap, Modifier.fillMaxSize())
                             Box(
                                 Modifier
                                     .size(44.dp)
@@ -453,6 +459,20 @@ private fun SheetBody(host: SnackbarHostState, gap: Dp = 16.dp, content: @Compos
         content()
         HuellaSnackbarHost(host)
     }
+}
+
+/** Real map centred on the publication when it has coordinates; the drawn street grid otherwise. */
+@Composable
+private fun DetailMiniMap(pub: Publication, onOpenMap: () -> Unit, modifier: Modifier = Modifier) {
+    if (pub.lat == 0.0 || pub.lon == 0.0) return MapBackground(modifier)
+    val camera = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(LatLng(pub.lat, pub.lon), 15f) }
+    GoogleMap(
+        modifier = modifier,
+        cameraPositionState = camera,
+        googleMapOptionsFactory = { GoogleMapOptions().liteMode(true) },
+        uiSettings = MapUiSettings(mapToolbarEnabled = false, zoomControlsEnabled = false),
+        onMapClick = { onOpenMap() },
+    )
 }
 
 /** 4:3 pager with the publication's real photos (placeholder slide if none), back + share buttons, page dots. */
