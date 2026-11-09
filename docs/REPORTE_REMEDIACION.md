@@ -1,11 +1,11 @@
 # Reporte de remediación: auditoría 2026-11
 
-Rama `fix/auditoria-2026-11` sobre el commit base `04713a4` (auditoría técnica del 2026-11-08, 63 hallazgos).
+Rama `fix/auditoria-2026-11` sobre el commit base `00f9cdc` (auditoría técnica del 2026-11-08, 63 hallazgos).
 Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MATRIZ_HALLAZGOS.md`.
 
 ## Resumen ejecutivo
 
-- **Alcance:** 131 commits (`git log fix/auditoria-2026-11 ^04713a4`, contando este) y 177 archivos cambiados,
+- **Alcance:** 131 commits (`git log fix/auditoria-2026-11 ^00f9cdc`, contando este) y 177 archivos cambiados,
   con unas +10 600 y −2 800 líneas. Se añadieron 24 migraciones append-only a las 3 que ya existían, además de pruebas
   pgTAP, E2E contra Supabase y Robolectric, y las Edge Functions `moderate-ai` y `verify-image`.
 - **Estado final de los 63 ítems:** 58 resueltos, 5 parciales (18, 20, 21, 22, 36) y 0 pendientes.
@@ -21,7 +21,7 @@ Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MAT
 - **Funciones simuladas que ahora son reales:** editar, eliminar, finalizar adopción, comentarios, votos,
   avistamientos, puntos, notificaciones y eliminar cuenta pasan por PostgREST, RPC y triggers. Las pruebas E2E las
   ejercitan con el `SupabaseRepository` real.
-- **Pruebas:** la corrida final contra el hosted (`scripts/test-all.sh` sobre `e16808f`, exit 0, tras los cierres de
+- **Pruebas:** la corrida final contra el hosted (`scripts/test-all.sh` sobre `871f26a`, exit 0, tras los cierres de
   backend de la sección "Pendiente"; repetida el 2026-11-09 con Vault configurado y la clave rotada, mismo resultado) dio:
   - pgTAP: 22/22 tests y 225/225 aserciones.
   - `deno test supabase/functions/`: 10/10 (`moderate-ai` y `verify-image`).
@@ -35,15 +35,15 @@ Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MAT
 
 1. Remediación por bloques: backend y RLS, gamificación, front, i18n, visual y documentación. Cada commit es atómico
    y cita el ítem que resuelve.
-2. Verificación adversarial en solo lectura sobre `86a4197`. Encontró que el ítem 9 seguía roto: "Editar" abría el
+2. Verificación adversarial en solo lectura sobre `2c90ffe`. Encontró que el ítem 9 seguía roto: "Editar" abría el
    asistente vacío y creaba otra publicación. También dejó parciales los ítems 14, 15, 32, 33, 36, 37, 44, 49 y 56-60.
    Los problemas eran esperas fijas, interruptores que solo vivían en memoria, un diálogo de cierre con información
    falsa y fotos huérfanas.
-3. Reparación de esos ítems (`19ff386`..`de9dac9`), endurecimiento de `moderate-ai` (`e6104ac`) y pruebas para
-   los ítems 42 y 47 (`4e4082c`).
-4. Corrida completa contra el hosted y matriz actualizada (`5834397`, `1afada6`).
+3. Reparación de esos ítems (`90f312d`..`94ff6fd`), endurecimiento de `moderate-ai` (`93dd941`) y pruebas para
+   los ítems 42 y 47 (`95cdc62`).
+4. Corrida completa contra el hosted y matriz actualizada (`5f1ce1d`, `4bf9039`).
 5. Verificación independiente del backend (sección siguiente).
-6. Reparación del backend (`5459b5e`..`09b7ff3`) y corrida E2E final (exit 0, sin cambios).
+6. Reparación del backend (`486ed27`..`1858a2d`) y corrida E2E final (exit 0, sin cambios).
 
 ## Verificación independiente del backend
 
@@ -72,17 +72,17 @@ de venta.
 
 | Commit | Qué cambia | Prueba |
 |---|---|---|
-| `5459b5e` | Ítem 7: `INSERT` solo de `publication_id`, `applicant_id` y `message`; sin `UPDATE` directo; se elimina la política UPDATE del autor. Las respuestas pasan solo por `respond_to_request` | pgTAP `test_30` (+4 casos); E2E `RlsSecurityE2eTest` (g) |
-| `0129a56` | Scripts SQL remotos en UTF-8 y reparación del mojibake que habían dejado en el hosted | pgTAP `test_42_codificacion` |
-| `e820508` | Ítem 23: CHECK de longitud en `name`, `city`, `phone` y `bio` | pgTAP `test_40`; E2E `RlsSecurityE2eTest` (h) |
-| `911ef2d` | Ítems 21, 51 y 52: `event_at`, `event_end_at` y `age_months` tipadas, rellenadas por trigger con backfill; `member_since` generado desde `created_at`; se borra `tone` | pgTAP `test_41` |
-| `65e7c13` | Ítem 5: el moderador de `seed.sql` nace con contraseña aleatoria | `RepoHygieneTest` |
-| `84945e0` | Ítem 18: sin listado público; triggers que borran por la Storage API y Edge Function `verify-image` (magic bytes) | pgTAP `test_43`; `deno test` de `verify-image`; E2E `StorageAuthReportsE2eTest` |
-| `f19fdfe` | E2E de los ítems 7 y 23 contra el hosted | — |
-| `c58142b` | Ítem 22: CHECK que exige coordenadas completas, en rango y distintas de (0,0), o NULL | pgTAP `test_44` |
-| `09b7ff3` | `docs/SEGURIDAD_BACKEND.md` con el contrato nuevo | — |
+| `486ed27` | Ítem 7: `INSERT` solo de `publication_id`, `applicant_id` y `message`; sin `UPDATE` directo; se elimina la política UPDATE del autor. Las respuestas pasan solo por `respond_to_request` | pgTAP `test_30` (+4 casos); E2E `RlsSecurityE2eTest` (g) |
+| `7fa2454` | Scripts SQL remotos en UTF-8 y reparación del mojibake que habían dejado en el hosted | pgTAP `test_42_codificacion` |
+| `a9e229b` | Ítem 23: CHECK de longitud en `name`, `city`, `phone` y `bio` | pgTAP `test_40`; E2E `RlsSecurityE2eTest` (h) |
+| `7c9387b` | Ítems 21, 51 y 52: `event_at`, `event_end_at` y `age_months` tipadas, rellenadas por trigger con backfill; `member_since` generado desde `created_at`; se borra `tone` | pgTAP `test_41` |
+| `ab3cc8a` | Ítem 5: el moderador de `seed.sql` nace con contraseña aleatoria | `RepoHygieneTest` |
+| `4c4cde6` | Ítem 18: sin listado público; triggers que borran por la Storage API y Edge Function `verify-image` (magic bytes) | pgTAP `test_43`; `deno test` de `verify-image`; E2E `StorageAuthReportsE2eTest` |
+| `f54f8d9` | E2E de los ítems 7 y 23 contra el hosted | — |
+| `a49d1a6` | Ítem 22: CHECK que exige coordenadas completas, en rango y distintas de (0,0), o NULL | pgTAP `test_44` |
+| `1858a2d` | `docs/SEGURIDAD_BACKEND.md` con el contrato nuevo | — |
 
-**Corrida E2E final** (`scripts/test-all.sh`, HEAD `09b7ff3`): verde a la primera.
+**Corrida E2E final** (`scripts/test-all.sh`, HEAD `1858a2d`): verde a la primera.
 
 - Las 24 migraciones locales (`20261101000000`..`20261109340100`) están registradas en el hosted.
 - Tras la corrida no quedaron datos de prueba: 0 usuarios e2e/tap, 0 publicaciones `tap_`/`e2e` y 0 objetos `e2e-*`.
@@ -93,74 +93,74 @@ Estado final y commits que resuelven cada ítem. La matriz indica la prueba que 
 
 | # | Hallazgo | Estado | Commits | Nota |
 |---|---|---|---|---|
-| 1 | Registro como moderador por metadata | Resuelto | fe98070 |  |
-| 2 | Usuario edita sus puntos, nivel y rol | Resuelto | fe98070 |  |
-| 3 | Autor autoaprueba su publicación | Resuelto | 68e8259 |  |
-| 4 | Email y teléfono expuestos | Resuelto | 63a1f8a |  |
-| 5 | Credenciales de admin en el seed | Resuelto | 3510bef 65e7c13 | `seed.sql` es solo local y su moderador nace con contraseña aleatoria. En el hosted la contraseña de `admin@huella.app` se rotó el 2026-11-09 a una aleatoria fuera del repo (la publicada responde 400) |
-| 6 | Gamificación inexistente en servidor | Resuelto | ca63b9b |  |
-| 7 | Notificaciones de solicitud nunca se generan | Resuelto | 58f17c3 504dbba 5459b5e f19fdfe | La verificación independiente encontró que se podía autoaceptar por INSERT o por PATCH directo. Corregido: el estado solo cambia por `respond_to_request` |
-| 8 | No se puede eliminar la cuenta | Resuelto | 13a908b 1529b06 |  |
-| 9 | Editar publicación crea otra | Resuelto | 88770ff bc28af6 |  |
-| 10 | Eliminar publicación no elimina | Resuelto | 88770ff |  |
-| 11 | Recuperar contraseña sin salida | Resuelto | 0b436ba 76799ba |  |
-| 12 | Horas desfasadas 5 h | Resuelto | 60c95cd |  |
-| 13 | Comentarios, votos, avistamientos simulados | Resuelto | ace9317 1178f6f |  |
-| 14 | Fotos aleatorias de picsum | Resuelto | dab166d 414a1cc 19ff386 | Opción mínima: una foto por publicación (`image_url`); varias fotos piden `image_urls TEXT[]` |
-| 15 | "Finalizar adopción" siempre falla | Resuelto | b90e536 1d9643c bb8993b | El diálogo dice que se marca adopción concretada y suma 50 puntos |
-| 16 | Seed inconsistente con el trigger | Resuelto | 3510bef |  |
-| 17 | Reportes sin ciclo de vida | Resuelto | 51a8d76 f79bd2f 4678d05 |  |
-| 18 | Storage sin límites | Parcial | 0713158 84945e0 | Carpeta, MIME, 5 MB y listado privado activos. Vault configurado el 2026-11-09: `verify-image` y el DELETE por la Storage API están activos (verificado en vivo: al borrar una publicación con foto su fila de `storage.objects` desaparece en la misma transacción y `net._http_response` registra el DELETE con 200). Sigue parcial porque la API responde `[]` (la fila ya no existe) y el binario queda huérfano en S3, sin URL que lo sirva (pendiente 3) |
-| 19 | Sin índices | Resuelto | a380c37 |  |
-| 20 | `conversations.updated_at` y Realtime | Parcial | 13a908b | Trigger y publicación Realtime listos; la app no se suscribe |
-| 21 | Datos semánticos como texto | Parcial | b90e536 911ef2d | La BD ya tiene `event_at`, `event_end_at` y `age_months` tipadas (con trigger y backfill). Falta que la app las escriba, las lea y ordene o filtre por ellas |
-| 22 | Ubicación (0,0) y mapa falso | Parcial | b90e536 c58142b | La BD solo acepta coordenadas completas, en rango y distintas de (0,0), o NULL. El asistente no captura la ubicación y `MapScreen.toLatLng()` sigue inventando coordenadas por ciudad |
-| 23 | `handle_new_user` frágil, email divergente | Resuelto | fe98070 83b97dd e820508 f19fdfe | La verificación independiente encontró `name` sin límite al editar. Corregido con CHECK de longitud en `name`, `city`, `phone` y `bio` |
-| 24 | Enum `notification_type` incompleto | Resuelto | 51a8d76 a262fbf 8029365 |  |
-| 25 | Sesión persistente ignorada | Resuelto | 88a8f31 |  |
-| 26 | Expulsión silenciosa y refresh concurrente | Resuelto | 88a8f31 0b436ba |  |
-| 27 | `refreshAll()` dentro de cada escritura | Resuelto | ae8b8e5 |  |
-| 28 | Perfil público con datos falsos | Resuelto | dfdcaa4 |  |
-| 29 | Notificaciones solo en memoria | Resuelto | 2622725 8029365 |  |
-| 30 | Textos corruptos (mojibake) | Resuelto | 95629a6 489a95f 0129a56 | `0129a56` repara también el mojibake que quedó en los datos del hosted |
-| 31 | Términos inexistentes | Resuelto | f9e7ad7 76799ba |  |
-| 32 | Sin paginación | Resuelto | d2c05b6 | Categoría, especie y ciudad se filtran en el servidor; texto, tamaño y vacunado/esterilizado en memoria sobre las páginas cargadas |
-| 33 | "cerca de Medellín" y ubicación sin uso | Resuelto | bdfc2bd 74ededd |  |
-| 34 | Sin `.env.example` ni fail-fast | Resuelto | 2f6420e e079499 |  |
-| 35 | Token en backup | Resuelto | e7e7b3f |  |
-| 36 | Deep link custom sin verificación | Parcial | 0b436ba 16e7bce | Solo se acepta `code` + verifier; sigue el esquema `huella://`: App Links `https` con `autoVerify` y `assetlinks.json` requieren un dominio |
-| 37 | i18n a medias | Resuelto | 79acb44 0175dcc b27c6db 34e90dc 972c9eb b352dc4 db2b772 7dbd5e2 70d1fdd 4748168 84c7efd bb8993b | Errores propios con `AppError(@StringRes)`; el texto que genera el servidor (mensajes de error de PostgREST, títulos de notificaciones) se muestra tal cual |
-| 38 | Build no reproducible | Resuelto | b3ae855 e079499 |  |
-| 39 | Tests no cubren el código real | Resuelto | 1bccf9a abf84fa c995e5b 0b436ba bd80e58 5afc6bb 4e4082c |  |
-| 40 | Logging siempre activo | Resuelto | 5b8c43e |  |
-| 41 | Listas cortadas por la barra inferior | Resuelto | bdfc2bd |  |
-| 42 | Título del detalle bajo la barra de estado | Resuelto | b66e5c1 |  |
-| 43 | Caption de depuración en fotos | Resuelto | dab166d 0b85310 |  |
-| 44 | Snackbars tapan el CTA | Resuelto | b66e5c1 d43644a 0b85310 af44f68 |  |
-| 45 | Títulos truncados a una línea | Resuelto | 3997c76 0b85310 |  |
-| 46 | FAB naranja duplicado | Resuelto | bdfc2bd |  |
-| 47 | Iconos repetidos y grillas desiguales | Resuelto | 5e3a826 | `icon_attr_castrado.xml` quedó con finales de línea CRLF (cosmético) |
-| 48 | Error de términos sin mensaje, placeholder, typo | Resuelto | d43644a |  |
-| 49 | Splash con puntos, onboarding que salta | Resuelto | 6d5053f bf20643 |  |
-| 50 | Botones estrechos y áreas táctiles < 48 dp | Resuelto | 6d5053f 1c6b3bb |  |
-| 51 | Sin triggers `updated_at` | Resuelto | a725ec6 911ef2d | `member_since` es un `smallint` generado desde `created_at`. Opcional en la app: derivarlo de `created_at` |
-| 52 | `tone` ARGB en BD | Resuelto | b90e536 911ef2d | La columna se borró. La app aún lee `tone` con un valor por defecto: falta un mapa categoría→color (limpieza de front) |
-| 53 | RPC no limpia reportes ni suma puntos | Resuelto | ca63b9b |  |
-| 54 | `FakeRepository` en producción | Resuelto | 414a1cc |  |
-| 55 | Interfaz que miente y mock espejo | Resuelto | 9a3577f |  |
-| 56 | Esperas decorativas | Resuelto | d43644a 63f4c1d d2c05b6 561fe4c | Las confirmaciones se muestran en la pantalla de destino |
-| 57 | Ajustes: toggles en memoria, cuenta | Resuelto | cf2c0bb 76799ba 1f94f91 |  |
-| 58 | Accesibilidad | Resuelto | 1c6b3bb 0b85310 68ea6b5 4748168 a5a3222 |  |
-| 59 | Tema solo claro | Resuelto | 8fdd357 8c52bee | El fondo de mapa estático es una ilustración decorativa y queda clara en ambos temas |
-| 60 | Inconsistencias de marca y copy | Resuelto | 40d2bf4 9d251c3 84c7efd | Excepciones deliberadas: botón atrás circular sobre la foto del detalle (necesita contraste sobre la imagen) y hora `HH:mm` en el chat |
-| 61 | Google Sign-In "Próximamente" | Resuelto | d43644a |  |
-| 62 | Documentación desactualizada | Resuelto | aaaea84 947e1e2 5cd2266 86a4197 de9dac9 5834397 1afada6 09b7ff3 | Estado final en `docs/REPORTE_REMEDIACION.md` |
-| 63 | `.gitignore`, `.env.example`, cp1252 | Resuelto | 95629a6 e079499 |  |
+| 1 | Registro como moderador por metadata | Resuelto | 3525bd7 |  |
+| 2 | Usuario edita sus puntos, nivel y rol | Resuelto | 3525bd7 |  |
+| 3 | Autor autoaprueba su publicación | Resuelto | 4ff72f5 |  |
+| 4 | Email y teléfono expuestos | Resuelto | 1165bfe |  |
+| 5 | Credenciales de admin en el seed | Resuelto | 3e3311f ab3cc8a | `seed.sql` es solo local y su moderador nace con contraseña aleatoria. En el hosted la contraseña de `admin@huella.app` se rotó el 2026-11-09 a una aleatoria fuera del repo (la publicada responde 400) |
+| 6 | Gamificación inexistente en servidor | Resuelto | 1db9dc9 |  |
+| 7 | Notificaciones de solicitud nunca se generan | Resuelto | fee4d9f 82e523a 486ed27 f54f8d9 | La verificación independiente encontró que se podía autoaceptar por INSERT o por PATCH directo. Corregido: el estado solo cambia por `respond_to_request` |
+| 8 | No se puede eliminar la cuenta | Resuelto | 75faf12 b7afaa8 |  |
+| 9 | Editar publicación crea otra | Resuelto | cca090f 68b9bbc |  |
+| 10 | Eliminar publicación no elimina | Resuelto | cca090f |  |
+| 11 | Recuperar contraseña sin salida | Resuelto | b9f45ad 4117b91 |  |
+| 12 | Horas desfasadas 5 h | Resuelto | f90c927 |  |
+| 13 | Comentarios, votos, avistamientos simulados | Resuelto | 6f78a60 b808b14 |  |
+| 14 | Fotos aleatorias de picsum | Resuelto | 1b7a182 d7a56da 90f312d | Opción mínima: una foto por publicación (`image_url`); varias fotos piden `image_urls TEXT[]` |
+| 15 | "Finalizar adopción" siempre falla | Resuelto | 548a53d 16b1dc3 3b7943e | El diálogo dice que se marca adopción concretada y suma 50 puntos |
+| 16 | Seed inconsistente con el trigger | Resuelto | 3e3311f |  |
+| 17 | Reportes sin ciclo de vida | Resuelto | 064a938 796b40b 23f3a85 |  |
+| 18 | Storage sin límites | Parcial | 2dfea7a 4c4cde6 | Carpeta, MIME, 5 MB y listado privado activos. Vault configurado el 2026-11-09: `verify-image` y el DELETE por la Storage API están activos (verificado en vivo: al borrar una publicación con foto su fila de `storage.objects` desaparece en la misma transacción y `net._http_response` registra el DELETE con 200). Sigue parcial porque la API responde `[]` (la fila ya no existe) y el binario queda huérfano en S3, sin URL que lo sirva (pendiente 3) |
+| 19 | Sin índices | Resuelto | 625f7a6 |  |
+| 20 | `conversations.updated_at` y Realtime | Parcial | 75faf12 | Trigger y publicación Realtime listos; la app no se suscribe |
+| 21 | Datos semánticos como texto | Parcial | 548a53d 7c9387b | La BD ya tiene `event_at`, `event_end_at` y `age_months` tipadas (con trigger y backfill). Falta que la app las escriba, las lea y ordene o filtre por ellas |
+| 22 | Ubicación (0,0) y mapa falso | Parcial | 548a53d a49d1a6 | La BD solo acepta coordenadas completas, en rango y distintas de (0,0), o NULL. El asistente no captura la ubicación y `MapScreen.toLatLng()` sigue inventando coordenadas por ciudad |
+| 23 | `handle_new_user` frágil, email divergente | Resuelto | 3525bd7 a54fe96 a9e229b f54f8d9 | La verificación independiente encontró `name` sin límite al editar. Corregido con CHECK de longitud en `name`, `city`, `phone` y `bio` |
+| 24 | Enum `notification_type` incompleto | Resuelto | 064a938 05ce1cb 7e0a5e6 |  |
+| 25 | Sesión persistente ignorada | Resuelto | 27b568e |  |
+| 26 | Expulsión silenciosa y refresh concurrente | Resuelto | 27b568e b9f45ad |  |
+| 27 | `refreshAll()` dentro de cada escritura | Resuelto | 12eb6a6 |  |
+| 28 | Perfil público con datos falsos | Resuelto | f2c3317 |  |
+| 29 | Notificaciones solo en memoria | Resuelto | 1124d8e 7e0a5e6 |  |
+| 30 | Textos corruptos (mojibake) | Resuelto | d5f9aa6 c4971ce 7fa2454 | `7fa2454` repara también el mojibake que quedó en los datos del hosted |
+| 31 | Términos inexistentes | Resuelto | 43db8fd 4117b91 |  |
+| 32 | Sin paginación | Resuelto | 9a58459 | Categoría, especie y ciudad se filtran en el servidor; texto, tamaño y vacunado/esterilizado en memoria sobre las páginas cargadas |
+| 33 | "cerca de Medellín" y ubicación sin uso | Resuelto | 4334a8d 6867817 |  |
+| 34 | Sin `.env.example` ni fail-fast | Resuelto | eb0326b 4b6d5c2 |  |
+| 35 | Token en backup | Resuelto | 8ddc46a |  |
+| 36 | Deep link custom sin verificación | Parcial | b9f45ad efd15c1 | Solo se acepta `code` + verifier; sigue el esquema `huella://`: App Links `https` con `autoVerify` y `assetlinks.json` requieren un dominio |
+| 37 | i18n a medias | Resuelto | b7f4602 457aca6 97926ee d6bd609 a3af53e d7e67b7 8b0093f 971e524 ddd8211 0b46cea ff83497 3b7943e | Errores propios con `AppError(@StringRes)`; el texto que genera el servidor (mensajes de error de PostgREST, títulos de notificaciones) se muestra tal cual |
+| 38 | Build no reproducible | Resuelto | bf7dcc3 4b6d5c2 |  |
+| 39 | Tests no cubren el código real | Resuelto | e6ace74 4551da4 3371241 b9f45ad 7510689 e523f02 95cdc62 |  |
+| 40 | Logging siempre activo | Resuelto | 2a07acd |  |
+| 41 | Listas cortadas por la barra inferior | Resuelto | 4334a8d |  |
+| 42 | Título del detalle bajo la barra de estado | Resuelto | 9c6ea0d |  |
+| 43 | Caption de depuración en fotos | Resuelto | 1b7a182 6864d2a |  |
+| 44 | Snackbars tapan el CTA | Resuelto | 9c6ea0d ca1c6cb 6864d2a a940b53 |  |
+| 45 | Títulos truncados a una línea | Resuelto | 8f0cd92 6864d2a |  |
+| 46 | FAB naranja duplicado | Resuelto | 4334a8d |  |
+| 47 | Iconos repetidos y grillas desiguales | Resuelto | f927d92 | `icon_attr_castrado.xml` quedó con finales de línea CRLF (cosmético) |
+| 48 | Error de términos sin mensaje, placeholder, typo | Resuelto | ca1c6cb |  |
+| 49 | Splash con puntos, onboarding que salta | Resuelto | 1f48095 457a7cc |  |
+| 50 | Botones estrechos y áreas táctiles < 48 dp | Resuelto | 1f48095 510d00a |  |
+| 51 | Sin triggers `updated_at` | Resuelto | a9c1f16 7c9387b | `member_since` es un `smallint` generado desde `created_at`. Opcional en la app: derivarlo de `created_at` |
+| 52 | `tone` ARGB en BD | Resuelto | 548a53d 7c9387b | La columna se borró. La app aún lee `tone` con un valor por defecto: falta un mapa categoría→color (limpieza de front) |
+| 53 | RPC no limpia reportes ni suma puntos | Resuelto | 1db9dc9 |  |
+| 54 | `FakeRepository` en producción | Resuelto | d7a56da |  |
+| 55 | Interfaz que miente y mock espejo | Resuelto | 173689d |  |
+| 56 | Esperas decorativas | Resuelto | ca1c6cb ec8d0f4 9a58459 ce9fc9a | Las confirmaciones se muestran en la pantalla de destino |
+| 57 | Ajustes: toggles en memoria, cuenta | Resuelto | b63d561 4117b91 273334c |  |
+| 58 | Accesibilidad | Resuelto | 510d00a 6864d2a c223304 0b46cea 3dfb54c |  |
+| 59 | Tema solo claro | Resuelto | 0a1c668 9c2e126 | El fondo de mapa estático es una ilustración decorativa y queda clara en ambos temas |
+| 60 | Inconsistencias de marca y copy | Resuelto | d4ffd44 aeb9ebb ff83497 | Excepciones deliberadas: botón atrás circular sobre la foto del detalle (necesita contraste sobre la imagen) y hora `HH:mm` en el chat |
+| 61 | Google Sign-In "Próximamente" | Resuelto | ca1c6cb |  |
+| 62 | Documentación desactualizada | Resuelto | c6cbb90 f31665c 849f26e 2c90ffe 94ff6fd 5f1ce1d 4bf9039 1858a2d | Estado final en `docs/REPORTE_REMEDIACION.md` |
+| 63 | `.gitignore`, `.env.example`, cp1252 | Resuelto | d5f9aa6 4b6d5c2 |  |
 
 Hay dos temas fuera de la numeración, que salieron de la revisión de seguridad de commits recientes:
 
 - **Refresh en vuelo tras logout/login:** resuelto. Lo cubre `SupabaseRepositorySessionTest`.
-- **Prompt injection en `moderate-ai`:** resuelto (`e6104ac`) y desplegado: el hosted corre la versión 2.
+- **Prompt injection en `moderate-ai`:** resuelto (`93dd941`) y desplegado: el hosted corre la versión 2.
 
 ## Pruebas: qué existen y cómo correrlas
 
@@ -209,7 +209,7 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
 | Recurso | Estado |
 |---|---|
 | Migraciones | 27 registradas en `supabase_migrations.schema_migrations`; la última es `20261109350200`. Son las mismas 27 de `supabase/migrations/`, no falta ninguna |
-| Edge Function `moderate-ai` | `ACTIVE`, **versión 3** (la de `3729555`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de un moderador de prueba `{"status":"not_configured"}` |
+| Edge Function `moderate-ai` | `ACTIVE`, **versión 3** (la de `04fcc63`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de un moderador de prueba `{"status":"not_configured"}` |
 | Edge Function `verify-image` | `ACTIVE`, versión 2, con `verify_jwt=true`. Solo acepta el service role: anon recibe 403 |
 | Secrets de funciones | Solo los que Supabase crea por defecto. **No hay `DEEPSEEK_API_KEY`** (decisión del dueño), así que `moderate-ai` responde `not_configured` y la UI lo muestra |
 | Vault | `huellas_project_url` y `huellas_service_role_key` cargados el 2026-11-09 con `scripts/configure-storage-vault.sh`. Los triggers llaman a la Storage API y a `verify-image` (ítem 18) |
@@ -230,11 +230,11 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
    vivo borrando una publicación de prueba con foto: la fila de `storage.objects` desaparece en la misma transacción
    y `net._http_response` registra el DELETE a la Storage API (200). El binario sigue el límite del punto 3.
 3. **Seguimiento de la revisión automática de dos migraciones: cerrado, con un límite abierto.**
-   - `20261109300100_reparar_codificacion.sql`: `20261109350000` (`5659d93`, aplicada) re-asegura sin depender de
+   - `20261109300100_reparar_codificacion.sql`: `20261109350000` (`f1d0457`, aplicada) re-asegura sin depender de
      datos los privilegios (solo SELECT e INSERT de `publication_id`, `applicant_id`, `message`) y exactamente las
      dos políticas. `test_45_politicas_solicitudes` lo exige. La conversión de datos no se repite: en un entorno
      donde fallara, `apply-migrations` se detiene en `300100` y una copia posterior no llegaría a correr.
-   - `20261109330000_storage_por_api.sql`: `20261109350100` (`8b44dcf`, aplicada) borra también las filas de
+   - `20261109330000_storage_por_api.sql`: `20261109350100` (`3b256a3`, aplicada) borra también las filas de
      `storage.objects` en la misma transacción (`purge_pet_images`, que usan `delete_publication_images` y
      `delete_my_account`), con o sin Vault. Las peticiones encoladas se registran en `public.storage_purge_failures`
      y el job `huellas_reconciliacion_storage` las cruza con `net._http_response`: borra las 2xx y registra error,
@@ -246,10 +246,10 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
      una copia en caché de la URL pública durante su TTL. Purgar también el binario exige otro diseño, y decidirlo le
      corresponde al dueño: por ejemplo, guardar `name` y `version` y reinsertar la fila justo antes del DELETE.
 4. **Residuos menores del backend: cerrados.**
-   - `moderate-ai` (`3729555`, desplegada como versión 3): ya no envía `phone`, un `risk` ausente o inválido queda en
+   - `moderate-ai` (`04fcc63`, desplegada como versión 3): ya no envía `phone`, un `risk` ausente o inválido queda en
      0.5 y la heurística detecta "venta", "vendo", "mil pesos", "COP", "$" con cifra y "precio" sin marcar
      "ventana". Lo cubre `review_test.ts`.
-   - `20261109350200` (`e16808f`, aplicada) retira EXECUTE a PUBLIC, anon y authenticated de todas las funciones de
+   - `20261109350200` (`871f26a`, aplicada) retira EXECUTE a PUBLIC, anon y authenticated de todas las funciones de
      trigger SECURITY DEFINER de public. Lo exige `test_47_triggers_sin_execute`.
 5. **Key de DeepSeek.** Sigue sin configurar (2026-11-09): falta decidir si se activa la sugerencia de IA:
    - Se activa con `supabase secrets set DEEPSEEK_API_KEY=... --project-ref <ref>` y, si se quiere, `DEEPSEEK_MODEL`.
