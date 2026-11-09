@@ -8,27 +8,28 @@ Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MAT
 - **Alcance:** 131 commits (`git log fix/auditoria-2026-11 ^04713a4`, contando este) y 177 archivos cambiados,
   con unas +10 600 y −2 800 líneas. Se añadieron 24 migraciones append-only a las 3 que ya existían, además de pruebas
   pgTAP, E2E contra Supabase y Robolectric, y las Edge Functions `moderate-ai` y `verify-image`.
-- **Estado final de los 63 ítems:** 57 resueltos, 6 parciales (5, 18, 20, 21, 22, 36) y 0 pendientes.
-  - Los parciales de backend dependen de un paso operativo en el hosted: rotar la contraseña de `admin@huella.app`
-    (ítem 5) y cargar los secretos de Vault para el borrado y la verificación de fotos (ítem 18).
+- **Estado final de los 63 ítems:** 58 resueltos, 5 parciales (18, 20, 21, 22, 36) y 0 pendientes.
+  - El ítem 5 quedó resuelto al rotar la contraseña de `admin@huella.app` en el hosted (2026-11-09).
+  - El parcial de backend (18) ya no depende de Vault (configurado el 2026-11-09): queda el binario huérfano en S3
+    al borrar, que exige una decisión de diseño (pendiente 3).
   - Los demás parciales se resuelven en la app: Realtime (20), columnas tipadas (21), ubicación y mapa (22) y
     App Links (36).
 - **Verificación independiente del backend:** una revisión en solo lectura contra el hosted encontró tres hallazgos
   nuevos: solicitudes autoaceptadas por la Data API (7), nombre de perfil sin límite (23) y el moderador semilla con
-  la contraseña publicada (5). Los dos primeros ya están corregidos y probados en vivo. El tercero sigue abierto
-  (ver la sección propia más abajo).
+  la contraseña publicada (5). Los tres están corregidos y probados en vivo; el tercero, rotando la contraseña
+  (la anterior responde 400 y la nueva 200).
 - **Funciones simuladas que ahora son reales:** editar, eliminar, finalizar adopción, comentarios, votos,
   avistamientos, puntos, notificaciones y eliminar cuenta pasan por PostgREST, RPC y triggers. Las pruebas E2E las
   ejercitan con el `SupabaseRepository` real.
 - **Pruebas:** la corrida final contra el hosted (`scripts/test-all.sh` sobre `e16808f`, exit 0, tras los cierres de
-  backend de la sección "Pendiente") dio:
+  backend de la sección "Pendiente"; repetida el 2026-11-09 con Vault configurado y la clave rotada, mismo resultado) dio:
   - pgTAP: 22/22 tests y 225/225 aserciones.
   - `deno test supabase/functions/`: 10/10 (`moderate-ai` y `verify-image`).
   - JVM: 119/119 en 30 clases, con 24 E2E contra el hosted, sin saltos ni fallos.
 - **Pendiente operativo:**
-  - Rotar la contraseña de `admin@huella.app` en el hosted (ítem 5). La sesión de reparación no tenía permiso.
-  - Cargar los secretos de Vault con `scripts/configure-storage-vault.sh` (ítem 18).
-  - Configurar `DEEPSEEK_API_KEY`, si el dueño lo decide.
+  - Configurar `DEEPSEEK_API_KEY`, si el dueño lo decide (sigue sin key).
+  - Hechos el 2026-11-09: contraseña de `admin@huella.app` rotada (ítem 5) y secretos de Vault cargados con
+    `scripts/configure-storage-vault.sh` (ítem 18).
 
 ### Cómo se llegó aquí
 
@@ -56,7 +57,7 @@ terminar. Punto de partida: 16 migraciones registradas, pgTAP 14/14 (170/170), E
 | Ítem | Veredicto | Evidencia principal |
 |---|---|---|
 | 1, 2, 3, 4, 6, 8, 16, 17, 19, 24, 53 | Resuelto | Exploits de la auditoría rechazados en vivo: signup con `is_moderator`, PATCH de `points`/`is_moderator`, autoaprobación, `select=email,phone` (403/401), `award_points` sin EXECUTE. La moderación suma +10 y resuelve reportes. `delete_my_account` borra en cascada |
-| 5 | Parcial | `admin@huella.app` con la contraseña publicada inicia sesión en el hosted (HTTP 200) y es moderador |
+| 5 | Resuelto | `admin@huella.app` tenía la contraseña publicada (HTTP 200, moderador). Rotada el 2026-11-09: la anterior responde 400 |
 | 7 | Parcial, **hallazgo nuevo** | El camino legítimo funcionaba, pero `authenticated` tenía `INSERT(status)` y `UPDATE(status)` sobre `adoption_requests`. Había dos atajos: el solicitante insertaba con `status='ACEPTADA'` (201) y el autor aceptaba con PATCH directo (200). Ninguno creaba conversación ni notificación |
 | 18 | Parcial | Límites de carpeta, MIME y tamaño correctos. Quedaban tres residuos: binarios huérfanos en S3 al borrar, MIME validado solo por `Content-Type` (un HTML entraba como `image/jpeg`) y listado anónimo del bucket (`object/list` → 200) |
 | 20 | Parcial | Trigger y publicación Realtime listos. La app no se suscribe |
@@ -96,7 +97,7 @@ Estado final y commits que resuelven cada ítem. La matriz indica la prueba que 
 | 2 | Usuario edita sus puntos, nivel y rol | Resuelto | fe98070 |  |
 | 3 | Autor autoaprueba su publicación | Resuelto | 68e8259 |  |
 | 4 | Email y teléfono expuestos | Resuelto | 63a1f8a |  |
-| 5 | Credenciales de admin en el seed | Parcial | 3510bef 65e7c13 | `seed.sql` es solo local y su moderador nace con contraseña aleatoria. El hosted conserva `admin@huella.app` con la contraseña publicada (inicia sesión y es moderador): hay que rotarla o borrar la cuenta |
+| 5 | Credenciales de admin en el seed | Resuelto | 3510bef 65e7c13 | `seed.sql` es solo local y su moderador nace con contraseña aleatoria. En el hosted la contraseña de `admin@huella.app` se rotó el 2026-11-09 a una aleatoria fuera del repo (la publicada responde 400) |
 | 6 | Gamificación inexistente en servidor | Resuelto | ca63b9b |  |
 | 7 | Notificaciones de solicitud nunca se generan | Resuelto | 58f17c3 504dbba 5459b5e f19fdfe | La verificación independiente encontró que se podía autoaceptar por INSERT o por PATCH directo. Corregido: el estado solo cambia por `respond_to_request` |
 | 8 | No se puede eliminar la cuenta | Resuelto | 13a908b 1529b06 |  |
@@ -109,7 +110,7 @@ Estado final y commits que resuelven cada ítem. La matriz indica la prueba que 
 | 15 | "Finalizar adopción" siempre falla | Resuelto | b90e536 1d9643c bb8993b | El diálogo dice que se marca adopción concretada y suma 50 puntos |
 | 16 | Seed inconsistente con el trigger | Resuelto | 3510bef |  |
 | 17 | Reportes sin ciclo de vida | Resuelto | 51a8d76 f79bd2f 4678d05 |  |
-| 18 | Storage sin límites | Parcial | 0713158 84945e0 | Carpeta, MIME, 5 MB y listado privado activos. El borrado del binario por la Storage API y la verificación de magic bytes (`verify-image`) están desplegados, pero no se activan hasta cargar los secretos de Vault. Mientras tanto se borra la fila de `storage.objects` y el binario queda huérfano en S3 (sin URL que lo sirva) |
+| 18 | Storage sin límites | Parcial | 0713158 84945e0 | Carpeta, MIME, 5 MB y listado privado activos. Vault configurado el 2026-11-09: `verify-image` y el DELETE por la Storage API están activos (verificado en vivo: al borrar una publicación con foto su fila de `storage.objects` desaparece en la misma transacción y `net._http_response` registra el DELETE con 200). Sigue parcial porque la API responde `[]` (la fila ya no existe) y el binario queda huérfano en S3, sin URL que lo sirva (pendiente 3) |
 | 19 | Sin índices | Resuelto | a380c37 |  |
 | 20 | `conversations.updated_at` y Realtime | Parcial | 13a908b | Trigger y publicación Realtime listos; la app no se suscribe |
 | 21 | Datos semánticos como texto | Parcial | b90e536 911ef2d | La BD ya tiene `event_at`, `event_end_at` y `age_months` tipadas (con trigger y backfill). Falta que la app las escriba, las lea y ordene o filtre por ellas |
@@ -211,26 +212,23 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
 | Edge Function `moderate-ai` | `ACTIVE`, **versión 3** (la de `3729555`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de un moderador de prueba `{"status":"not_configured"}` |
 | Edge Function `verify-image` | `ACTIVE`, versión 2, con `verify_jwt=true`. Solo acepta el service role: anon recibe 403 |
 | Secrets de funciones | Solo los que Supabase crea por defecto. **No hay `DEEPSEEK_API_KEY`** (decisión del dueño), así que `moderate-ai` responde `not_configured` y la UI lo muestra |
-| Vault | **Faltan** `huellas_project_url` y `huellas_service_role_key`. Sin ellos, los triggers de storage usan el modo de respaldo: borran la fila de `storage.objects`, el binario queda huérfano en S3 y no se llama a `verify-image` (ítem 18) |
+| Vault | `huellas_project_url` y `huellas_service_role_key` cargados el 2026-11-09 con `scripts/configure-storage-vault.sh`. Los triggers llaman a la Storage API y a `verify-image` (ítem 18) |
 | pg_cron | Tres jobs: `huellas_cierre_automatico` (`0 8 * * *`), `huellas_limpieza_notificaciones` (`30 8 * * *`) y `huellas_reconciliacion_storage` (`15 * * * *`) |
 | Storage | Bucket `pet-images`, público, con límite de 5 MB y MIME `image/jpeg`, `image/png` o `image/webp`. Cuatro políticas, todas limitadas a la carpeta propia (ver, subir, actualizar y borrar). Ya no hay listado público |
 | `adoption_requests` | Dos políticas: INSERT del solicitante y SELECT de solicitudes enviadas o recibidas. La política UPDATE del autor ya no existe. Re-aseguradas sin depender de datos por `20261109350000` (`test_45`) |
 | Realtime | La publicación `supabase_realtime` incluye `chat_messages` y `notifications`. La app todavía no se suscribe (ítem 20) |
-| Auth | 6 usuarios: 4 de semilla (`admin@huella.app`, que es moderador, y laura, carlos y sofia) y 2 cuentas gmail del desarrollador. La confirmación de correo está activa |
+| Auth | 6 usuarios: 4 de semilla (`admin@huella.app`, que es moderador y tiene la contraseña rotada, y laura, carlos y sofia) y 2 cuentas gmail del desarrollador. La confirmación de correo está activa |
 
 ## Pendiente o que requiere decisión humana
 
-1. **Rotar el moderador semilla del hosted (ítem 5).** `admin@huella.app` sigue entrando con la contraseña que se
-   publicó, y es moderador. La sesión de reparación no tuvo permiso para cambiarla:
-   - Rotarla con `PUT /auth/v1/admin/users/<id>` y el service role, usando una clave aleatoria que no quede en el
-     repo. Otra opción es borrar la cuenta y crear el moderador desde el dashboard.
-   - Después, actualizar "Usuarios semilla" en `ENTORNO_REMOTO.md`. Ninguna prueba del repo usa esa credencial.
+1. **Moderador semilla del hosted (ítem 5): hecho el 2026-11-09.** Contraseña de `admin@huella.app` rotada con
+   `PUT /auth/v1/admin/users/<id>` a una aleatoria de 24 caracteres guardada fuera del repo; la publicada responde 400
+   y la nueva 200. Ninguna prueba del repo usa esa credencial.
    - Laura, carlos y sofia tienen el mismo problema, pero sin rol de moderador. Las 2 cuentas gmail del desarrollador
      no se tocaron.
-2. **Cargar los secretos de Vault (ítem 18).** Ejecutar
-   `source /c/temp/huellas-audit/.env.remote && scripts/configure-storage-vault.sh`. Con eso quedan activos el
-   borrado de binarios por la Storage API y la verificación de magic bytes, sin otros cambios. `test_43` ya prueba
-   el cableado con un Vault de prueba dentro de la transacción.
+2. **Secretos de Vault (ítem 18): hechos el 2026-11-09** con `scripts/configure-storage-vault.sh`. Verificado en
+   vivo borrando una publicación de prueba con foto: la fila de `storage.objects` desaparece en la misma transacción
+   y `net._http_response` registra el DELETE a la Storage API (200). El binario sigue el límite del punto 3.
 3. **Seguimiento de la revisión automática de dos migraciones: cerrado, con un límite abierto.**
    - `20261109300100_reparar_codificacion.sql`: `20261109350000` (`5659d93`, aplicada) re-asegura sin depender de
      datos los privilegios (solo SELECT e INSERT de `publication_id`, `applicant_id`, `message`) y exactamente las
@@ -253,7 +251,7 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
      "ventana". Lo cubre `review_test.ts`.
    - `20261109350200` (`e16808f`, aplicada) retira EXECUTE a PUBLIC, anon y authenticated de todas las funciones de
      trigger SECURITY DEFINER de public. Lo exige `test_47_triggers_sin_execute`.
-5. **Key de DeepSeek.** Falta decidir si se activa la sugerencia de IA:
+5. **Key de DeepSeek.** Sigue sin configurar (2026-11-09): falta decidir si se activa la sugerencia de IA:
    - Se activa con `supabase secrets set DEEPSEEK_API_KEY=... --project-ref <ref>` y, si se quiere, `DEEPSEEK_MODEL`.
    - Activarla manda el contenido de cada publicación a un tercero (ya sin `phone`), así que conviene revisarlo
      contra la política de datos.
@@ -307,9 +305,9 @@ gh pr create --base main --head fix/auditoria-2026-11 \
 Después del merge:
 
 1. En cada entorno, correr `scripts/apply-migrations-remote.sh` para confirmar que no falta ninguna migración, y
-   `scripts/configure-storage-vault.sh` para cargar los secretos de Vault (pendiente 2).
+   `scripts/configure-storage-vault.sh` para cargar los secretos de Vault (en el hosted de pruebas ya están).
 2. Desplegar `moderate-ai` y `verify-image` en cada entorno nuevo (en el hosted de pruebas ya están).
-3. Rotar las cuentas semilla (pendiente 1).
+3. Rotar las cuentas semilla que siguen con contraseña publicada (laura, carlos y sofia; la de admin ya está rotada).
 4. Generar el APK de release con `app/.env` apuntando al proyecto real.
 
 Son 131 commits, demasiados para revisarlos uno por uno. Es más práctico recorrerlos por ítem con la matriz.
