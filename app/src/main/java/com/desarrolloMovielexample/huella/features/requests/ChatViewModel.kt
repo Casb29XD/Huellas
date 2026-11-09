@@ -2,6 +2,10 @@ package com.desarrolloMovielexample.huella.features.requests
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.ChatMessage
 import com.desarrolloMovielexample.huella.domain.model.Conversation
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
@@ -26,8 +30,8 @@ class ChatViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     private var conversationId: String? = null
 
@@ -36,7 +40,10 @@ class ChatViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
         conversationId = id
         _uiState.update { it.copy(conversation = repo.getConversation(id)) }
         viewModelScope.launch {
-            repo.messages(id).collect { list -> _uiState.update { it.copy(messages = list) } }
+            // La conversación puede llegar (o completarse con el teléfono) después de abrir el chat.
+            repo.messages(id).collect { list ->
+                _uiState.update { it.copy(messages = list, conversation = repo.getConversation(id) ?: it.conversation) }
+            }
         }
     }
 
@@ -46,7 +53,7 @@ class ChatViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
         val id = conversationId ?: return
         val text = _uiState.value.text
         if (text.isBlank()) {
-            _messages.trySend("Escribe un mensaje")
+            _messages.trySend(uiText(R.string.chat_placeholder))
             return
         }
         if (_uiState.value.isSending) return
@@ -56,7 +63,7 @@ class ChatViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
                 .onSuccess { _uiState.update { it.copy(isSending = false) } }
                 .onFailure { e ->
                     _uiState.update { it.copy(text = text, isSending = false) }
-                    _messages.send(e.message ?: "No se pudo enviar el mensaje")
+                    _messages.send(e.toUiText(R.string.error_send_message))
                 }
         }
     }

@@ -1,5 +1,9 @@
 package com.desarrolloMovielexample.huella.features.profile
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import kotlinx.coroutines.launch
 
 import androidx.lifecycle.ViewModel
@@ -7,28 +11,11 @@ import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
-
-// ponytail: toggles live in memory only; persist them (DataStore) when notifications are real.
-data class SettingsUiState(val pushEnabled: Boolean = true, val emailDigestEnabled: Boolean = false)
 
 class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
-    private val _uiState = MutableStateFlow(SettingsUiState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
-
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
-
-    fun setPush(enabled: Boolean) = _uiState.update { it.copy(pushEnabled = enabled) }
-    fun setEmailDigest(enabled: Boolean) = _uiState.update { it.copy(emailDigestEnabled = enabled) }
-
-    fun onTerms() {
-        _messages.trySend("Los términos estarán disponibles pronto")
-    }
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun logout() = repo.logout()
 
@@ -36,11 +23,11 @@ class SettingsViewModel(private val repo: HuellaRepository = SupabaseRepository)
         viewModelScope.launch {
             repo.deleteAccount()
                 .onSuccess {
-                    _messages.send("Cuenta eliminada exitosamente")
+                    _messages.send(uiText(R.string.msg_account_deleted))
                     onSuccess()
                 }
                 .onFailure {
-                    _messages.send(it.message ?: "No se pudo eliminar la cuenta")
+                    _messages.send(it.toUiText(R.string.error_delete_account))
                 }
         }
     }

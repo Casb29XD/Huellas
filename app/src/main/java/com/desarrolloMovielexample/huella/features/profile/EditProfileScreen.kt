@@ -32,12 +32,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.tooling.preview.Preview
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.HuellaDropdownField
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextField
@@ -46,7 +49,7 @@ import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
-import kotlinx.coroutines.delay
+import com.desarrolloMovielexample.huella.core.utils.asString
 
 @Composable
 fun EditProfileScreen(
@@ -56,19 +59,16 @@ fun EditProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
-    // Let the "Cambios guardados" snackbar be seen before leaving.
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
     LaunchedEffect(state.saved) {
-        if (state.saved) {
-            delay(1_200)
-            onSaved()
-        }
+        if (state.saved) onSaved()
     }
 
     Scaffold(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
-        topBar = { HuellaTopBar("Editar perfil", Modifier.statusBarsPadding(), onBack = onBack) },
+        topBar = { HuellaTopBar(stringResource(R.string.settings_edit_profile), Modifier.statusBarsPadding(), onBack = onBack) },
         bottomBar = {
             Column(
                 Modifier
@@ -78,7 +78,7 @@ fun EditProfileScreen(
             ) {
                 HorizontalDivider(color = HuellaColors.Divider, thickness = 1.dp)
                 PrimaryButton(
-                    text = "Guardar cambios",
+                    text = stringResource(R.string.action_save_changes),
                     onClick = viewModel::save,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -110,41 +110,41 @@ fun EditProfileScreen(
                         .clickable(onClick = viewModel::onPhotoClick),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Outlined.PhotoCamera, contentDescription = "Cambiar foto", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.PhotoCamera, contentDescription = stringResource(R.string.edit_change_photo), tint = Color.White, modifier = Modifier.size(18.dp))
                 }
             }
             HuellaTextField(
                 value = state.name,
                 onValueChange = viewModel::onNameChange,
-                label = "Nombre",
-                error = state.nameError,
+                label = stringResource(R.string.field_name),
+                error = state.nameError?.asString(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             )
             HuellaTextField(
                 value = state.email,
                 onValueChange = viewModel::onEmailChange,
-                label = "Correo",
-                error = state.emailError,
+                label = stringResource(R.string.field_email),
+                error = state.emailError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             )
             HuellaDropdownField(
                 value = state.city,
                 options = state.cities,
                 onSelect = viewModel::onCityChange,
-                label = "Ciudad",
-                error = state.cityError,
+                label = stringResource(R.string.field_city),
+                error = state.cityError?.asString(),
             )
             HuellaTextField(
                 value = state.phone,
                 onValueChange = viewModel::onPhoneChange,
-                label = "Teléfono de contacto",
-                error = state.phoneError,
+                label = stringResource(R.string.edit_phone),
+                error = state.phoneError?.asString(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
             )
             HuellaTextField(
                 value = state.bio,
                 onValueChange = viewModel::onBioChange,
-                label = "Sobre ti",
+                label = stringResource(R.string.edit_about),
                 singleLine = false,
                 minHeight = 90.dp,
             )

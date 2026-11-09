@@ -1,5 +1,7 @@
 package com.desarrolloMovielexample.huella.core.components
 
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,7 +29,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 
@@ -70,7 +72,7 @@ fun SegmentedSelector(
                     Spacer(Modifier.width(4.dp))
                 }
                 Text(
-                    option,
+                    optionLabel(option),
                     style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
                     color = if (isSelected) HuellaColors.TextPrimary else HuellaColors.TextSecondary,
                 )
@@ -161,7 +163,7 @@ fun HuellaTopBar(
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = HuellaColors.TextPrimary)
             }
             Spacer(Modifier.width(4.dp))
         }
@@ -188,7 +190,7 @@ fun HuellaSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifi
             snackbarData = data,
             shape = HuellaShapes.Card,
             containerColor = HuellaColors.TextPrimary,
-            contentColor = Color.White,
+            contentColor = HuellaColors.Background,
             actionColor = HuellaColors.PrimaryContainer,
         )
     }

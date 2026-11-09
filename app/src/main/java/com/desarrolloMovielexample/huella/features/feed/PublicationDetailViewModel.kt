@@ -2,12 +2,15 @@ package com.desarrolloMovielexample.huella.features.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Comment
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,9 +32,13 @@ data class PublicationDetailUiState(
     val reportDetail: String = "",
     val sightingText: String = "",
     val isSending: Boolean = false,
+    /** Error de validación del sheet abierto, mostrado inline bajo su campo (ítem 44). */
+    val sheetError: UiText? = null,
     val comments: List<Comment> = emptyList(),
     val commentDraft: String = "",
     val isAuthorOrMod: Boolean = false,
+    /** Solo el autor edita (ítem 9); el moderador puede borrar pero no reescribir el post. */
+    val isAuthor: Boolean = false,
 )
 
 class PublicationDetailViewModel(
@@ -42,8 +49,8 @@ class PublicationDetailViewModel(
     private val _uiState = MutableStateFlow(PublicationDetailUiState(publication = repo.getPublication(publicationId)))
     val uiState: StateFlow<PublicationDetailUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -61,8 +68,12 @@ class PublicationDetailViewModel(
                 val pub = _uiState.value.publication
                 val isAuthor = user != null && pub != null && user.id == pub.author.userId
                 val isMod = user?.isModerator == true
-                _uiState.update { it.copy(isAuthorOrMod = isAuthor || isMod) }
+                _uiState.update { it.copy(isAuthorOrMod = isAuthor || isMod, isAuthor = isAuthor) }
             }
+        }
+        viewModelScope.launch {
+            repo.refreshPublication(publicationId)
+            repo.getPublication(publicationId)?.let { fresh -> _uiState.update { it.copy(publication = fresh) } }
         }
         viewModelScope.launch {
             repo.publications.collect { list ->
@@ -74,13 +85,13 @@ class PublicationDetailViewModel(
         }
     }
 
-    fun openSheet(sheet: DetailSheet) = _uiState.update { it.copy(sheet = sheet) }
-    fun closeSheet() = _uiState.update { it.copy(sheet = null, isSending = false) }
+    fun openSheet(sheet: DetailSheet) = _uiState.update { it.copy(sheet = sheet, sheetError = null) }
+    fun closeSheet() = _uiState.update { it.copy(sheet = null, isSending = false, sheetError = null) }
 
-    fun onInterestMessageChange(text: String) = _uiState.update { it.copy(interestMessage = text) }
-    fun onReportReasonChange(reason: String) = _uiState.update { it.copy(reportReason = reason) }
+    fun onInterestMessageChange(text: String) = _uiState.update { it.copy(interestMessage = text, sheetError = null) }
+    fun onReportReasonChange(reason: String) = _uiState.update { it.copy(reportReason = reason, sheetError = null) }
     fun onReportDetailChange(text: String) = _uiState.update { it.copy(reportDetail = text) }
-    fun onSightingChange(text: String) = _uiState.update { it.copy(sightingText = text) }
+    fun onSightingChange(text: String) = _uiState.update { it.copy(sightingText = text, sheetError = null) }
     fun onCommentDraftChange(text: String) = _uiState.update { it.copy(commentDraft = text) }
 
     fun vote(value: Int) {
@@ -99,10 +110,10 @@ class PublicationDetailViewModel(
             repo.addComment(publicationId, text)
                 .onSuccess {
                     _uiState.update { it.copy(commentDraft = "") }
-                    _messages.send("Comentario publicado (+2 puntos)")
+                    _messages.send(uiText(R.string.msg_comment_posted))
                 }
                 .onFailure {
-                    _messages.send(it.message ?: "No se pudo publicar el comentario")
+                    _messages.send(it.toUiText(R.string.error_comment_post))
                 }
         }
     }
@@ -110,7 +121,8 @@ class PublicationDetailViewModel(
     fun deleteComment(commentId: String) {
         viewModelScope.launch {
             repo.deleteComment(publicationId, commentId)
-                .onSuccess { _messages.send("Comentario eliminado") }
+                .onSuccess { _messages.send(uiText(R.string.msg_comment_deleted)) }
+                .onFailure { _messages.send(it.toUiText(R.string.error_comment_delete)) }
         }
     }
 
@@ -118,11 +130,11 @@ class PublicationDetailViewModel(
         viewModelScope.launch {
             repo.deletePublication(publicationId)
                 .onSuccess {
-                    _messages.send("Publicación eliminada")
+                    _messages.send(uiText(R.string.msg_post_deleted))
                     onSuccess()
                 }
                 .onFailure {
-                    _messages.send(it.message ?: "No se pudo eliminar la publicación")
+                    _messages.send(it.toUiText(R.string.error_post_delete))
                 }
         }
     }
@@ -131,7 +143,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.interestMessage.length > 500) {
-            _messages.trySend("El mensaje no puede superar 500 caracteres")
+            _uiState.update { it.copy(sheetError = uiText(R.string.error_message_too_long)) }
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -139,11 +151,14 @@ class PublicationDetailViewModel(
             repo.sendAdoptionRequest(publicationId, s.interestMessage.trim())
                 .onSuccess {
                     _uiState.update { it.copy(isSending = false, sheet = null, requestSent = true, interestMessage = "") }
-                    _messages.send("Solicitud enviada. Te avisaremos cuando ${s.publication?.author?.name?.substringBefore(" ") ?: "el autor"} responda")
+                    _messages.send(
+                        s.publication?.author?.name?.substringBefore(" ")?.let { uiText(R.string.msg_request_sent_named, it) }
+                            ?: uiText(R.string.msg_request_sent),
+                    )
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isSending = false) }
-                    _messages.send(e.message ?: "No pudimos enviar la solicitud")
+                    _messages.send(e.toUiText(R.string.error_send_request))
                 }
         }
     }
@@ -152,7 +167,7 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.reportReason == null) {
-            _messages.trySend("Selecciona un motivo para el reporte")
+            _uiState.update { it.copy(sheetError = uiText(R.string.error_report_reason)) }
             return
         }
         _uiState.update { it.copy(isSending = true) }
@@ -160,11 +175,11 @@ class PublicationDetailViewModel(
             repo.reportPublication(publicationId, s.reportReason, s.reportDetail.trim())
                 .onSuccess {
                     _uiState.update { it.copy(isSending = false, sheet = null, reportReason = null, reportDetail = "") }
-                    _messages.send("Gracias. Un moderador revisará tu reporte")
+                    _messages.send(uiText(R.string.msg_report_sent))
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isSending = false) }
-                    _messages.send(e.message ?: "No pudimos enviar el reporte")
+                    _messages.send(e.toUiText(R.string.error_send_report))
                 }
         }
     }
@@ -173,14 +188,20 @@ class PublicationDetailViewModel(
         val s = _uiState.value
         if (s.isSending) return
         if (s.sightingText.isBlank()) {
-            _messages.trySend("Cuéntanos dónde y cuándo lo viste")
+            _uiState.update { it.copy(sheetError = uiText(R.string.error_sighting_empty)) }
             return
         }
         _uiState.update { it.copy(isSending = true) }
         viewModelScope.launch {
-            delay(500)
-            _uiState.update { it.copy(isSending = false, sheet = null, sightingText = "") }
-            _messages.send("Aviso enviado. ¡Gracias por ayudar! +5 puntos")
+            repo.reportSighting(publicationId, s.sightingText)
+                .onSuccess {
+                    _uiState.update { it.copy(isSending = false, sheet = null, sightingText = "") }
+                    _messages.send(uiText(R.string.msg_sighting_sent))
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isSending = false) }
+                    _messages.send(e.toUiText(R.string.error_send_sighting))
+                }
         }
     }
 }

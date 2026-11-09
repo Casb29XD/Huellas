@@ -2,13 +2,17 @@ package com.desarrolloMovielexample.huella.features.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.Level
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,13 +31,16 @@ data class FeedFilters(
     val onlyVaccinated: Boolean = false,
     val onlySterilized: Boolean = false,
     val city: String? = null,          // full name, e.g. "Medellín, Antioquia"
-    val distanceKm: Float = 10f,       // ponytail: shown only, no geo filtering until maps phase
+    // ponytail: sin filtro de distancia hasta que haya geolocalización real (ítem 33).
 ) {
     val isActive: Boolean get() = species != null || size != null || onlyVaccinated || onlySterilized || city != null
 }
 
 data class HomeUiState(
+    /** true hasta que termina la carga real de la primera página (ítem 56). */
     val isLoading: Boolean = true,
+    val isLoadingMore: Boolean = false,
+    val hasMore: Boolean = false,
     val userFirstName: String = "",
     val userInitials: String = "",
     val userLevel: Level = Level.AMIGO_ANIMAL,
@@ -64,36 +71,73 @@ class HomeViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), controls.value)
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
+
+    private var loadJob: Job? = null
 
     init {
-        // ponytail: simulated first load so the skeleton state is visible; real fetch replaces this.
-        viewModelScope.launch {
-            delay(600)
-            controls.update { it.copy(isLoading = false) }
+        reload()
+    }
+
+    /**
+     * Primera página con categoría, especie y ciudad filtradas en el servidor (ítem 32). Búsqueda por texto,
+     * tamaño y vacunado/esterilizado se aplican en memoria sobre las páginas cargadas (filterFeed).
+     */
+    private fun reload() {
+        val c = controls.value
+        loadJob?.cancel()
+        controls.update { it.copy(isLoadingMore = false) }
+        loadJob = viewModelScope.launch {
+            repo.loadFeed(c.category, c.filters.species, c.filters.city, reset = true)
+                .onSuccess { more -> controls.update { it.copy(isLoading = false, hasMore = more) } }
+                .onFailure { e ->
+                    controls.update { it.copy(isLoading = false, hasMore = false) }
+                    _messages.trySend(e.toUiText(R.string.error_load_feed))
+                }
+        }
+    }
+
+    /** La lista llegó al final: pide la página siguiente si la hay. */
+    fun loadMore() {
+        val c = controls.value
+        if (c.isLoading || c.isLoadingMore || !c.hasMore) return
+        controls.update { it.copy(isLoadingMore = true) }
+        loadJob = viewModelScope.launch {
+            val more = repo.loadFeed(c.category, c.filters.species, c.filters.city, reset = false).getOrDefault(false)
+            controls.update { it.copy(isLoadingMore = false, hasMore = more) }
+        }
+    }
+
+    /** Recarga solo si cambió algún filtro que resuelve el servidor. */
+    private fun setControls(transform: (HomeUiState) -> HomeUiState) {
+        val before = controls.value
+        controls.update(transform)
+        val after = controls.value
+        if (before.category != after.category || before.filters.species != after.filters.species || before.filters.city != after.filters.city) {
+            reload()
         }
     }
 
     fun onQueryChange(query: String) = controls.update { it.copy(query = query) }
 
-    fun onCategorySelected(category: Category?) = controls.update { it.copy(category = category) }
+    fun onCategorySelected(category: Category?) = setControls { it.copy(category = category) }
 
     fun applyFilters(filters: FeedFilters) {
-        controls.update { it.copy(filters = filters) }
-        _messages.trySend(if (filters.isActive) "Filtros aplicados" else "Mostrando todas las publicaciones")
+        setControls { it.copy(filters = filters) }
+        _messages.trySend(uiText(if (filters.isActive) R.string.msg_filters_applied else R.string.msg_showing_all))
     }
 
-    fun updateFilters(filters: FeedFilters) = controls.update { it.copy(filters = filters) }
+    fun updateFilters(filters: FeedFilters) = setControls { it.copy(filters = filters) }
 
     /** "Limpiar filtros": query, category and sheet filters. */
     fun clearAll() {
-        controls.update { it.copy(query = "", category = null, filters = FeedFilters()) }
-        _messages.trySend("Filtros eliminados")
+        setControls { it.copy(query = "", category = null, filters = FeedFilters()) }
+        _messages.trySend(uiText(R.string.msg_filters_cleared))
     }
 
     fun createAlert() {
-        _messages.trySend("Listo, te avisaremos cuando haya mascotas para esta búsqueda")
+        _messages.trySend(uiText(R.string.msg_alert_created))
     }
 }
 

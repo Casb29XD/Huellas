@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.profile
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -53,6 +55,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTabs
 import com.desarrolloMovielexample.huella.core.components.ModerationStatusTag
 import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
 import androidx.compose.ui.tooling.preview.Preview
+import com.desarrolloMovielexample.huella.core.components.labelRes
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.Manrope
@@ -89,10 +92,10 @@ fun ProfileScreen(
                 horizontalArrangement = Arrangement.End,
             ) {
                 IconButton(onClick = onEditProfile) {
-                    Icon(Icons.Outlined.Edit, contentDescription = "Editar perfil", tint = HuellaColors.TextPrimary, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.settings_edit_profile), tint = HuellaColors.TextPrimary, modifier = Modifier.size(22.dp))
                 }
                 IconButton(onClick = onSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Ajustes", tint = HuellaColors.TextPrimary, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings_title), tint = HuellaColors.TextPrimary, modifier = Modifier.size(22.dp))
                 }
             }
             ProfileHeader(user, onOpenLevels)
@@ -101,14 +104,14 @@ fun ProfileScreen(
             BadgesSection(user.badges, Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp))
             StatsRow(
                 listOf(
-                    user.publicationsCount.toString() to "Publicaciones",
-                    user.adoptionsCount.toString() to "Adopciones concretadas",
-                    user.fosterCount.toString() to "Hogares temporales",
+                    user.publicationsCount.toString() to stringResource(R.string.profile_publications),
+                    user.adoptionsCount.toString() to stringResource(R.string.profile_adoptions_done),
+                    user.fosterCount.toString() to stringResource(R.string.profile_foster_homes),
                 ),
                 Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
             )
             HuellaTabs(
-                tabs = listOf("Mis publicaciones", "Historial de puntos"),
+                tabs = listOf(stringResource(R.string.profile_tab_posts), stringResource(R.string.profile_tab_points)),
                 selectedIndex = state.selectedTab,
                 onSelect = viewModel::selectTab,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp),
@@ -120,7 +123,7 @@ fun ProfileScreen(
                 if (state.selectedTab == 0) {
                     if (state.publications.isEmpty()) {
                         Text(
-                            "Aún no tienes publicaciones.",
+                            stringResource(R.string.profile_no_posts),
                             style = MaterialTheme.typography.bodyMedium,
                             color = HuellaColors.TextSecondary,
                             modifier = Modifier.padding(vertical = 12.dp),
@@ -171,7 +174,7 @@ private fun ProfileHeader(user: User, onOpenLevels: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             HuellaIcon(R.drawable.icon_animal_otro, tint = Color.White, size = 26.dp)
-            Text(level.label, style = MaterialTheme.typography.labelLarge, color = Color.White)
+            Text(stringResource(level.labelRes), style = MaterialTheme.typography.labelLarge, color = Color.White)
         }
     }
 }
@@ -187,22 +190,23 @@ private fun PointsCard(user: User, onOpenLevels: () -> Unit, modifier: Modifier 
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            val pointsSuffix = stringResource(R.string.profile_points_suffix)
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(fontSize = 26.sp, fontWeight = FontWeight.SemiBold, color = HuellaColors.TextPrimary)) {
                         append(user.points.toString())
                     }
                     withStyle(SpanStyle(fontSize = 13.sp, fontWeight = FontWeight.Normal, color = HuellaColors.TextTertiary)) {
-                        append(" puntos")
+                        append(pointsSuffix)
                     }
                 },
                 style = TextStyle(fontFamily = Manrope),
                 modifier = Modifier.weight(1f),
             )
             Text(
-                "Ver niveles",
+                stringResource(R.string.profile_view_levels),
                 style = MaterialTheme.typography.labelMedium.copy(fontSize = 13.sp),
-                color = HuellaColors.Primary,
+                color = HuellaColors.PrimaryText,
                 modifier = Modifier
                     .clickable(onClick = onOpenLevels)
                     .padding(bottom = 4.dp),
@@ -223,15 +227,20 @@ private fun PointsCard(user: User, onOpenLevels: () -> Unit, modifier: Modifier 
                     .background(Brush.horizontalGradient(listOf(user.level.color, (next ?: user.level).color))),
             )
         }
+        val missing = stringResource(R.string.profile_missing)
+        val missingPoints = stringResource(R.string.profile_points_n, user.pointsToNext)
+        val forLevel = stringResource(R.string.profile_for)
+        val nextLabel = next?.let { stringResource(it.labelRes) }.orEmpty()
+        val maxLevel = stringResource(R.string.profile_max_level)
         Text(
             buildAnnotatedString {
                 if (next != null) {
-                    append("Te faltan ")
-                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = HuellaColors.TextPrimary)) { append("${user.pointsToNext} puntos") }
-                    append(" para ")
-                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = next.color)) { append(next.label) }
+                    append(missing)
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = HuellaColors.TextPrimary)) { append(missingPoints) }
+                    append(forLevel)
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = next.color)) { append(nextLabel) }
                 } else {
-                    append("Alcanzaste el nivel máximo")
+                    append(maxLevel)
                 }
             },
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
@@ -262,13 +271,13 @@ private fun PointsHistory(history: List<PointsEntry>) {
                     Icon(Icons.Outlined.Add, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(entry.what, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
-                    Text(entry.whenLabel, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+                    Text(pointsActionLabel(entry.what), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+                    Text(entry.whenLabel.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
                 }
                 Text(
-                    "+${entry.points}",
+                    stringResource(R.string.points_plus, entry.points),
                     style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 15.sp),
-                    color = HuellaColors.Primary,
+                    color = HuellaColors.PrimaryText,
                 )
             }
             if (index < history.lastIndex) HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
@@ -283,7 +292,7 @@ private fun ModerationEntry(onClick: () -> Unit, modifier: Modifier = Modifier) 
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .drawBehind {
                 val stroke = 1.dp.toPx()
                 drawRoundRect(
@@ -301,13 +310,13 @@ private fun ModerationEntry(onClick: () -> Unit, modifier: Modifier = Modifier) 
     ) {
         HuellaIcon(R.drawable.icon_accion_moderacion, tint = HuellaColors.TextSecondary, size = 26.dp)
         Text(
-            "Panel de moderación",
+            stringResource(R.string.moderation_panel),
             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
             color = HuellaColors.TextSecondary,
             modifier = Modifier.weight(1f),
         )
         Text(
-            "rol moderador",
+            stringResource(R.string.moderation_role),
             style = MaterialTheme.typography.labelSmall,
             color = HuellaColors.TextTertiary,
             modifier = Modifier

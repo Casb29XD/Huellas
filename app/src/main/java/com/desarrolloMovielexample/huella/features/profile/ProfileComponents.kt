@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.Manrope
@@ -31,7 +33,7 @@ import com.desarrolloMovielexample.huella.core.theme.Manrope
 /** White card with the design's 1dp #ECEEEA border (profile / settings / levels lists). */
 internal fun Modifier.outlinedCard(): Modifier = this
     .clip(HuellaShapes.Card)
-    .background(Color.White)
+    .background(HuellaColors.Surface)
     .border(1.dp, HuellaColors.Divider, HuellaShapes.Card)
 
 /** Light tint of a level color (#F5E6D8 for Protector). */
@@ -101,3 +103,15 @@ internal fun GroupCaption(text: String, modifier: Modifier = Modifier) {
         modifier = modifier,
     )
 }
+
+/** Texto de points_history.action que escribe award_points (en español) traducido; otro texto se muestra tal cual. */
+private val POINTS_ACTION_LABELS = mapOf(
+    "Crear una publicación" to R.string.points_action_create,
+    "Publicación aprobada" to R.string.points_action_approved,
+    "Comentar una publicación" to R.string.points_action_comment,
+    "Reportar un avistamiento" to R.string.points_action_sighting,
+    "Adopción concretada" to R.string.points_action_adoption,
+)
+
+@Composable
+fun pointsActionLabel(action: String): String = POINTS_ACTION_LABELS[action]?.let { stringResource(it) } ?: action

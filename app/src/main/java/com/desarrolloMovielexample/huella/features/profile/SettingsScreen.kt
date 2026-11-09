@@ -24,7 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,16 +39,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.desarrolloMovielexample.huella.BuildConfig
 import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.components.Avatar
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
-import com.desarrolloMovielexample.huella.core.components.HuellaSwitch
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.utils.AppLanguage
+import com.desarrolloMovielexample.huella.domain.model.User
 
 @Suppress("DEPRECATION") // Icons.Outlined.Logout: the AutoMirrored variant is not needed for an LTR-only app.
 @Composable
@@ -58,13 +59,16 @@ fun SettingsScreen(
     onChangePassword: () -> Unit,
     onLoggedOut: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
+    user: User? = null,
+    onOpenTerms: () -> Unit = {},
 ) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var selectedLanguage by remember { mutableStateOf(AppLanguage.selected(context)) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
 
     Scaffold(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
@@ -79,14 +83,7 @@ fun SettingsScreen(
                 .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                GroupCaption(stringResource(R.string.settings_notifications))
-                Column(Modifier.fillMaxWidth().outlinedCard()) {
-                    ToggleRow(stringResource(R.string.settings_push), stringResource(R.string.settings_push_summary), state.pushEnabled, viewModel::setPush)
-                    HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                    ToggleRow(stringResource(R.string.settings_email_digest), stringResource(R.string.settings_email_digest_summary), state.emailDigestEnabled, viewModel::setEmailDigest)
-                }
-            }
+            // ponytail: sin interruptores de push/correo hasta que existan esas notificaciones (ítem 57).
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 GroupCaption(stringResource(R.string.settings_language_section))
                 Column(Modifier.fillMaxWidth().outlinedCard()) {
@@ -107,6 +104,20 @@ fun SettingsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 GroupCaption(stringResource(R.string.settings_account))
                 Column(Modifier.fillMaxWidth().outlinedCard()) {
+                    if (user != null) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Avatar(user.initials, user.level, size = 40.dp)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(user.name, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+                                Text(user.email, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+                            }
+                        }
+                        HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
+                    }
                     LinkRow(stringResource(R.string.settings_edit_profile), onEditProfile) {
                         HuellaIcon(R.drawable.icon_nav_perfil, tint = HuellaColors.TextSecondary, size = 29.dp)
                     }
@@ -115,8 +126,25 @@ fun SettingsScreen(
                         HuellaIcon(R.drawable.icon_estado_cerrada, tint = HuellaColors.TextSecondary, size = 29.dp)
                     }
                     HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                    LinkRow(stringResource(R.string.settings_terms), viewModel::onTerms) {
+                    LinkRow(stringResource(R.string.settings_terms), onOpenTerms) {
                         Icon(Icons.Outlined.Gavel, contentDescription = null, tint = HuellaColors.TextSecondary, modifier = Modifier.size(22.dp))
+                    }
+                    HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { showDeleteDialog = true }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
+                        Text(
+                            stringResource(R.string.settings_delete_account),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
+                            color = HuellaColors.ErrorDark,
+                        )
                     }
                 }
             }
@@ -129,6 +157,8 @@ fun SettingsScreen(
                         onLoggedOut()
                     }
                     .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(Icons.Outlined.Logout, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
                 Text(
@@ -139,30 +169,12 @@ fun SettingsScreen(
                 )
             }
 
-            var showDeleteDialog by remember { mutableStateOf(false) }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .outlinedCard()
-                    .clickable { showDeleteDialog = true }
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = HuellaColors.ErrorDark, modifier = Modifier.size(22.dp))
-                Text(
-                    "Eliminar mi cuenta",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
-                    color = HuellaColors.ErrorDark,
-                )
-            }
 
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("¿Eliminar tu cuenta?") },
-                    text = { Text("Esta acción es irreversible. Se eliminarán tus publicaciones, solicitudes y datos.") },
+                    title = { Text(stringResource(R.string.settings_delete_title)) },
+                    text = { Text(stringResource(R.string.settings_delete_text)) },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -170,18 +182,18 @@ fun SettingsScreen(
                                 viewModel.deleteAccount(onSuccess = onLoggedOut)
                             }
                         ) {
-                            Text("Eliminar definitivamente", color = HuellaColors.ErrorDark)
+                            Text(stringResource(R.string.settings_delete_confirm), color = HuellaColors.ErrorDark)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDeleteDialog = false }) {
-                            Text("Cancelar")
+                            Text(stringResource(R.string.action_cancel))
                         }
                     }
                 )
             }
             Text(
-                stringResource(R.string.settings_footer),
+                stringResource(R.string.settings_footer, stringResource(R.string.app_name), BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.TextTertiary,
                 textAlign = TextAlign.Center,
@@ -259,23 +271,6 @@ fun SettingsScreenPreview() {
             onChangePassword = {},
             onLoggedOut = {},
         )
-    }
-}
-
-@Composable
-private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable { onChange(!checked) }
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
-        }
-        HuellaSwitch(checked = checked, onCheckedChange = onChange)
     }
 }
 

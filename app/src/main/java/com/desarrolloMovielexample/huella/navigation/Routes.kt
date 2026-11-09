@@ -23,6 +23,10 @@ sealed interface Routes {
     @Serializable
     data object ForgotPassword : Routes
 
+    /** Nueva contraseña: tras el enlace de recuperación o desde Ajustes con sesión. */
+    @Serializable
+    data object SetPassword : Routes
+
     // 02 Inicio y detalle
     @Serializable
     data object Home : Routes
@@ -72,4 +76,8 @@ sealed interface Routes {
 
     @Serializable
     data class ModerationDetail(val id: String) : Routes
+
+    // F4: Terms
+    @Serializable
+    data object Terms : Routes
 }

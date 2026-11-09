@@ -1,5 +1,7 @@
 package com.desarrolloMovielexample.huella.domain.model
 
+import com.desarrolloMovielexample.huella.core.utils.UiText
+
 enum class Category(val label: String) {
     ADOPCION("Adopción"),
     PERDIDOS("Perdidos"),
@@ -64,9 +66,9 @@ data class Publication(
     val sex: String? = null,      // Macho, Hembra, Desconocido
     val city: String,
     val neighborhood: String = city,
-    val timeAgo: String,
+    val timeAgo: UiText,          // "hace 2 h" / "2 h ago", resuelto en la UI (ítem 37)
     val description: String,
-    val imageUrl: String?,        // random photo (picsum); null -> striped placeholder only
+    val imageUrl: String?,        // URL pública en pet-images; null -> solo el placeholder a rayas
     val tone: Long,               // ARGB of the striped placeholder band
     val photoLabel: String = title,
     val author: Author,
@@ -91,7 +93,7 @@ data class Comment(
     val publicationId: String,
     val author: Author,
     val text: String,
-    val timeAgo: String,
+    val timeAgo: UiText,
     val isMine: Boolean = false,
 )
 
@@ -147,7 +149,7 @@ data class SentRequest(
     val id: String,
     val publicationId: String,
     val status: RequestStatus,
-    val whenLabel: String,        // "Enviada hace 2 h"
+    val whenLabel: UiText,        // "hace 2 h"
     val message: String = "",
 )
 
@@ -159,7 +161,7 @@ data class Applicant(
     val level: Level,
     val initials: String,
     val message: String,
-    val timeAgo: String,
+    val timeAgo: UiText,
     val status: RequestStatus = RequestStatus.PENDIENTE,
 )
 
@@ -191,7 +193,9 @@ enum class NotificationType {
     LEVEL_UP,
     NEW_COMMENT,
     NEW_VOTE,
-    BADGE_EARNED
+    BADGE_EARNED,
+    REQUEST_REJECTED,
+    SIGHTING
 }
 
 data class AppNotification(
@@ -200,16 +204,16 @@ data class AppNotification(
     val type: NotificationType,
     val title: String,
     val text: String,
-    val time: String,
+    val time: UiText,
     val read: Boolean = false,
     val targetId: String? = null, // publication id / conversation id depending on type
 )
 
-data class Report(val who: String, val reason: String, val detail: String)
+data class Report(val who: String, val reason: String, val detail: String, val id: String = "")
 
 data class ModerationItem(
     val publication: Publication,
-    val waitTime: String,         // "3 h en espera"
+    val waitTime: UiText,         // "hace 3 h"
     val reports: List<Report> = emptyList(),
     val authorApproved: Int,
     val authorRejected: Int,
@@ -220,7 +224,7 @@ data class ModerationItem(
 
 data class ModerationStats(val pending: Int, val reported: Int, val approvedToday: Int)
 
-data class PointsEntry(val what: String, val points: Int, val whenLabel: String)
+data class PointsEntry(val what: String, val points: Int, val whenLabel: UiText)
 
 data class PointsAction(val what: String, val points: Int)
 

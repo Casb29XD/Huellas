@@ -27,7 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +46,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -212,22 +213,22 @@ fun MapScreen(
                     Modifier
                         .shadow(3.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color.White)
+                        .background(HuellaColors.Surface)
                         .clickable(onClick = onBack)
                         .padding(10.dp),
                 ) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = HuellaColors.TextPrimary)
                 }
                 Row(
                     Modifier
                         .weight(1f)
                         .shadow(3.dp, RoundedCornerShape(22.dp))
                         .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White)
+                        .background(HuellaColors.Surface)
                         .padding(3.dp),
                 ) {
-                    ToggleSegment("Lista", R.drawable.icon_accion_lista, selected = !showMap, Modifier.weight(1f)) { showMap = false }
-                    ToggleSegment("Mapa", R.drawable.icon_accion_mapa, selected = showMap, Modifier.weight(1f)) { showMap = true }
+                    ToggleSegment(stringResource(R.string.map_list), R.drawable.icon_accion_lista, selected = !showMap, Modifier.weight(1f)) { showMap = false }
+                    ToggleSegment(stringResource(R.string.map_map), R.drawable.icon_accion_mapa, selected = showMap, Modifier.weight(1f)) { showMap = true }
                 }
             }
 
@@ -237,13 +238,13 @@ fun MapScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item {
-                    LegendChip("Perdidos", HuellaColors.CatPerdidos, showLost) { showLost = !showLost }
+                    LegendChip(stringResource(R.string.category_lost), HuellaColors.CatPerdidos, showLost) { showLost = !showLost }
                 }
                 item {
-                    LegendChip("Encontrados", HuellaColors.CatEncontrados, showFound) { showFound = !showFound }
+                    LegendChip(stringResource(R.string.category_found), HuellaColors.CatEncontrados, showFound) { showFound = !showFound }
                 }
                 item {
-                    LegendChip("Jornadas y Eventos", HuellaColors.CatVeterinaria, showVet) { showVet = !showVet }
+                    LegendChip(stringResource(R.string.map_events), HuellaColors.CatVeterinaria, showVet) { showVet = !showVet }
                 }
             }
 
@@ -322,7 +323,7 @@ private fun LegendChip(text: String, dot: Color, active: Boolean, onClick: () ->
             .alpha(if (active) 1f else 0.5f)
             .shadow(2.dp, RoundedCornerShape(10.dp))
             .clip(RoundedCornerShape(10.dp))
-            .background(Color.White)
+            .background(HuellaColors.Surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

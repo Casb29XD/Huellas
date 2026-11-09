@@ -25,7 +25,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -41,8 +42,8 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 
 /**
- * "Estado vacío": illustration, title 16/500, text 14/400 #5F6A63, optional 44dp green action
- * and optional text action below (e.g. "Limpiar filtros" + "Crear alerta").
+ * "Estado vacío": illustration, title 16/500, text 14/400 #5F6A63, optional full-width 48dp green action
+ * and optional outlined secondary action below (e.g. "Limpiar filtros" + "Crear alerta").
  * Illustrations: R.drawable.illus_searching, illus_relationship, illus_empty_inbox, illus_tasks,
  * illus_connection_lost, illus_message_sent...
  */
@@ -70,20 +71,20 @@ fun EmptyState(
         Text(text, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary, textAlign = TextAlign.Center)
         if (actionText != null && onAction != null) {
             if (actionOutlined) {
-                SecondaryButton(actionText, onAction, height = 44.dp, icon = actionIcon)
+                SecondaryButton(actionText, onAction, Modifier.fillMaxWidth(), icon = actionIcon)
             } else {
-                PrimaryButton(actionText, onAction, height = 44.dp, icon = actionIcon)
+                PrimaryButton(actionText, onAction, Modifier.fillMaxWidth(), icon = actionIcon)
             }
         }
         if (secondaryActionText != null && onSecondaryAction != null) {
-            HuellaTextButton(secondaryActionText, onSecondaryAction)
+            SecondaryButton(secondaryActionText, onSecondaryAction, Modifier.fillMaxWidth())
         }
     }
 }
 
 /** Red "Sin conexión a internet" banner. */
 @Composable
-fun OfflineBanner(modifier: Modifier = Modifier, text: String = "Sin conexión a internet") {
+fun OfflineBanner(modifier: Modifier = Modifier, text: String = stringResource(R.string.offline_banner)) {
     Row(
         modifier
             .fillMaxWidth()
@@ -102,8 +103,8 @@ fun OfflineBanner(modifier: Modifier = Modifier, text: String = "Sin conexión a
 fun ErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "No pudimos cargar las publicaciones",
-    text: String = "Revisa tu conexión e inténtalo de nuevo. Las publicaciones guardadas siguen disponibles sin internet.",
+    title: String = stringResource(R.string.load_error_title),
+    text: String = stringResource(R.string.load_error_text),
     showBanner: Boolean = true,
 ) {
     Column(modifier.fillMaxSize()) {
@@ -113,7 +114,7 @@ fun ErrorState(
                 illustration = R.drawable.illus_connection_lost,
                 title = title,
                 text = text,
-                actionText = "Reintentar",
+                actionText = stringResource(R.string.action_retry),
                 onAction = onRetry,
                 actionIcon = Icons.Outlined.Refresh,
             )

@@ -40,7 +40,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +51,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -70,15 +74,20 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PetImage
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
 import com.desarrolloMovielexample.huella.core.components.StripedPlaceholder
+import com.desarrolloMovielexample.huella.core.components.labelRes
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
+import com.desarrolloMovielexample.huella.core.utils.UiText
+import com.desarrolloMovielexample.huella.core.utils.asString
+import com.desarrolloMovielexample.huella.data.remote.AiReview
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
 import com.desarrolloMovielexample.huella.domain.model.Report
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val DisabledReject = Color(0xFFE6B9B9)
 
@@ -88,27 +97,22 @@ private val DisabledReject = Color(0xFFE6B9B9)
 fun ModerationDetailScreen(
     itemId: String,
     onBack: () -> Unit,
-    onDone: () -> Unit,
+    /** Recibe la confirmación para mostrarla en la pantalla de destino. */
+    onDone: (UiText) -> Unit,
     viewModel: ModerationDetailViewModel = viewModel(),
 ) {
     LaunchedEffect(itemId) { viewModel.load(itemId) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val sheetSnackbarHostState = remember { SnackbarHostState() }
 
+    val resources = LocalContext.current.resources
     LaunchedEffect(viewModel) {
+        // El Scaffold ancla el snackbar sobre la DecisionBar; los errores del sheet se muestran inline.
         viewModel.messages.collect { message ->
-            // Feedback goes to the sheet's own host while it is open (the sheet window covers the screen).
-            val host = if (viewModel.uiState.value.showRejectSheet) sheetSnackbarHostState else snackbarHostState
-            launch { host.showSnackbar(message, duration = SnackbarDuration.Short) }
+            launch { snackbarHostState.showSnackbar(message.resolve(resources), duration = SnackbarDuration.Short) }
         }
     }
-    LaunchedEffect(state.finished) {
-        if (state.finished) {
-            delay(1_500) // let the confirmation snackbar be read before leaving
-            onDone()
-        }
-    }
+    LaunchedEffect(state.doneMessage) { state.doneMessage?.let(onDone) }
 
     val item = state.item
     Scaffold(
@@ -127,14 +131,14 @@ fun ModerationDetailScreen(
     ) { padding ->
         if (item == null) {
             Column(Modifier.fillMaxSize().padding(padding)) {
-                HuellaTopBar(title = "Moderación", onBack = onBack)
+                HuellaTopBar(title = stringResource(R.string.moderation_title), onBack = onBack)
                 if (state.loaded) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         EmptyState(
                             illustration = R.drawable.illus_tasks,
-                            title = "Publicación no disponible",
-                            text = "Esta publicación ya fue moderada o no existe.",
-                            actionText = "Volver",
+                            title = stringResource(R.string.detail_unavailable),
+                            text = stringResource(R.string.moderation_already_done),
+                            actionText = stringResource(R.string.action_go_back),
                             onAction = onBack,
                             actionOutlined = true,
                         )
@@ -157,13 +161,14 @@ fun ModerationDetailScreen(
                         PetImage(
                             imageUrl = item.publication.imageUrl,
                             tone = toneColor(item.publication.tone),
-                            label = "foto 1/3: ${item.publication.title}",
                             contentDescription = item.publication.title,
                             modifier = Modifier.matchParentSize(),
                         )
                         CategoryChip(item.publication.category, Modifier.padding(10.dp))
                     }
-                    DetailBody(item)
+                    DetailBody(item, state.resolvingReportId, viewModel::resolveReport) {
+                        AiSuggestionCard(state.aiReview, state.aiLoading, state.aiMessage, viewModel::analyzeWithAi)
+                    }
                 }
             }
         }
@@ -184,25 +189,23 @@ fun ModerationDetailScreen(
                 )
             },
         ) {
-            Box {
-                RejectSheetContent(
-                    selected = state.rejectReason,
-                    reasonError = state.reasonError,
-                    comment = state.rejectComment,
-                    commentError = state.commentError,
-                    loading = state.isRejecting,
-                    onSelect = viewModel::selectReason,
-                    onCommentChange = viewModel::updateComment,
-                    onClose = viewModel::closeRejectSheet,
-                    onConfirm = viewModel::confirmReject,
-                )
-                HuellaSnackbarHost(sheetSnackbarHostState, Modifier.align(Alignment.BottomCenter))
-            }
+            RejectSheetContent(
+                selected = state.rejectReason,
+                reasonError = state.reasonError,
+                comment = state.rejectComment,
+                commentError = state.commentError,
+                rejectError = state.rejectError,
+                loading = state.isRejecting,
+                onSelect = viewModel::selectReason,
+                onCommentChange = viewModel::updateComment,
+                onClose = viewModel::closeRejectSheet,
+                onConfirm = viewModel::confirmReject,
+            )
         }
     }
 }
 
-/** Yellow "En revisión · 8 h en espera · publicado hace 8 h" header with back arrow. */
+/** Yellow "En revisión · Publicada hace 8 h" header (una sola métrica de tiempo). */
 @Composable
 private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
     Row(
@@ -213,14 +216,19 @@ private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = HuellaColors.TextPrimary)
         }
         HuellaIcon(R.drawable.icon_estado_en_revision, tint = HuellaColors.WarningDark, size = 26.dp)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text("En revisión", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = HuellaColors.WarningDark)
             Text(
-                "${item.waitTime} · publicado ${item.publication.timeAgo}",
+                stringResource(if (item.isReported) R.string.moderation_reported_post else R.string.post_status_review),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = HuellaColors.WarningDark,
+            )
+            Text(
+                stringResource(R.string.moderation_published, item.publication.timeAgo.asString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = HuellaColors.WarningDark,
             )
@@ -230,7 +238,12 @@ private fun ReviewHeader(item: ModerationItem, onBack: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DetailBody(item: ModerationItem) {
+private fun DetailBody(
+    item: ModerationItem,
+    resolvingReportId: String?,
+    onResolve: (Report) -> Unit,
+    aiCard: @Composable () -> Unit,
+) {
     val pub = item.publication
     Column(
         Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
@@ -242,7 +255,7 @@ private fun DetailBody(item: ModerationItem) {
             color = HuellaColors.TextPrimary,
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            listOf(pub.species, pub.breed, pub.size, pub.city).forEachIndexed { i, text ->
+            listOf(optionLabel(pub.species), pub.breed, optionLabel(pub.size), pub.city).forEachIndexed { i, text ->
                 if (i > 0) Text("·", fontSize = 13.sp, color = HuellaColors.Outline)
                 Text(text, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp), color = HuellaColors.TextSecondary)
             }
@@ -257,7 +270,9 @@ private fun DetailBody(item: ModerationItem) {
                 .padding(horizontal = 14.dp, vertical = 12.dp),
         )
 
-        Section("Historial del autor") {
+        aiCard()
+
+        Section(stringResource(R.string.moderation_author_history)) {
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -271,12 +286,12 @@ private fun DetailBody(item: ModerationItem) {
                     Text(pub.author.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = HuellaColors.TextPrimary)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         HuellaIcon(R.drawable.icon_animal_otro, tint = pub.author.level.color, size = 18.dp)
-                        Text(pub.author.level.label, style = MaterialTheme.typography.labelMedium, color = HuellaColors.TextTertiary)
+                        Text(stringResource(pub.author.level.labelRes), style = MaterialTheme.typography.labelMedium, color = HuellaColors.TextTertiary)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    SmallTag("${item.authorApproved} aprobadas", HuellaColors.PrimarySoft, HuellaColors.Primary)
-                    SmallTag("${item.authorRejected} rechazadas", HuellaColors.ErrorContainer, HuellaColors.ErrorDark)
+                    SmallTag(pluralStringResource(R.plurals.moderation_approved_n, item.authorApproved, item.authorApproved), HuellaColors.PrimarySoft, HuellaColors.Primary)
+                    SmallTag(pluralStringResource(R.plurals.moderation_rejected_n, item.authorRejected, item.authorRejected), HuellaColors.ErrorContainer, HuellaColors.ErrorDark)
                 }
             }
         }
@@ -284,19 +299,19 @@ private fun DetailBody(item: ModerationItem) {
         if (item.isReported) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                    Text("Reportes recibidos", style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+                    Text(stringResource(R.string.moderation_reports_received), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
                     Text(item.reports.size.toString(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HuellaColors.Error)
                 }
                 Column(Modifier.fillMaxWidth().outlinedWhite()) {
                     item.reports.forEachIndexed { i, report ->
                         if (i > 0) HorizontalDivider(color = HuellaColors.SurfaceMuted, thickness = 1.dp)
-                        ReportRow(report)
+                        ReportRow(report, resolving = resolvingReportId == report.id, onResolve = { onResolve(report) })
                     }
                 }
             }
         }
 
-        Section("Ubicación") {
+        Section(stringResource(R.string.detail_location)) {
             // ponytail: maps are out of scope this phase -> static striped placeholder with a pin.
             Box(
                 Modifier
@@ -318,9 +333,72 @@ private fun DetailBody(item: ModerationItem) {
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .padding(10.dp)
-                        .background(Color.White, HuellaShapes.Tag)
+                        .background(HuellaColors.Surface, HuellaShapes.Tag)
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 )
+            }
+        }
+    }
+}
+
+/** Tarjeta "Sugerencia de IA": solo informa; la decisión sigue siendo del moderador. */
+@Composable
+private fun AiSuggestionCard(review: AiReview?, loading: Boolean, message: UiText?, onAnalyze: () -> Unit) {
+    Section(stringResource(R.string.moderation_ai_title)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .outlinedWhite()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (review != null) {
+                val (label, color) = when (review.verdict) {
+                    "APROBAR" -> stringResource(R.string.moderation_ai_approve) to HuellaColors.Primary
+                    "RECHAZAR" -> stringResource(R.string.moderation_ai_reject) to HuellaColors.ErrorDark
+                    else -> stringResource(R.string.moderation_ai_review) to HuellaColors.WarningDark
+                }
+                Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = color)
+                Text(
+                    stringResource(R.string.moderation_ai_risk, (review.risk * 100).roundToInt()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HuellaColors.TextSecondary,
+                )
+                review.reasons.forEach { reason ->
+                    Text(stringResource(R.string.moderation_ai_bullet, reason), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextBody)
+                }
+                if (review.verdict == "RECHAZAR" && !review.suggestedReason.isNullOrBlank()) {
+                    Text(
+                        stringResource(R.string.moderation_ai_reason, optionLabel(review.suggestedReason.orEmpty())),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HuellaColors.TextSecondary,
+                    )
+                }
+                Text(
+                    stringResource(R.string.moderation_ai_only_suggestion),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = HuellaColors.TextTertiary,
+                )
+            } else {
+                Text(
+                    stringResource(R.string.moderation_ai_prompt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = HuellaColors.TextSecondary,
+                )
+            }
+            if (message != null) {
+                Text(message.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+            }
+            TextButton(onClick = onAnalyze, enabled = !loading, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                if (loading) {
+                    CircularProgressIndicator(Modifier.size(16.dp), color = HuellaColors.Primary, strokeWidth = 2.dp)
+                } else {
+                    Text(
+                        stringResource(if (review == null) R.string.moderation_ai_analyze else R.string.moderation_ai_again),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = HuellaColors.PrimaryText,
+                    )
+                }
             }
         }
     }
@@ -347,7 +425,7 @@ private fun SmallTag(text: String, background: Color, content: Color) {
 }
 
 @Composable
-private fun ReportRow(report: Report) {
+private fun ReportRow(report: Report, resolving: Boolean, onResolve: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -357,7 +435,7 @@ private fun ReportRow(report: Report) {
         HuellaIcon(R.drawable.icon_accion_reportar, tint = HuellaColors.Error, size = 23.dp)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(report.reason, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = HuellaColors.TextPrimary)
+                Text(optionLabel(report.reason), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = HuellaColors.TextPrimary)
                 Text(report.who, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
             }
             if (report.detail.isNotBlank()) {
@@ -367,11 +445,20 @@ private fun ReportRow(report: Report) {
                     color = HuellaColors.TextSecondary,
                 )
             }
+            if (report.id.isNotBlank()) {
+                TextButton(onClick = onResolve, enabled = !resolving, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    if (resolving) {
+                        CircularProgressIndicator(Modifier.size(16.dp), color = HuellaColors.Primary, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.moderation_resolve_report), style = MaterialTheme.typography.labelLarge, color = HuellaColors.PrimaryText)
+                    }
+                }
+            }
         }
     }
 }
 
-/** Sticky "Rechazar" (red) + "Aprobar" (green) bar. */
+/** Sticky "Aprobar" (verde) + "Rechazar" (rojo, a la derecha) bar. */
 @Composable
 private fun DecisionBar(approving: Boolean, enabled: Boolean, onReject: () -> Unit, onApprove: () -> Unit) {
     Column(
@@ -385,8 +472,8 @@ private fun DecisionBar(approving: Boolean, enabled: Boolean, onReject: () -> Un
             Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            DecisionButton("Rechazar", R.drawable.icon_accion_rechazar, HuellaColors.Error, false, enabled, onReject, Modifier.weight(1f))
-            DecisionButton("Aprobar", R.drawable.icon_accion_aprobar, HuellaColors.Primary, approving, enabled, onApprove, Modifier.weight(1f))
+            DecisionButton(stringResource(R.string.moderation_approve), R.drawable.icon_accion_aprobar, HuellaColors.Primary, approving, enabled, onApprove, Modifier.weight(1f))
+            DecisionButton(stringResource(R.string.action_reject), R.drawable.icon_accion_rechazar, HuellaColors.Error, false, enabled, onReject, Modifier.weight(1f))
         }
     }
 }
@@ -430,7 +517,8 @@ private fun RejectSheetContent(
     selected: String?,
     reasonError: Boolean,
     comment: String,
-    commentError: String?,
+    commentError: UiText?,
+    rejectError: UiText?,
     loading: Boolean,
     onSelect: (String) -> Unit,
     onCommentChange: (String) -> Unit,
@@ -445,14 +533,15 @@ private fun RejectSheetContent(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Rechazar publicación", style = MaterialTheme.typography.titleLarge, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.moderation_reject_title), style = MaterialTheme.typography.titleLarge, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
             IconButton(onClick = onClose) {
-                Icon(Icons.Outlined.Close, contentDescription = "Cerrar", tint = HuellaColors.TextPrimary)
+                Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.action_close), tint = HuellaColors.TextPrimary)
             }
         }
+        val reasonLabel = stringResource(R.string.moderation_reason)
         Text(
             buildAnnotatedString {
-                append("Motivo ")
+                append(reasonLabel)
                 withStyle(SpanStyle(color = HuellaColors.Error)) { append("*") }
             },
             style = MaterialTheme.typography.bodyMedium,
@@ -462,7 +551,7 @@ private fun RejectSheetContent(
             Modifier
                 .fillMaxWidth()
                 .clip(HuellaShapes.Card)
-                .background(Color.White)
+                .background(HuellaColors.Surface)
                 .border(1.dp, if (reasonError) HuellaColors.Error else HuellaColors.Divider, HuellaShapes.Card),
         ) {
             REJECT_REASONS.forEachIndexed { i, reason ->
@@ -476,20 +565,27 @@ private fun RejectSheetContent(
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     RadioDot(selected == reason)
-                    Text(reason, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+                    Text(optionLabel(reason), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
                 }
             }
+        }
+        if (reasonError) {
+            // Texto además del color (accesibilidad, ítem 58).
+            Text(stringResource(R.string.moderation_reason_required), style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
         }
         HuellaTextField(
             value = comment,
             onValueChange = onCommentChange,
-            placeholder = "Comentario para el autor (se envía con la notificación)",
-            error = commentError,
+            placeholder = stringResource(R.string.moderation_comment_placeholder),
+            error = commentError?.asString(),
             singleLine = false,
             minHeight = 72.dp,
         )
+        if (rejectError != null) {
+            Text(rejectError.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark)
+        }
         PrimaryButton(
-            text = "Confirmar rechazo",
+            text = stringResource(R.string.moderation_confirm_reject),
             onClick = onConfirm,
             loading = loading,
             containerColor = if (selected == null) DisabledReject else HuellaColors.Error,
@@ -498,10 +594,10 @@ private fun RejectSheetContent(
     }
 }
 
-/** Design radio: 20dp ring (#8A8F88), red ring + dot when selected. */
+/** Design radio: 20dp ring (#8A8F88), primary ring + dot when selected (el rojo queda para errores). */
 @Composable
 private fun RadioDot(selected: Boolean) {
-    val color = if (selected) HuellaColors.Error else HuellaColors.TextTertiary
+    val color = if (selected) HuellaColors.Primary else HuellaColors.TextTertiary
     Box(
         Modifier
             .size(20.dp)
@@ -514,7 +610,7 @@ private fun RadioDot(selected: Boolean) {
 
 private fun Modifier.outlinedWhite(): Modifier = this
     .clip(HuellaShapes.Card)
-    .background(Color.White)
+    .background(HuellaColors.Surface)
     .border(1.dp, HuellaColors.Divider, HuellaShapes.Card)
 
 @Preview(showBackground = true)

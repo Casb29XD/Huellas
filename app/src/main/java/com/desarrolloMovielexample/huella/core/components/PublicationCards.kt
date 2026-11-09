@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.core.components
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,13 +19,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,14 +70,14 @@ fun categoryIcon(category: Category, filled: Boolean = false): Int = when (categ
 fun Modifier.huellaCard(): Modifier = this
     .shadow(1.dp, HuellaShapes.Card, clip = false, ambientColor = HuellaColors.TextPrimary, spotColor = HuellaColors.TextPrimary)
     .clip(HuellaShapes.Card)
-    .background(Color.White)
+    .background(HuellaColors.Surface)
     .border(1.dp, HuellaColors.TextPrimary.copy(alpha = 0.05f), HuellaShapes.Card)
 
 @Composable
 private fun VaccineBadge(vaccinated: Boolean, compact: Boolean) {
     val fg = if (vaccinated) HuellaColors.Primary else HuellaColors.NoVaccineFg
     val icon = if (vaccinated) R.drawable.icon_attr_vacunado else R.drawable.icon_attr_sin_vacunas
-    val text = if (vaccinated) "Vacunado" else "Sin vacunas"
+    val text = stringResource(if (vaccinated) R.string.vaccinated else R.string.not_vaccinated)
     Row(
         if (compact) Modifier else Modifier
             .background(if (vaccinated) HuellaColors.PrimarySoft else HuellaColors.NoVaccineBg, HuellaShapes.Tag)
@@ -101,7 +103,7 @@ private fun CityAndTime(publication: Publication, compact: Boolean, modifier: Mo
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Icon(Icons.Outlined.Schedule, contentDescription = null, tint = HuellaColors.TextTertiary, modifier = Modifier.size(if (compact) 14.dp else 15.dp))
-            Text(publication.timeAgo, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+            Text(publication.timeAgo.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
         }
     }
 }
@@ -133,15 +135,15 @@ fun PublicationCard(
             Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(publication.title, style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary)
+            Text(publication.title, style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                AttributeInline(speciesIcon(publication.species), publication.species)
+                AttributeInline(speciesIcon(publication.species), optionLabel(publication.species))
                 AttributeInline(R.drawable.icon_attr_raza_aproximada, publication.breed)
-                AttributeInline(sizeIcon(publication.size), publication.size)
+                AttributeInline(sizeIcon(publication.size), optionLabel(publication.size))
                 if (publication.category != Category.VETERINARIA) VaccineBadge(publication.vaccinated, compact = false)
             }
             CityAndTime(publication, compact = false, modifier = Modifier.fillMaxWidth())
@@ -184,7 +186,7 @@ fun PublicationRowCard(
                 .size(96.dp)
                 .clip(RoundedCornerShape(10.dp)),
         ) {
-            PetImage(publication, Modifier.matchParentSize(), showLabel = false, showPhoto = showPhoto)
+            PetImage(publication, Modifier.matchParentSize(), showPhoto = showPhoto)
             CategoryChip(publication.category, Modifier.padding(6.dp), small = true)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -193,7 +195,7 @@ fun PublicationRowCard(
                     publication.title,
                     style = MaterialTheme.typography.titleSmall,
                     color = HuellaColors.TextPrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
@@ -205,11 +207,11 @@ fun PublicationRowCard(
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 val dot = @Composable { Text("·", style = MaterialTheme.typography.bodySmall, color = HuellaColors.Outline) }
-                Text(publication.species, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
+                Text(optionLabel(publication.species), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
                 dot()
                 Text(publication.breed, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
                 dot()
-                Text(publication.size, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
+                Text(optionLabel(publication.size), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
                 if (publication.category != Category.VETERINARIA) VaccineBadge(publication.vaccinated, compact = true)
             }
             CityAndTime(publication, compact = true)

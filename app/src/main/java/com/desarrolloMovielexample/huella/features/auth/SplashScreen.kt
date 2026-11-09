@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,7 +59,7 @@ fun SplashScreen(
             val window = (view.context as? Activity)?.window
             val controller = window?.let { WindowCompat.getInsetsController(it, view) }
             controller?.isAppearanceLightStatusBars = false
-            onDispose { controller?.isAppearanceLightStatusBars = true }
+            onDispose { controller?.isAppearanceLightStatusBars = !HuellaColors.isDark }
         }
     }
 
@@ -86,39 +86,25 @@ fun SplashScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.logo_paw),
-                    contentDescription = "Huella",
+                    contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier.width(78.dp),
                 )
             }
             Spacer(Modifier.height(22.dp))
             Text(
-                "Huella",
+                stringResource(R.string.app_name),
                 style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 34.sp, letterSpacing = (-0.5).sp),
                 color = Color.White,
             )
             Spacer(Modifier.height(22.dp))
             Text(
-                "Red de adopción de mascotas",
+                stringResource(R.string.app_tagline),
                 style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.Normal, fontSize = 14.sp),
                 color = Color.White.copy(alpha = 0.85f),
             )
         }
-        Row(
-            Modifier
-                .align(Alignment.CenterHorizontally)
-                .height(120.dp)
-                .padding(bottom = 40.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            repeat(3) { i ->
-                Box(
-                    Modifier
-                        .size(6.dp)
-                        .background(if (i == 2) HuellaColors.Secondary else Color.White.copy(alpha = 0.35f), CircleShape),
-                )
-            }
-        }
+        // Same bottom space the pagination dots used to take, so the logo stays where it was.
+        Spacer(Modifier.height(120.dp))
     }
 }
 

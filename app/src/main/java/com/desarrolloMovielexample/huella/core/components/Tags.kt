@@ -15,13 +15,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,15 +39,21 @@ import com.desarrolloMovielexample.huella.domain.model.RequestStatus
 
 /** Tinted PNG icon from res/drawable (design icons are alpha masks, e.g. R.drawable.icon_animal_perro). */
 @Composable
-fun HuellaIcon(@DrawableRes res: Int, modifier: Modifier = Modifier, tint: Color = HuellaColors.TextSecondary, size: Dp = 24.dp) {
-    Icon(painterResource(res), contentDescription = null, tint = tint, modifier = modifier.size(size))
+fun HuellaIcon(
+    @DrawableRes res: Int,
+    modifier: Modifier = Modifier,
+    tint: Color = HuellaColors.TextSecondary,
+    size: Dp = 24.dp,
+    contentDescription: String? = null,
+) {
+    Icon(painterResource(res), contentDescription = contentDescription, tint = tint, modifier = modifier.size(size))
 }
 
 /** "Chip de categoría": solid category color, white 12/500 text. [small] = 10sp version used on compact cards. */
 @Composable
 fun CategoryChip(category: Category, modifier: Modifier = Modifier, small: Boolean = false) {
     Text(
-        text = category.label,
+        text = stringResource(category.labelRes),
         color = Color.White,
         style = if (small) TextStyle(fontSize = 10.sp, lineHeight = 10.sp) else MaterialTheme.typography.labelMedium.copy(lineHeight = 12.sp),
         fontFamily = MaterialTheme.typography.labelMedium.fontFamily,
@@ -73,7 +80,7 @@ fun LevelBadge(level: Level, modifier: Modifier = Modifier, soft: Boolean = fals
         horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         HuellaIcon(R.drawable.icon_animal_otro, tint = fg, size = 18.dp)
-        Text(level.label, color = fg, style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(level.labelRes), color = fg, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -113,14 +120,14 @@ fun ModerationStatusTag(status: PostStatus, modifier: Modifier = Modifier, small
         PostStatus.APROBADA -> R.drawable.icon_estado_aprobada
         PostStatus.RECHAZADA -> R.drawable.icon_estado_rechazada
     }
-    StatusTag(status.label, bg, fg, modifier, icon = if (small) null else icon, small = small)
+    StatusTag(stringResource(status.labelRes), bg, fg, modifier, icon = if (small) null else icon, small = small)
 }
 
 /** Pendiente / Aceptada / Rechazada (Mis solicitudes · Enviadas). */
 @Composable
 fun RequestStatusTag(status: RequestStatus, modifier: Modifier = Modifier) {
     val (bg, fg) = status.colors
-    StatusTag(status.label, bg, fg, modifier, small = true)
+    StatusTag(stringResource(status.labelRes), bg, fg, modifier, small = true)
 }
 
 /**
@@ -141,7 +148,7 @@ fun HuellaFilterChip(
         modifier
             .height(34.dp)
             .clip(HuellaShapes.FilterChip)
-            .background(if (selected) HuellaColors.PrimaryContainer else Color.White)
+            .background(if (selected) HuellaColors.PrimaryContainer else HuellaColors.Surface)
             .border(BorderStroke(1.dp, if (selected) HuellaColors.Primary else HuellaColors.Outline), HuellaShapes.FilterChip)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),
@@ -153,7 +160,7 @@ fun HuellaFilterChip(
         if (onRemove != null) {
             Icon(
                 Icons.Outlined.Close,
-                contentDescription = "Quitar",
+                contentDescription = stringResource(R.string.action_remove),
                 tint = fg,
                 modifier = Modifier
                     .size(16.dp)

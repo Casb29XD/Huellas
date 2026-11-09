@@ -1,20 +1,38 @@
 *.iml
 .gradle
+.kotlin/
 /local.properties
+local.properties
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# IDE: solo se versionan compiler.xml, gradle.xml, misc.xml, vcs.xml e inspectionProfiles/
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+/.idea/deviceManager.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/runConfigurations.xml
+/.idea/AndroidProjectSystem.xml
+/.idea/shelf/
 
-# Environment variables
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Variables de entorno y claves (las plantillas *.example sí se versionan)
+app/.env
 .env
 .env.*
 *.env
+!.env.example
+!.env.*.example
+
+# Grafo de conocimiento generado por graphify
+graphify-out/

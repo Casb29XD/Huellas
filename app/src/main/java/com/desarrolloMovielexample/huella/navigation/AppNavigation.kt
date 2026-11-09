@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.navigation
 
+import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
@@ -7,10 +8,15 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
@@ -21,18 +27,22 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.desarrolloMovielexample.huella.core.components.BottomBarItem
 import com.desarrolloMovielexample.huella.core.components.HuellaBottomBar
+import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordScreen
 import com.desarrolloMovielexample.huella.features.auth.LoginScreen
 import com.desarrolloMovielexample.huella.features.auth.OnboardingScreen
 import com.desarrolloMovielexample.huella.features.auth.RegisterScreen
+import com.desarrolloMovielexample.huella.features.auth.SetPasswordScreen
 import com.desarrolloMovielexample.huella.features.auth.SplashScreen
 import com.desarrolloMovielexample.huella.features.createpost.CreatePostScreen
 import com.desarrolloMovielexample.huella.features.createpost.PostSentScreen
 import com.desarrolloMovielexample.huella.features.feed.HomeScreen
 import com.desarrolloMovielexample.huella.features.feed.MapScreen
 import com.desarrolloMovielexample.huella.features.feed.PublicationDetailScreen
+import com.desarrolloMovielexample.huella.features.legal.TermsScreen
 import com.desarrolloMovielexample.huella.features.moderation.ModerationDetailScreen
 import com.desarrolloMovielexample.huella.features.moderation.ModerationScreen
 import com.desarrolloMovielexample.huella.features.profile.EditProfileScreen
@@ -43,6 +53,7 @@ import com.desarrolloMovielexample.huella.features.profile.PublicProfileScreen
 import com.desarrolloMovielexample.huella.features.profile.SettingsScreen
 import com.desarrolloMovielexample.huella.features.requests.ChatScreen
 import com.desarrolloMovielexample.huella.features.requests.RequestsScreen
+import kotlinx.coroutines.launch
 
 /** Bottom-bar tab for each top-level route (bar hidden elsewhere). */
 private fun tabForDestination(destination: androidx.navigation.NavDestination?): BottomBarItem? {
@@ -73,6 +84,9 @@ private fun NavHostController.navigateClearingStack(route: Any) {
     }
 }
 
+private const val APP_PREFS = "huella_prefs"
+private const val ONBOARDING_SEEN = "onboarding_seen"
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppNavigation(
@@ -81,6 +95,17 @@ fun AppNavigation(
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentTab = tabForDestination(backStackEntry?.destination)
+    val scope = rememberCoroutineScope()
+    val prefs = LocalContext.current.getSharedPreferences(APP_PREFS, Context.MODE_PRIVATE)
+    // Confirmaciones que sobreviven a la navegación: la pantalla sale al instante y el aviso se ve en el destino (ítem 56).
+    val appSnackbar = remember { SnackbarHostState() }
+    val resources = LocalContext.current.resources
+    val flash: (UiText) -> Unit = { msg -> scope.launch { appSnackbar.showSnackbar(msg.resolve(resources)) } }
+
+    // Ítem 26: si el refresh token caduca, volver a Login en vez de quedar en "Inicia sesión para continuar".
+    LaunchedEffect(Unit) {
+        SupabaseRepository.sessionExpired.collect { navController.navigateClearingStack(Routes.Login) }
+    }
 
     // Manejar deep links de Supabase Auth al iniciar la app.
     LaunchedEffect(deepLinkUri) {
@@ -90,30 +115,20 @@ fun AppNavigation(
             ?.substringAfter("=")
         val type = deepLinkUri.getQueryParameter("type") ?: fragmentType
 
-        when (type) {
-            "recovery" -> {
-                navController.navigate(Routes.ForgotPassword) {
-                    popUpTo<Routes.Splash> { inclusive = true }
-                }
-            }
-            else -> {
-                val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
-                if (authResult.isSuccess) {
-                    navController.navigate(Routes.Home) {
-                        popUpTo<Routes.Splash> { inclusive = true }
-                    }
-                } else {
-                    navController.navigate(Routes.Login) {
-                        popUpTo<Routes.Splash> { inclusive = true }
-                    }
-                }
-            }
+        // Recuperación (ítem 11): se canjea el enlace y se pide la contraseña nueva en vez de reenviar el correo.
+        val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
+        val target = when {
+            authResult.isFailure -> Routes.Login
+            type == "recovery" -> Routes.SetPassword
+            else -> Routes.Home
         }
+        navController.navigateClearingStack(target)
     }
 
     Scaffold(
         containerColor = HuellaColors.Background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { HuellaSnackbarHost(appSnackbar) },
         bottomBar = {
             if (currentTab != null) {
                 HuellaBottomBar(
@@ -143,8 +158,16 @@ fun AppNavigation(
             composable<Routes.Splash> {
                 SplashScreen(
                     onFinished = {
-                        navController.navigate(Routes.Onboarding) {
-                            popUpTo<Routes.Splash> { inclusive = true }
+                        // Con deep link de Auth, el LaunchedEffect de arriba decide el destino.
+                        if (deepLinkUri == null) scope.launch {
+                            // Ítem 25: sesión válida -> Home; si no, onboarding solo la primera vez y luego Login.
+                            val target = when {
+                                SupabaseRepository.restoreSession() -> Routes.Home
+                                prefs.getBoolean(ONBOARDING_SEEN, false) -> Routes.Login
+                                else -> Routes.Onboarding
+                            }
+                            // Pila limpia: si el refresh caducó, sessionExpired pudo haber navegado ya a Login.
+                            navController.navigateClearingStack(target)
                         }
                     },
                 )
@@ -152,6 +175,7 @@ fun AppNavigation(
             composable<Routes.Onboarding> {
                 OnboardingScreen(
                     onFinish = {
+                        prefs.edit().putBoolean(ONBOARDING_SEEN, true).apply()
                         navController.navigate(Routes.Login) {
                             popUpTo<Routes.Onboarding> { inclusive = true }
                         }
@@ -169,10 +193,16 @@ fun AppNavigation(
                 RegisterScreen(
                     onBack = { navController.popBackStack() },
                     onRegistered = { navController.navigateClearingStack(Routes.Home) },
+                    onOpenTerms = { navController.navigate(Routes.Terms) },
                 )
             }
             composable<Routes.ForgotPassword> {
                 ForgotPasswordScreen(onBack = { navController.popBackStack() })
+            }
+            composable<Routes.SetPassword> {
+                // Desde el enlace de recuperación la pila está vacía: al terminar se entra a Home.
+                val leave = { if (!navController.popBackStack()) navController.navigateClearingStack(Routes.Home) }
+                SetPasswordScreen(onBack = leave, onDone = { msg -> leave(); flash(msg) })
             }
 
             // ---------- 02 Inicio y detalle ----------
@@ -281,11 +311,17 @@ fun AppNavigation(
                 )
             }
             composable<Routes.Settings> {
+                val user by SupabaseRepository.currentUser.collectAsStateWithLifecycle()
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onEditProfile = { navController.navigate(Routes.EditProfile) },
-                    onChangePassword = { navController.navigate(Routes.ForgotPassword) },
+                    onChangePassword = {
+                        val signedIn = SupabaseRepository.currentUser.value != null
+                        navController.navigate(if (signedIn) Routes.SetPassword else Routes.ForgotPassword)
+                    },
                     onLoggedOut = { navController.navigateClearingStack(Routes.Login) },
+                    user = user,
+                    onOpenTerms = { navController.navigate(Routes.Terms) },
                 )
             }
 
@@ -301,8 +337,15 @@ fun AppNavigation(
                 ModerationDetailScreen(
                     itemId = route.id,
                     onBack = { navController.popBackStack() },
-                    onDone = { navController.popBackStack() },
+                    onDone = { msg ->
+                        navController.popBackStack()
+                        flash(msg)
+                    },
                 )
+            }
+
+            composable<Routes.Terms> {
+                TermsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

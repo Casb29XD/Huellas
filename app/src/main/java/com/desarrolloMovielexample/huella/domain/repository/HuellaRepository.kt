@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.domain.repository
 
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
+import com.desarrolloMovielexample.huella.domain.model.Category
 import com.desarrolloMovielexample.huella.domain.model.ChatMessage
 import com.desarrolloMovielexample.huella.domain.model.Comment
 import com.desarrolloMovielexample.huella.domain.model.Conversation
@@ -16,7 +17,7 @@ import com.desarrolloMovielexample.huella.domain.model.User
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Data contract shared by the Supabase implementation and the in-memory preview repository.
+ * Contrato de datos: SupabaseRepository en la app y FakeRepository (en memoria) en los tests.
  * Suspend functions return [Result] with Spanish error messages.
  */
 interface HuellaRepository {
@@ -26,21 +27,34 @@ interface HuellaRepository {
     suspend fun register(name: String, email: String, city: String, password: String): Result<User>
     suspend fun handleAuthCallback(uri: android.net.Uri): Result<User>
     suspend fun sendPasswordReset(email: String): Result<Unit>
+    /** Contraseña nueva para el usuario con sesión (incluida la sesión de recuperación). */
+    suspend fun updatePassword(password: String): Result<Unit>
     suspend fun updateProfile(name: String, email: String, city: String, phone: String, bio: String): Result<User>
     suspend fun deleteAccount(): Result<Unit>
     fun logout()
     fun getUser(userId: String): User?
+    /** Carga el perfil público de [userId] y sus publicaciones; luego [getUser] y [publicationsByAuthor] los devuelven. */
+    suspend fun refreshUser(userId: String): Result<User>
 
     // Publications
     val publications: StateFlow<List<Publication>>        // public feed
     val myPublications: StateFlow<List<Publication>>      // current user's posts (with status)
+    /**
+     * Feed paginado (ítem 32): reset=true carga la primera página con estos filtros de servidor; reset=false
+     * añade la siguiente página con los últimos filtros. Devuelve true si puede haber más páginas.
+     */
+    suspend fun loadFeed(category: Category?, species: String?, city: String?, reset: Boolean): Result<Boolean>
     fun getPublication(id: String): Publication?
     fun publicationsByAuthor(userId: String): List<Publication>
     suspend fun createPublication(draft: PublicationDraft): Result<Publication>
     suspend fun updatePublication(publicationId: String, draft: PublicationDraft): Result<Publication>
     suspend fun deletePublication(publicationId: String): Result<Unit>
     suspend fun reportPublication(publicationId: String, reason: String, detail: String): Result<Unit>
-    suspend fun votePublication(publicationId: String, value: Int): Result<Unit> // 1 for up, -1 for down, 0 to revoke
+    suspend fun votePublication(publicationId: String, value: Int): Result<Unit> // 1 up, -1 down, 0 o el mismo voto otra vez = quitar
+    /** Relee contadores y el voto propio de una publicación. */
+    suspend fun refreshPublication(publicationId: String): Result<Unit>
+    /** "Lo he visto": avisa al autor de una publicación de perdidos/encontrados. */
+    suspend fun reportSighting(publicationId: String, text: String): Result<Unit>
 
     // Comments
     fun comments(publicationId: String): StateFlow<List<Comment>>
@@ -78,6 +92,8 @@ interface HuellaRepository {
     fun getModerationItem(id: String): ModerationItem?
     suspend fun approve(itemId: String): Result<Unit>
     suspend fun reject(itemId: String, reason: String, comment: String): Result<Unit>
+    /** Cierra un reporte sin rechazar la publicación (Report.id). */
+    suspend fun resolveReport(reportId: String): Result<Unit>
 
     // Catalogs
     val cities: List<String>

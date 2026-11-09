@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same as HuellaColors.Background in dark mode, so the window behind Compose does not flash light. -->
+    <color name="huella_background">#FF121714</color>
+</resources>

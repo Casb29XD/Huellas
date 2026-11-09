@@ -18,156 +18,60 @@ En las aplicaciones convencionales de rescate animal o adopción, la interacció
 ### Cómo lo resuelve Huella:
 - **Flujo de Solicitudes:**
   - El adoptante postula formalmente con un mensaje de motivación (`sendAdoptionRequest`), quedando registrado en su bandeja de "Solicitudes Enviadas".
-  - El publicador recibe agrupadas las solicitudes en su bandeja de "Solicitudes Recibidas" (`ReceivedRequestGroup`), pudiendo revisar el perfil, nivel de confiabilidad e insignias del interesado.
-  - El publicador puede **Aceptar** o **Rechazar** la solicitud directamente.
+  - El publicador recibe agrupadas las solicitudes en su bandeja de "Solicitudes Recibidas" (`ReceivedRequestGroup`), pudiendo revisar el perfil público, nivel y puntos del interesado.
+  - El publicador puede **Aceptar** o **Rechazar** la solicitud directamente (RPC `respond_to_request`, que notifica al solicitante).
 - **Canal de Chat Seguro y Contextual:**
-  - Al abrirse el interés mutuo, se genera una conversación (`Conversation`) enlazada al ID de la publicación.
-  - La mensajería interna (`ChatMessage`) permite coordinar visitas, resolver dudas sobre comportamiento o vacunas y compartir fotos de avance sin salir de la plataforma.
+  - Al aceptar la solicitud se crea una conversación (`Conversation`) enlazada a la publicación.
+  - La mensajería interna (`ChatMessage`, texto) permite coordinar visitas y resolver dudas sin exponer el teléfono; el teléfono del otro participante solo se obtiene con `get_contact_phone`.
+  - Estado actual: los mensajes se recargan al enviar o abrir el chat; `chat_messages` ya está publicada en Supabase Realtime, pero la app todavía no se suscribe.
 - **Cierre del ciclo de vida:**
-  - Una vez concretada la adopción en el chat, el publicador marca la publicación como **Finalizada**, otorgando puntos de gamificación e insignias automáticas (`ADOPCION_EXITOSA` / `HOGAR_TEMPORAL`).
+  - Una vez concretada la adopción en el chat, el publicador marca la publicación como **Finalizada** (RPC `close_publication`) y el servidor suma los puntos de gamificación correspondientes. Las insignias (`Badge`) existen en el modelo de la app, pero el backend todavía no las calcula.
 
 ---
 
-## 2. Mejoras de Arquitectura Implementadas
+## 2. Arquitectura actual
 
-1. **Migración a Rutas Type-Safe (`@Serializable`):**
-   - Se eliminaron las cadenas String propensas a errores de tipeo y los bundles manuales con `navArgument`.
-   - Se implementó `kotlinx.serialization` en `Routes`:
-     - `Routes.Detail(val id: String)`
-     - `Routes.CreatePost(val editPublicationId: String? = null)`
-     - `Routes.Requests(val tab: Int = 0)`
-     - `Routes.Chat(val id: String)`
-     - `Routes.PublicProfile(val id: String)`
-     - `Routes.ModerationDetail(val id: String)`
-   - Se utilizan métodos nativos de Navigation Compose `composable<T>` y `entry.toRoute<T>()`.
-
-2. **Capa de Casos de Uso (`domain/usecase`):**
-   - Se separó la lógica de negocio y validaciones de los ViewModels mediante Use Cases con `operator fun invoke()`:
-     - `CreatePublicationUseCase`, `UpdatePublicationUseCase`, `DeletePublicationUseCase`
-     - `AddCommentUseCase`, `DeleteCommentUseCase`, `GetCommentsUseCase`
-     - `VotePublicationUseCase`
-     - `ModeratePublicationUseCase`
-     - `DeleteAccountUseCase`
-
-3. **Corrección del Rol Moderador:**
-   - Se creó el `enum class Role { USUARIO, MODERADOR }`.
-   - El panel de moderación en `ProfileScreen` y las rutas de moderación quedan estrictamente condicionadas a `user.role == Role.MODERADOR`.
-   - En el backend se preparó el script de protección para evitar escalación de privilegios desde el cliente.
-
-4. **Sincronización del Feed con Moderación:**
-   - Se corrigió el problema en `FakeRepository`: ahora existe una única fuente de publicaciones (`allPublications`).
-   - Al ejecutar `approve(itemId)`, el estado pasa a `PostStatus.APROBADA` y se refleja inmediatamente tanto en `myPublications` como en el feed público (`publications`), además de notificar al autor.
-
-5. **Nuevas Funcionalidades Completadas:**
-   - **Comentarios:** lectura, adición y eliminación con actualización en tiempo real y notificación al dueño del post.
-   - **Votos:** sistema de valoración upvote/downvote (`publication.votesCount` y `userVote`).
-   - **Edición y Eliminación:** posibilidad de editar publicaciones (vuelven a revisión) y eliminarlas mediante diálogo de confirmación.
-   - **Eliminación de Cuenta:** opción en Ajustes con diálogo de advertencia irreversible.
-   - **Estadísticas Detalladas:** desglose de publicaciones activas, finalizadas y en revisión en el perfil.
-   - **Insignias:** modelo `Badge` visible en el perfil según los logros del usuario.
-   - **Notificaciones:** soporte de lectura individual al tocar y soporte para tipos `NEW_COMMENT`, `NEW_VOTE` y `BADGE_EARNED`.
+1. **Rutas type-safe (`@Serializable`)** en `navigation/Routes.kt` (`Routes.Detail(id)`, `Routes.CreatePost(editPublicationId)`,
+   `Routes.Requests(tab)`, `Routes.Chat(id)`, `Routes.PublicProfile(id)`, `Routes.ModerationDetail(id)`, etc.) con
+   `composable<T>` y `toRoute<T>()`.
+2. **Casos de uso** en `domain/usecase/PublicationUseCases.kt` (`CreatePublicationUseCase`, `UpdatePublicationUseCase`,
+   `DeletePublicationUseCase`, `AddCommentUseCase`, `DeleteCommentUseCase`, `GetCommentsUseCase`, `VotePublicationUseCase`,
+   `ModeratePublicationUseCase`, `DeleteAccountUseCase`) con validaciones previas al repositorio.
+3. **Datos:** `SupabaseRepository` es la única implementación de `HuellaRepository` en la app (Retrofit contra PostgREST,
+   Auth y Storage). `FakeRepository` existe solo en `app/src/test` para pruebas.
+4. **Rol moderador:** `enum class Role { USUARIO, MODERADOR }`; el panel de moderación solo aparece si
+   `user.role == Role.MODERADOR`. En el servidor, el alta nunca otorga el rol, el cliente no puede cambiar
+   `is_moderator`, puntos ni nivel, y el autor no puede aprobar su publicación (migraciones `20261109010*`,
+   ver `docs/SEGURIDAD_BACKEND.md`).
+5. **Moderación:** el RPC `moderate_publication` cambia el estado, notifica al autor y suma puntos; el feed solo
+   muestra publicaciones `APROBADA`. La Edge Function `moderate-ai` da una sugerencia opcional (`docs/MODERACION_IA.md`).
+6. **Funciones respaldadas por el servidor:** comentarios y votos (tablas con RLS; un comentario ajeno notifica
+   `NEW_COMMENT` al autor), "Lo he visto" (`report_sighting`, notificación `SIGHTING`), edición desde el asistente (PATCH; vuelve a revisión) y
+   eliminación de publicaciones, eliminación de cuenta (`delete_my_account`), cierre de publicación, notificaciones
+   de solicitudes y estadísticas del perfil.
+7. **Pendiente:** los tipos `NEW_VOTE` y `BADGE_EARNED` existen en el enum pero ningún proceso los genera; no hay
+   insignias calculadas ni notificaciones push (Ajustes no muestra interruptores de notificaciones). Cada publicación
+   guarda una sola foto (`image_url`); no hay geolocalización (ni permisos de ubicación ni filtro de distancia).
 
 ---
 
-## 3. Estrategia y Funcionamiento de los Tests
+## 3. Pruebas
 
-El proyecto cuenta con una infraestructura de pruebas automatizadas diseñada para ejecutarse de manera **local, determinista y segura** (sin depender de red externa ni modificar la base de datos de producción de Supabase).
+Detalle y comandos en [docs/PRUEBAS.md](docs/PRUEBAS.md). Resumen:
 
-Se implementaron **19 pruebas unitarias y de integración** distribuidas en 3 suites principales:
+| Suite | Dónde | Qué cubre |
+|---|---|---|
+| Unitarias JVM | `app/src/test/.../data/remote`, `domain/usecase`, `HuellaDomainIntegrationTest` | Parseo de fechas, sesión y auth de `SupabaseRepository` con MockWebServer, configuración, casos de uso sobre `FakeRepository`, endpoints con `MockSupabaseApiService` |
+| Robolectric + compose-ui-test | `app/src/test/.../ui`, `features/moderation` | Pantallas sin emulador (login, registro, inicio, detalle, ajustes, moderación, inglés) |
+| E2E | `app/src/test/.../e2e/*E2eTest` | Flujos reales y exploits de RLS contra Supabase; se saltan sin variables de entorno |
+| pgTAP | `supabase/tests/*.sql` | Seguridad, gamificación, solicitudes, chat y eliminación de cuenta en la BD |
 
-```
-app/src/test/java/com/desarrolloMovielexample/huella/
-├── HuellaDomainIntegrationTest.kt             # Pruebas de integración de reglas de dominio
-├── domain/usecase/
-│   └── PublicationUseCasesTest.kt             # Pruebas unitarias de casos de uso y validaciones
-└── data/remote/
-    ├── MockSupabaseApiService.kt              # Doble de prueba (Mock) de la API REST / RPC
-    └── SupabaseEndpointsMockTest.kt           # Pruebas de consumo y contratos de endpoints
-```
-
----
-
-### 3.1. Pruebas de Integración de Dominio (`HuellaDomainIntegrationTest`)
-Verifican la interacción entre los modelos, repositorios y reglas de negocio globales de la aplicación:
-
-1. **`testModeratorRoleAndNormalUserRole`**:
-   - **Propósito:** Garantizar que el rol de moderador esté restringido.
-   - **Funcionamiento:** Inicia sesión con credenciales de usuario moderador (`mariana@correo.com`) y comprueba que `role == Role.MODERADOR` y `isModerator == true`. Luego inicia sesión con usuario estándar (`andres@correo.com`) y confirma que `role == Role.USUARIO` y `isModerator == false`, asegurando que la UI del panel de moderación no sea accesible para usuarios convencionales.
-2. **`testApprovePublicationReachesFeed`**:
-   - **Propósito:** Resolver la desconexión histórica entre moderación y feed.
-   - **Funcionamiento:** Crea un borrador en estado inicial `EN_REVISION`. Verifica que la publicación **no** aparece en el flujo público `publications`. Ejecuta `ModeratePublicationUseCase.approve()` como moderador y comprueba que inmediatamente el estado cambia a `APROBADA` y se propaga en tiempo real a la lista pública del feed.
-3. **`testCommentsAndNotificationGeneration`**:
-   - **Propósito:** Validar el sistema de retroalimentación interactiva y notificaciones.
-   - **Funcionamiento:** Un usuario añade un comentario a la publicación de otro rescatista mediante `AddCommentUseCase`. Comprueba que el comentario aparece en el StateFlow de comentarios y que se genera automáticamente una notificación de tipo `NEW_COMMENT` para el autor del post.
-4. **`testVotingMechanism`**:
-   - **Propósito:** Verificar el algoritmo de conteo y conmutación (toggle) de votos.
-   - **Funcionamiento:** Emite un voto favorable (+1) y verifica que el contador incrementa en 1 y `userVote == 1`. Al volver a presionar el mismo botón, el sistema retira el voto (toggle a 0), restaurando el conteo original sin duplicar registros.
-5. **`testDetailedStatsCalculation`**:
-   - **Propósito:** Asegurar el cálculo correcto del desglose de estadísticas e insignias.
-   - **Funcionamiento:** Recupera las estadísticas del perfil del usuario autenticado y valida que los contadores desglosados (`activeCount`, `pendingCount`, `finishedCount`) no sean conteos genéricos y que la colección de insignias (`badges`) contenga los logros obtenidos.
-
----
-
-### 3.2. Pruebas Unitarias de Casos de Uso (`PublicationUseCasesTest`)
-Prueban la lógica defensiva, reglas de negocio atómicas y validaciones antes de llegar a la capa de persistencia:
-
-1. **`createPublicationValidation`**:
-   - Comprueba que un intento de creación sin título o sin descripción es rechazado inmediatamente con `Result.failure` y mensajes de error descriptivos.
-   - Valida que un borrador completo sea aceptado y guardado en estado `EN_REVISION`.
-2. **`updatePublicationValidation`**:
-   - Impide actualizaciones que dejen el título en blanco.
-   - Valida la actualización de campos existentes y persistencia de cambios.
-3. **`commentValidationAndDeletion`**:
-   - Rechaza comentarios vacíos o compuestos únicamente por espacios en blanco.
-   - Aplica la restricción de longitud máxima de 500 caracteres, fallando si se supera el límite.
-   - Verifica la eliminación exitosa de un comentario por su autor o moderador.
-4. **`deletePublicationFlow`**:
-   - Verifica el ciclo de vida de eliminación de una publicación, comprobando que ya no esté disponible en el repositorio tras invocar el caso de uso.
-5. **`moderationRejectFlow`**:
-   - Valida el flujo en el que un moderador rechaza una publicación especificando el motivo (`reason`) y la retroalimentación para el rescatista (`comment`), marcando el estado en `RECHAZADA`.
-6. **`deleteAccountFlow`**:
-   - Comprueba que `DeleteAccountUseCase` ejecuta la baja de la cuenta y desautentica la sesión actual (`currentUser == null`).
-
----
-
-### 3.3. Pruebas de Endpoints y Red (`SupabaseEndpointsMockTest`)
-Simulan las llamadas HTTP REST y procedimientos remotos (RPC) hacia el backend utilizando un doble de prueba ([`MockSupabaseApiService`]) implementado sobre la misma interfaz Retrofit del proyecto:
-
-1. **`testAuthSignInSuccess` y `testAuthSignInFailure`**:
-   - Simula el endpoint `/auth/v1/token?grant_type=password`.
-   - Verifica que ante credenciales válidas se reciba código 200 con `access_token` JWT y `user.id`.
-   - Verifica que ante credenciales inválidas se retorne código 400 con cuerpo de error deserializado mediante `ResponseBody.create`.
-2. **`testGetPublicationsFiltering`**:
-   - Simula la consulta PostgREST `/rest/v1/publications?select=*&status=eq.APROBADA`.
-   - Comprueba que el filtro de estado excluya publicaciones `EN_REVISION` o `RECHAZADA`, entregando únicamente las aprobadas.
-3. **`testCreatePublicationEndpoint`**:
-   - Simula la inserción `POST /rest/v1/publications` con encabezado `Prefer: return=representation`.
-4. **`testModeratePublicationRpcEndpoint`**:
-   - Simula la llamada RPC de Supabase `/rest/v1/rpc/moderate_publication` enviando `p_publication_id` y `p_status`.
-   - Comprueba que la mutación atómica se aplique correctamente en el almacén de datos.
-5. **`testAdoptionRequestsAndChatMessagesFlow`**:
-   - Simula la inserción de solicitudes (`POST /rest/v1/adoption_requests`) y el envío de mensajes de mensajería (`POST /rest/v1/messages`), validando la estructura del payload y la persistencia en memoria.
-6. **`testNotificationsMarkAllReadEndpoint`**:
-   - Simula la actualización en bloque `PATCH /rest/v1/notifications?read=eq.false` marcando todas como leídas.
-
----
-
-### 3.4. Cómo Ejecutar los Tests Localmente
-
-Desde la terminal en la raíz del proyecto:
-
-```powershell
-# En Windows (usando el JBR de Android Studio)
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-.\gradlew.bat testDebugUnitTest --no-configuration-cache --console=plain
-```
+`HuellaDomainIntegrationTest` y `PublicationUseCasesTest` validan reglas de dominio sobre `FakeRepository`; no prueban
+el backend. Lo que toca Supabase lo cubren las suites E2E y pgTAP.
 
 ```bash
-# En macOS / Linux
-./gradlew testDebugUnitTest
+scripts/gradle-native.sh :app:testDebugUnitTest   # unitarias + Robolectric
+scripts/test-all.sh                               # batería completa contra el hosted
 ```
 
-#### Reportes HTML de Resultados:
-Al finalizar la ejecución, Gradle genera un informe interactivo con el detalle de tiempos y aserciones en:
-`app/build/reports/tests/testDebugUnitTest/index.html`
-
+Informe HTML: `app/build/reports/tests/testDebugUnitTest/index.html`.

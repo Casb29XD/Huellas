@@ -22,13 +22,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
+import com.desarrolloMovielexample.huella.core.components.benefitsRes
+import com.desarrolloMovielexample.huella.core.components.labelRes
+import com.desarrolloMovielexample.huella.core.components.rangeRes
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.Manrope
@@ -53,7 +57,7 @@ fun LevelsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
         containerColor = HuellaColors.Background,
-        topBar = { HuellaTopBar("Niveles", Modifier.statusBarsPadding(), onBack = onBack) },
+        topBar = { HuellaTopBar(stringResource(R.string.levels_title), Modifier.statusBarsPadding(), onBack = onBack) },
     ) { inner ->
         LazyColumn(
             Modifier
@@ -65,7 +69,7 @@ fun LevelsScreen(
             items(state.levels) { level -> LevelCard(level, current = level == state.currentLevel) }
             item {
                 Text(
-                    "Cómo ganar puntos",
+                    stringResource(R.string.levels_how_to_earn),
                     style = MaterialTheme.typography.titleMedium,
                     color = HuellaColors.TextPrimary,
                     modifier = Modifier.padding(top = 10.dp),
@@ -85,11 +89,11 @@ fun LevelsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text(action.what, style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
+                            Text(pointsActionLabel(action.what), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
                             Text(
-                                "+${action.points}",
+                                stringResource(R.string.points_plus, action.points),
                                 style = TextStyle(fontFamily = Manrope, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
-                                color = HuellaColors.Primary,
+                                color = HuellaColors.PrimaryText,
                                 modifier = Modifier
                                     .background(HuellaColors.PrimarySoft, RoundedCornerShape(8.dp))
                                     .padding(horizontal = 10.dp, vertical = 4.dp),
@@ -109,7 +113,7 @@ private fun LevelCard(level: Level, current: Boolean) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(if (current) level.color.copy(alpha = 0.07f) else Color.White)
+            .background(if (current) level.color.copy(alpha = 0.07f) else HuellaColors.Surface)
             .border(1.5.dp, if (current) level.color else HuellaColors.OutlineVariant, RoundedCornerShape(12.dp))
             .padding(14.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -124,10 +128,10 @@ private fun LevelCard(level: Level, current: Boolean) {
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(level.label, style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
+                Text(stringResource(level.labelRes), style = MaterialTheme.typography.titleMedium, color = HuellaColors.TextPrimary, modifier = Modifier.weight(1f))
                 if (current) {
                     Text(
-                        "Tu nivel",
+                        stringResource(R.string.levels_your_level),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White,
                         modifier = Modifier
@@ -136,13 +140,13 @@ private fun LevelCard(level: Level, current: Boolean) {
                     )
                 }
             }
-            Text(level.range, style = MaterialTheme.typography.labelMedium, color = level.color)
+            Text(stringResource(level.rangeRes), style = MaterialTheme.typography.labelMedium, color = level.color)
             Column(Modifier.padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                level.benefits.forEach { benefit ->
+                level.benefitsRes.forEach { benefit ->
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Icon(Icons.Outlined.Check, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(16.dp))
                         Text(
-                            benefit,
+                            stringResource(benefit),
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 18.sp),
                             color = HuellaColors.TextBody,
                         )

@@ -2,7 +2,11 @@ package com.desarrolloMovielexample.huella.features.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.utils.isValidEmail
+import com.desarrolloMovielexample.huella.core.utils.toUiText
+import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Level
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
@@ -24,10 +28,10 @@ data class EditProfileUiState(
     val phone: String = "",
     val bio: String = "",
     val cities: List<String> = emptyList(),
-    val nameError: String? = null,
-    val emailError: String? = null,
-    val cityError: String? = null,
-    val phoneError: String? = null,
+    val nameError: UiText? = null,
+    val emailError: UiText? = null,
+    val cityError: UiText? = null,
+    val phoneError: UiText? = null,
     val isLoading: Boolean = false,
     val saved: Boolean = false,
 )
@@ -49,8 +53,8 @@ class EditProfileViewModel(private val repo: HuellaRepository = SupabaseReposito
     )
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    private val _messages = Channel<UiText>(Channel.BUFFERED)
+    val messages: Flow<UiText> = _messages.receiveAsFlow()
 
     fun onNameChange(v: String) = _uiState.update { it.copy(name = v, nameError = null) }
     fun onEmailChange(v: String) = _uiState.update { it.copy(email = v, emailError = null) }
@@ -59,24 +63,24 @@ class EditProfileViewModel(private val repo: HuellaRepository = SupabaseReposito
     fun onBioChange(v: String) = _uiState.update { it.copy(bio = v) }
 
     fun onPhotoClick() {
-        _messages.trySend("Cambiar la foto estará disponible pronto")
+        _messages.trySend(uiText(R.string.msg_photo_soon))
     }
 
     fun save() {
         val s = _uiState.value
         if (s.isLoading) return
-        val nameError = if (s.name.isBlank()) "Ingresa tu nombre" else null
+        val nameError = if (s.name.isBlank()) uiText(R.string.error_name_empty) else null
         val emailError = when {
-            s.email.isBlank() -> "Ingresa tu correo"
-            !isValidEmail(s.email) -> "Ingresa un correo válido"
+            s.email.isBlank() -> uiText(R.string.error_email_empty)
+            !isValidEmail(s.email) -> uiText(R.string.error_email_invalid)
             else -> null
         }
-        val cityError = if (s.city.isBlank()) "Selecciona tu ciudad" else null
+        val cityError = if (s.city.isBlank()) uiText(R.string.error_city_required) else null
         val digits = s.phone.count { it.isDigit() }
-        val phoneError = if (s.phone.isNotBlank() && digits < 7) "Ingresa un teléfono válido" else null
+        val phoneError = if (s.phone.isNotBlank() && digits < 7) uiText(R.string.error_phone_invalid) else null
         if (nameError != null || emailError != null || cityError != null || phoneError != null) {
             _uiState.update { it.copy(nameError = nameError, emailError = emailError, cityError = cityError, phoneError = phoneError) }
-            _messages.trySend(nameError ?: emailError ?: cityError ?: phoneError ?: "Revisa los campos marcados")
+            _messages.trySend(nameError ?: emailError ?: cityError ?: phoneError ?: uiText(R.string.msg_check_fields))
             return
         }
         viewModelScope.launch {
@@ -84,11 +88,11 @@ class EditProfileViewModel(private val repo: HuellaRepository = SupabaseReposito
             repo.updateProfile(s.name, s.email, s.city, s.phone, s.bio)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, saved = true) }
-                    _messages.send("Cambios guardados")
+                    _messages.send(uiText(R.string.msg_changes_saved))
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _messages.send(e.message ?: "No pudimos guardar los cambios")
+                    _messages.send(e.toUiText(R.string.error_save_changes))
                 }
         }
     }

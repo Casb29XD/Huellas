@@ -2,24 +2,43 @@ package com.desarrolloMovielexample.huella.data.remote
 
 import android.content.Context
 import android.net.Uri
-import com.desarrolloMovielexample.huella.BuildConfig
+import androidx.annotation.StringRes
+import com.desarrolloMovielexample.huella.R
+import com.desarrolloMovielexample.huella.core.utils.AppError
+import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.data.remote.api.SupabaseApiService
 import com.desarrolloMovielexample.huella.domain.model.*
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import retrofit2.Response
 import java.net.URLDecoder
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -32,6 +51,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * All write operations use the user's access token so Supabase RLS remains authoritative.
  */
 object SupabaseRepository : HuellaRepository {
+    /** Deep link de los correos de Auth (debe estar en las Redirect URLs del proyecto). */
+    private const val AUTH_REDIRECT = "huella://auth/confirm"
+    private const val FEED_PAGE = 20
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var appContext: Context
     private val api: SupabaseApiService get() = RetrofitClient.supabaseApi
@@ -40,18 +62,19 @@ object SupabaseRepository : HuellaRepository {
         requireUserId()
         requireConfigured()
         val mimeType = appContext.contentResolver.getType(uri) ?: "image/jpeg"
-        require(mimeType.startsWith("image/")) { "Selecciona un archivo de imagen" }
+        if (!mimeType.startsWith("image/")) fail(R.string.err_image_type)
         val bytes = appContext.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: error("No se pudo leer la imagen seleccionada")
-        require(bytes.isNotEmpty()) { "La imagen está vacía" }
-        require(bytes.size <= 10 * 1024 * 1024) { "Cada imagen debe pesar menos de 10 MB" }
+            ?: fail(R.string.err_image_read)
+        if (bytes.isEmpty()) fail(R.string.err_image_empty)
+        // Mismo límite que el bucket pet-images (file_size_limit 5242880).
+        if (bytes.size > 5 * 1024 * 1024) fail(R.string.err_image_size)
         val ext = when (mimeType.substringAfter('/', "jpeg").lowercase()) {
             "jpeg" -> "jpg"
             else -> mimeType.substringAfter('/').substringBefore(';').lowercase()
         }
         val objectPath = "${requireUserId()}/${UUID.randomUUID()}.$ext"
         apiCall { api.uploadPetImage(objectPath, bytes.toRequestBody(mimeType.toMediaType()), mimeType) }
-        return "${BuildConfig.SUPABASE_URL.trimEnd('/')}/storage/v1/object/public/pet-images/$objectPath"
+        return "${SupabaseConfig.url}/storage/v1/object/public/pet-images/$objectPath"
     }
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -79,9 +102,13 @@ object SupabaseRepository : HuellaRepository {
     private var cachedPointsHistory: List<PointsEntry> = emptyList()
     override val pointsHistory: List<PointsEntry> get() = cachedPointsHistory
     private val userCache = mutableMapOf<String, User>()
+    private val authorPublications = mutableMapOf<String, List<Publication>>()
+    /** Las mismas acciones y puntos que award_points en el servidor; la UI las traduce con pointsActionLabel. */
     override val pointsActions = listOf(
         PointsAction("Crear una publicación", 5),
         PointsAction("Publicación aprobada", 10),
+        PointsAction("Comentar una publicación", 2),
+        PointsAction("Reportar un avistamiento", 5),
         PointsAction("Adopción concretada", 50),
     )
     override val cities = listOf(
@@ -97,17 +124,34 @@ object SupabaseRepository : HuellaRepository {
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
-        val id = SupabaseSession.userId
-        if (id != null && SupabaseSession.accessToken != null) {
-            scope.launch {
-                apiCall { api.getProfile(userId = "eq.$id") }
-                    .firstOrNull()?.let { _currentUser.value = it.toUser() }
-                refreshAll()
-            }
-        } else {
-            scope.launch { refreshFeed() }
-        }
+        // Sin app/.env no hay red que disparar: las pantallas muestran el error de requireConfigured() al usarse.
+        if (!SupabaseConfig.isConfigured) return
+        // Con sesión guardada, el Splash llama a restoreSession() y esa carga perfil y datos.
+        if (SupabaseSession.accessToken == null) scope.launch { quietly { refreshFeed() } }
     }
+
+    /**
+     * Splash (ítem 25): true si hay token guardado y rpc/get_my_profile responde (apiCall refresca el
+     * token si hace falta). Si no, la app va a Login aunque quede un token viejo en disco.
+     */
+    suspend fun restoreSession(): Boolean {
+        if (!SupabaseConfig.isConfigured || SupabaseSession.accessToken == null) return false
+        val profile = try {
+            apiCall { api.getMyProfile() }.firstOrNull()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            null
+        } ?: return false
+        _currentUser.value = profile.toUser()
+        startRefreshAll()
+        return true
+    }
+
+    private val refreshMutex = Mutex()
+    private val _sessionExpired = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Emite cuando el refresh token ya no sirve: AppNavigation vuelve a Login (ítem 26). */
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
 
     override suspend fun login(email: String, password: String): Result<User> = result {
         requireConfigured()
@@ -117,15 +161,15 @@ object SupabaseRepository : HuellaRepository {
         }
         val auth = apiCall { api.signIn(body) }
         val token = auth.string("access_token")
-            ?: error("Supabase no devolvió el token de acceso")
-        val userJson = auth.obj("user") ?: error("Supabase no devolvió el usuario")
-        val id = userJson.string("id") ?: error("El usuario no tiene un identificador")
+            ?: fail(R.string.err_unexpected_response)
+        val userJson = auth.obj("user") ?: fail(R.string.err_unexpected_response)
+        val id = userJson.string("id") ?: fail(R.string.err_unexpected_response)
         SupabaseSession.save(appContext, token, id, auth.string("refresh_token"))
-        val profile = apiCall { api.getProfile(userId = "eq.$id") }.firstOrNull()
-            ?: error("No encontramos el perfil asociado a esta cuenta")
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
+            ?: fail(R.string.err_profile_missing)
         val user = profile.toUser()
         _currentUser.value = user
-        refreshAll()
+        startRefreshAll()
         user
     }
 
@@ -141,18 +185,19 @@ object SupabaseRepository : HuellaRepository {
             addProperty("email", email.trim())
             addProperty("password", password)
             add("data", metadata)
+            addPkceChallenge()
         }
-        val response = apiCall { api.signUp(body) }
+        val response = apiCall { api.signUp(body, AUTH_REDIRECT) }
         val token = response.string("access_token")
-            ?: error("Cuenta creada. Confirma tu correo y luego inicia sesión.")
-        val userJson = response.obj("user") ?: error("Supabase no devolvió el usuario")
-        val id = userJson.string("id") ?: error("El usuario no tiene un identificador")
+            ?: fail(R.string.err_confirm_email)
+        val userJson = response.obj("user") ?: fail(R.string.err_unexpected_response)
+        val id = userJson.string("id") ?: fail(R.string.err_unexpected_response)
         SupabaseSession.save(appContext, token, id, response.string("refresh_token"))
-        val profile = apiCall { api.getProfile(userId = "eq.$id") }.firstOrNull()
-            ?: error("La cuenta se creó, pero aún no aparece su perfil")
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
+            ?: fail(R.string.err_profile_pending)
         val user = profile.toUser()
         _currentUser.value = user
-        refreshAll()
+        startRefreshAll()
         user
     }
 
@@ -169,33 +214,31 @@ object SupabaseRepository : HuellaRepository {
             }
         }
 
-        var accessToken = params["access_token"]
-        var refreshToken = params["refresh_token"]
-        var userId: String? = null
+        params["error_description"]?.let { error(it) } // p. ej. enlace vencido
 
-        val tokenHash = params["token_hash"] ?: params["token"]
-        if (accessToken.isNullOrBlank() && !tokenHash.isNullOrBlank()) {
-            val type = params["type"] ?: "signup"
-            val verified = apiCall { api.verifyOtp(tokenHash, type) }
-            accessToken = verified.string("access_token")
-            refreshToken = verified.string("refresh_token")
-            userId = verified.obj("user")?.string("id")
-        }
-
-        if (accessToken.isNullOrBlank()) {
-            error("No se encontraron credenciales de autenticación en el enlace")
-        }
-
-        if (userId.isNullOrBlank()) {
-            val userJson = apiCall { api.getUser("Bearer $accessToken") }
-            userId = userJson.string("id") ?: error("No se pudo obtener el usuario autenticado")
-        }
+        // Ítem 36: solo PKCE. huella:// lo puede registrar otra app; un code interceptado no sirve sin el
+        // code_verifier que guarda esta app, pero un token_hash o un access_token sí darían sesión: se rechazan.
+        val code = params["code"]
+        if (code.isNullOrBlank()) fail(R.string.err_link_invalid)
+        val verifier = SupabaseSession.codeVerifier
+            ?: fail(R.string.err_link_other_device)
+        val session = apiCall { api.exchangeCodeForSession(json {
+            addProperty("auth_code", code)
+            addProperty("code_verifier", verifier)
+        }) }
+        SupabaseSession.saveCodeVerifier(appContext, null)
+        val accessToken = session.string("access_token")
+        if (accessToken.isNullOrBlank()) fail(R.string.err_link_invalid)
+        val refreshToken = session.string("refresh_token")
+        val userId = session.obj("user")?.string("id")
+            ?: apiCall { api.getUser("Bearer $accessToken") }.string("id")
+            ?: fail(R.string.err_unexpected_response)
 
         SupabaseSession.save(appContext, accessToken, userId, refreshToken)
 
         var profile: JsonObject? = null
         for (i in 0..4) {
-            profile = apiCall { api.getProfile(userId = "eq.$userId") }.firstOrNull()
+            profile = apiCall { api.getMyProfile() }.firstOrNull()
             if (profile != null) break
             delay(350)
         }
@@ -209,48 +252,131 @@ object SupabaseRepository : HuellaRepository {
             initials = "UH",
         )
         _currentUser.value = user
-        refreshAll()
+        startRefreshAll()
         user
     }
 
     override suspend fun sendPasswordReset(email: String): Result<Unit> = result {
         requireConfigured()
-        apiCall { api.recoverPassword(json { addProperty("email", email.trim()) }) }
+        val body = json {
+            addProperty("email", email.trim())
+            addPkceChallenge()
+        }
+        // type=recovery viaja en el redirect para que AppNavigation abra SetPassword tras canjear el code.
+        apiCall { api.recoverPassword(body, "$AUTH_REDIRECT?type=recovery") }
         Unit
+    }
+
+    override suspend fun updatePassword(password: String): Result<Unit> = result {
+        requireUserId()
+        apiCall { api.updateAuthUser(json { addProperty("password", password) }) }
+        Unit
+    }
+
+    /**
+     * PKCE S256: guarda un code_verifier aleatorio en SupabaseSession y manda su challenge.
+     * GoTrue lee code_challenge del body (no de la URL) en signup y recover.
+     */
+    private fun JsonObject.addPkceChallenge() {
+        val verifier = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(ByteArray(32).also { SecureRandom().nextBytes(it) })
+        SupabaseSession.saveCodeVerifier(appContext, verifier)
+        val challenge = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)))
+        addProperty("code_challenge", challenge)
+        addProperty("code_challenge_method", "s256")
     }
 
     override suspend fun updateProfile(name: String, email: String, city: String, phone: String, bio: String): Result<User> = result {
         val id = requireUserId()
         val values = json {
             addProperty("name", name.trim())
-            addProperty("email", email.trim())
             addProperty("city", city.substringBefore(",").trim())
             addProperty("phone", phone.trim())
             addProperty("bio", bio.trim())
         }
-        val profile = apiCall { api.updateProfile("eq.$id", values) }.firstOrNull()
-            ?: error("No se pudo actualizar el perfil")
+        apiCall { api.updateProfile("eq.$id", values) }
+        // profiles.email no es editable por el cliente: el cambio pasa por Auth (correo de confirmación)
+        // y un trigger en auth.users lo copia al perfil cuando se confirma.
+        val newEmail = email.trim()
+        if (newEmail.isNotBlank() && !newEmail.equals(_currentUser.value?.email, ignoreCase = true)) {
+            // PKCE también aquí: el enlace de confirmación vuelve con ?code= (handleAuthCallback solo acepta code).
+            apiCall { api.updateAuthUser(json {
+                addProperty("email", newEmail)
+                addPkceChallenge()
+            }) }
+        }
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
+            ?: fail(R.string.err_profile_update)
         profile.toUser().also { _currentUser.value = it }
     }
 
     override fun logout() {
+        // Un refresh en vuelo de esta cuenta no debe escribir después del logout (ni en la sesión siguiente).
+        refreshJob?.cancel()
+        refreshJob = null
         _currentUser.value = null
         SupabaseSession.clear(appContext)
         _sentRequests.value = emptyList()
         _receivedRequests.value = emptyList()
         _notifications.value = emptyList()
         _myPublications.value = emptyList()
+        cachedPointsHistory = emptyList()
+        userCache.clear()
+        authorPublications.clear()
+        messageFlows.clear()
+        commentFlows.clear()
+        conversations.clear()
+        clearModeration()
+    }
+
+    private fun clearModeration() {
+        _moderationQueue.value = emptyList()
+        _moderationReports.value = emptyList()
+        _moderationStats.value = ModerationStats(0, 0, 0)
     }
 
     override fun getUser(userId: String): User? =
-        userCache[userId] ?: _currentUser.value?.takeIf { it.id == userId }
+        _currentUser.value?.takeIf { it.id == userId } ?: userCache[userId]
+
+    /** Perfil público (solo columnas públicas) y publicaciones aprobadas de [userId], en caché (ítem 28). */
+    override suspend fun refreshUser(userId: String): Result<User> = result {
+        val user = apiCall { api.getProfile(userId = "eq.$userId") }.firstOrNull()?.toUser()
+            ?: fail(R.string.err_profile_not_found)
+        val publications = apiCall { api.getPublications(authorId = "eq.$userId") }.map { it.toPublication() }
+        userCache[userId] = user
+        authorPublications[userId] = publications
+        user
+    }
+
+    /** Filtros de servidor del feed (categoría, especie, ciudad sin departamento) que reutilizan las páginas siguientes. */
+    private var feedFilter: Triple<Category?, String?, String?> = Triple(null, null, null)
+
+    override suspend fun loadFeed(category: Category?, species: String?, city: String?, reset: Boolean): Result<Boolean> = result {
+        if (reset) feedFilter = Triple(category, species, city?.substringBefore(",")?.trim())
+        val page = fetchFeed(offset = if (reset) 0 else _publications.value.size, limit = FEED_PAGE)
+        _publications.value = if (reset) page else (_publications.value + page).distinctBy { it.id }
+        page.size == FEED_PAGE
+    }
+
+    private suspend fun fetchFeed(offset: Int, limit: Int): List<Publication> = apiCall {
+        val (category, species, city) = feedFilter
+        api.getPublications(
+            category = category?.let { "eq.${it.name}" },
+            species = species?.let { "eq.$it" },
+            city = city?.let { "eq.$it" },
+            order = "created_at.desc,id.desc", // orden total: las páginas no se pisan ni saltan filas
+            limit = limit,
+            offset = offset,
+        )
+    }.map { it.toPublication() }
 
     override fun getPublication(id: String): Publication? =
         (_publications.value + _myPublications.value + _moderationQueue.value.map { it.publication })
             .firstOrNull { it.id == id }
 
     override fun publicationsByAuthor(userId: String): List<Publication> =
-        (_publications.value + _myPublications.value).distinctBy { it.id }
+        authorPublications[userId] ?: (_publications.value + _myPublications.value).distinctBy { it.id }
             .filter { it.author.userId == userId }
 
     override suspend fun createPublication(draft: PublicationDraft): Result<Publication> = result {
@@ -274,10 +400,9 @@ object SupabaseRepository : HuellaRepository {
             addProperty("image_url", draft.imageUrl)
         }
         val created = apiCall { api.createPublication(body) }.firstOrNull()
-            ?: error("Supabase no devolvió la publicación creada")
-        refreshAll()
+            ?: fail(R.string.err_unexpected_response)
         created.toPublication()
-    }
+    }.onSuccess { quietly { refreshMyPublications() } }
 
     override suspend fun reportPublication(publicationId: String, reason: String, detail: String): Result<Unit> = result {
         val reporterId = requireUserId()
@@ -297,34 +422,54 @@ object SupabaseRepository : HuellaRepository {
             addProperty("applicant_id", applicantId)
             addProperty("message", message.trim())
         }) }
-        refreshRequests()
         Unit
-    }
+    }.onSuccess { quietly { refreshRequests() } }
 
+    /** [applicantId] es el id de la solicitud (Applicant.id); las notificaciones las crea el servidor (ítem 7). */
     override suspend fun respondToRequest(applicantId: String, accept: Boolean): Result<Unit> = result {
-        apiCall { api.updateAdoptionRequest("eq.$applicantId", json {
-            addProperty("status", if (accept) RequestStatus.ACEPTADA.name else RequestStatus.RECHAZADA.name)
+        apiCall { api.respondToRequest(json {
+            addProperty("p_request_id", applicantId)
+            addProperty("p_accept", accept)
         }) }
-        refreshRequests()
         Unit
+    }.onSuccess {
+        quietly { refreshRequests() }
+        if (accept) quietly { refreshConversations() }
     }
 
-    override suspend fun closePublication(publicationId: String): Result<Unit> =
-        Result.failure(IllegalStateException("El esquema de Supabase no incluye un estado para cerrar una publicación sin borrarla"))
+    override suspend fun closePublication(publicationId: String): Result<Unit> = result {
+        requireUserId()
+        apiCall { api.closePublication(json { addProperty("p_publication_id", publicationId) }) }
+        val close = { p: Publication -> if (p.id == publicationId) p.copy(lifecycle = LifecycleStatus.FINALIZADA) else p }
+        _myPublications.update { it.map(close) }
+        _publications.update { it.map(close) }
+        Unit
+    }.onSuccess {
+        // El servidor suma puntos y actualiza contadores del perfil.
+        quietly { refreshMyProfile() }
+        quietly { refreshPointsHistory() }
+    }
+
+    private suspend fun refreshMyProfile() {
+        apiCall { api.getMyProfile() }.firstOrNull()?.let { _currentUser.value = it.toUser() }
+    }
 
     override fun getConversation(id: String): Conversation? = conversations[id]
 
     override suspend fun openConversation(contactUserId: String, publicationId: String?): Result<String> = result {
         val currentId = requireUserId()
-        require(contactUserId != currentId) { "No puedes iniciar un chat contigo mismo" }
-        val existing = apiCall { api.getConversations() }.firstOrNull { row ->
-            val pairMatches = (row.string("participant_one") == currentId && row.string("participant_two") == contactUserId) ||
-                (row.string("participant_two") == currentId && row.string("participant_one") == contactUserId)
-            pairMatches && (publicationId == null || row.string("publication_id") == publicationId)
-        }
+        if (contactUserId == currentId) fail(R.string.err_chat_self)
+        // El servidor filtra el par (en cualquier orden) y la publicación: no se descargan todas las conversaciones.
+        val existing = apiCall {
+            api.getConversations(
+                or = "(and(participant_one.eq.$currentId,participant_two.eq.$contactUserId)," +
+                    "and(participant_one.eq.$contactUserId,participant_two.eq.$currentId))",
+                publicationId = publicationId?.let { "eq.$it" },
+            )
+        }.firstOrNull()
         if (existing != null) {
             cacheConversation(existing, currentId)
-            existing.string("id") ?: error("La conversación no tiene identificador")
+            existing.string("id") ?: fail(R.string.err_unexpected_response)
         } else {
             val publication = publicationId?.let { getPublication(it) }
             val body = json {
@@ -334,9 +479,9 @@ object SupabaseRepository : HuellaRepository {
                 addProperty("about", publication?.let { "Sobre: ${it.title}" } ?: "Conversación de Huella")
             }
             val created = apiCall { api.createConversation(body) }.firstOrNull()
-                ?: error("Supabase no devolvió la conversación creada")
-            val createdId = created.string("id") ?: error("La conversación no tiene identificador")
-            val hydrated = apiCall { api.getConversations() }.firstOrNull { it.string("id") == createdId }
+                ?: fail(R.string.err_unexpected_response)
+            val createdId = created.string("id") ?: fail(R.string.err_unexpected_response)
+            val hydrated = apiCall { api.getConversations(id = "eq.$createdId") }.firstOrNull()
             cacheConversation(hydrated ?: created, currentId)
             createdId
         }
@@ -344,8 +489,21 @@ object SupabaseRepository : HuellaRepository {
 
     override fun messages(conversationId: String): StateFlow<List<ChatMessage>> {
         val flow = messageFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }
-        scope.launch { runCatching { flow.value = fetchMessages(conversationId) } }
+        scope.launch {
+            if (conversations[conversationId] == null) quietly { refreshConversations() }
+            quietly { loadContactPhone(conversationId) }
+            quietly { flow.value = fetchMessages(conversationId) }
+        }
         return flow.asStateFlow()
+    }
+
+    /** El teléfono del contacto no viaja en el embed de profiles: solo lo entrega rpc/get_contact_phone a participantes. */
+    private suspend fun loadContactPhone(conversationId: String) {
+        val conversation = conversations[conversationId] ?: return
+        if (conversation.phone.isNotBlank()) return
+        val phone = apiCall { api.getContactPhone(json { addProperty("p_conversation_id", conversationId) }) }
+            .takeUnless { it.isJsonNull }?.asString.orEmpty()
+        conversations[conversationId] = conversation.copy(phone = phone)
     }
 
     override suspend fun sendMessage(conversationId: String, text: String): Result<Unit> = result {
@@ -355,15 +513,15 @@ object SupabaseRepository : HuellaRepository {
             addProperty("sender_id", senderId)
             addProperty("text", text.trim())
         }) }
-        messageFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }.value =
-            fetchMessages(conversationId)
         Unit
+    }.onSuccess {
+        quietly { messageFlows.getOrPut(conversationId) { MutableStateFlow(emptyList()) }.value = fetchMessages(conversationId) }
     }
 
 
     override suspend fun deleteAccount(): Result<Unit> = result {
-        val id = requireUserId()
-        apiCall { api.updateProfile("eq.$id", json { addProperty("bio", "[Cuenta eliminada]") }) }
+        requireUserId()
+        apiCall { api.deleteMyAccount() }
         logout()
         Unit
     }
@@ -383,55 +541,137 @@ object SupabaseRepository : HuellaRepository {
             addProperty("neighborhood", draft.city)
             addProperty("description", draft.description.trim())
             addProperty("event_date", draft.eventDate)
-            addProperty("status", PostStatus.EN_REVISION.name)
+            draft.imageUrl?.let { addProperty("image_url", it) }
         }
-        val updated = apiCall { api.createPublication(body) }.firstOrNull() // fallback postgrest
-        refreshAll()
-        getPublication(publicationId) ?: error("No se pudo actualizar la publicaci�n")
+        // El servidor devuelve la fila editada de vuelta en EN_REVISION: el autor no elige el estado.
+        val updated = apiCall { api.updatePublication("eq.$publicationId", body) }.firstOrNull()
+            ?: fail(R.string.err_publication_update)
+        val publication = updated.toPublication()
+        _myPublications.update { list -> list.map { if (it.id == publicationId) publication else it } }
+        _publications.update { list ->
+            if (publication.status == PostStatus.APROBADA) list.map { if (it.id == publicationId) publication else it }
+            else list.filterNot { it.id == publicationId }
+        }
+        publication
     }
 
     override suspend fun deletePublication(publicationId: String): Result<Unit> = result {
-        refreshAll()
+        val deleted = apiCall { api.deletePublication("eq.$publicationId") }
+        if (deleted.isEmpty()) fail(R.string.err_publication_delete)
+        _publications.update { list -> list.filterNot { it.id == publicationId } }
+        _myPublications.update { list -> list.filterNot { it.id == publicationId } }
+        _moderationQueue.update { list -> list.filterNot { it.id == publicationId } }
+        _moderationReports.update { list -> list.filterNot { it.id == publicationId } }
+        commentFlows.remove(publicationId)
         Unit
-    }
+    }.onSuccess { quietly { refreshRequests() } }
 
+    /** Mismo botón otra vez = quitar el voto (igual que FakeRepository). */
     override suspend fun votePublication(publicationId: String, value: Int): Result<Unit> = result {
+        val userId = requireUserId()
+        if (value !in -1..1) fail(R.string.err_unexpected_response)
+        val newVote = if (value == getPublication(publicationId)?.userVote) 0 else value
+        if (newVote == 0) {
+            apiCall { api.deleteVote("eq.$publicationId", "eq.$userId") }
+        } else {
+            apiCall { api.upsertVote(json {
+                addProperty("publication_id", publicationId)
+                addProperty("user_id", userId)
+                addProperty("value", newVote)
+            }) }
+        }
+        Unit
+    }.onSuccess { refreshPublication(publicationId) }
+
+    /** Relee votes_count, comments_count y el voto propio, y los aplica en las listas en caché. */
+    override suspend fun refreshPublication(publicationId: String): Result<Unit> = result {
+        val counts = apiCall { api.getPublicationCounts("eq.$publicationId") }.firstOrNull() ?: return@result Unit
+        val userId = SupabaseSession.userId
+        val myVote = if (userId == null) 0 else {
+            apiCall { api.getMyVote("eq.$publicationId", "eq.$userId") }.firstOrNull()?.int("value") ?: 0
+        }
+        val apply = { p: Publication ->
+            if (p.id != publicationId) p
+            else p.copy(votesCount = counts.int("votes_count"), commentsCount = counts.int("comments_count"), userVote = myVote)
+        }
+        _publications.update { it.map(apply) }
+        _myPublications.update { it.map(apply) }
         Unit
     }
 
     private val commentFlows = mutableMapOf<String, MutableStateFlow<List<Comment>>>()
 
     override fun comments(publicationId: String): StateFlow<List<Comment>> {
-        return commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }.asStateFlow()
+        val flow = commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }
+        scope.launch { quietly { flow.value = fetchComments(publicationId) } }
+        return flow.asStateFlow()
     }
 
     override suspend fun addComment(publicationId: String, text: String): Result<Comment> = result {
-        val user = _currentUser.value ?: error("Inicia sesi�n")
-        val comment = Comment(
-            id = "c_${System.currentTimeMillis()}",
-            publicationId = publicationId,
-            author = Author(user.id, user.name, user.level, user.initials),
-            text = text.trim(),
-            timeAgo = "ahora",
-            isMine = true
-        )
-        val flow = commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }
-        flow.update { it + comment }
-        comment
+        val authorId = requireUserId()
+        val created = apiCall { api.createComment(json {
+            addProperty("publication_id", publicationId)
+            addProperty("author_id", authorId)
+            addProperty("text", text.trim())
+        }) }.firstOrNull() ?: fail(R.string.err_unexpected_response)
+        created.toComment()
+    }.onSuccess { comment ->
+        commentFlows.getOrPut(publicationId) { MutableStateFlow(emptyList()) }.update { it + comment }
+        quietly { commentFlows.getValue(publicationId).value = fetchComments(publicationId) }
+        refreshPublication(publicationId)
     }
 
     override suspend fun deleteComment(publicationId: String, commentId: String): Result<Unit> = result {
-        val flow = commentFlows[publicationId] ?: return@result Unit
-        flow.update { list -> list.filterNot { it.id == commentId } }
+        val deleted = apiCall { api.deleteComment("eq.$commentId") }
+        if (deleted.isEmpty()) fail(R.string.err_comment_delete)
+        commentFlows[publicationId]?.update { list -> list.filterNot { it.id == commentId } }
         Unit
+    }.onSuccess { refreshPublication(publicationId) }
+
+    override suspend fun reportSighting(publicationId: String, text: String): Result<Unit> = result {
+        requireUserId()
+        apiCall { api.reportSighting(json {
+            addProperty("p_publication_id", publicationId)
+            addProperty("p_text", text.trim())
+        }) }
+        Unit
+    }
+
+    private suspend fun fetchComments(publicationId: String): List<Comment> =
+        apiCall { api.getComments("eq.$publicationId") }.map { it.toComment() }
+
+    private fun JsonObject.toComment(): Comment {
+        val author = obj("author")
+        val authorId = string("author_id").orEmpty()
+        return Comment(
+            id = string("id").orEmpty(),
+            publicationId = string("publication_id").orEmpty(),
+            author = Author(
+                userId = authorId,
+                name = author?.string("name") ?: "Usuario Huella",
+                level = level(author?.string("level")),
+                initials = author?.string("initials").orEmpty(),
+            ),
+            text = string("text").orEmpty(),
+            timeAgo = relativeTime(string("created_at")),
+            isMine = authorId == SupabaseSession.userId,
+        )
     }
 
     override fun markNotificationRead(id: String) {
         _notifications.update { list -> list.map { if (it.id == id) it.copy(read = true) else it } }
+        scope.launch {
+            runCatching { apiCall { api.updateNotification("eq.$id", json { addProperty("read", true) }) } }
+                .onFailure { quietly { refreshNotifications() } }
+        }
     }
 
     override fun deleteNotification(id: String) {
         _notifications.update { list -> list.filterNot { it.id == id } }
+        scope.launch {
+            runCatching { apiCall { api.deleteNotification("eq.$id") } }
+                .onFailure { quietly { refreshNotifications() } }
+        }
     }
 
     override fun markAllNotificationsRead() {
@@ -450,9 +690,14 @@ object SupabaseRepository : HuellaRepository {
         updateModeration(itemId, PostStatus.APROBADA, null, null)
 
     override suspend fun reject(itemId: String, reason: String, comment: String): Result<Unit> {
-        if (reason.isBlank()) return Result.failure(IllegalArgumentException("Selecciona un motivo de rechazo"))
+        if (reason.isBlank()) return Result.failure(AppError(R.string.moderation_reason_required))
         return updateModeration(itemId, PostStatus.RECHAZADA, reason, comment)
     }
+
+    override suspend fun resolveReport(reportId: String): Result<Unit> = result {
+        apiCall { api.resolveReport(json { addProperty("p_report_id", reportId) }) }
+        Unit
+    }.onSuccess { quietly { refreshModeration() } }
 
     private suspend fun updateModeration(
         id: String,
@@ -468,23 +713,45 @@ object SupabaseRepository : HuellaRepository {
                 addProperty("p_comment", comment)
             })
         }
-        refreshAll()
         Unit
+    }.onSuccess {
+        quietly { refreshModeration() }
+        quietly { refreshFeed() }
     }
 
+    @Volatile
+    private var refreshJob: Job? = null
+
+    /** Lanza refreshAll() cancelando el de la sesión anterior (login/logout rápidos no mezclan cuentas). */
+    private fun startRefreshAll() {
+        refreshJob?.cancel()
+        refreshJob = scope.launch { refreshAll() }
+    }
+
+    /** Recarga todo lo visible; cada parte falla por separado sin tumbar a las demás. */
     private suspend fun refreshAll() {
-        refreshFeed()
-        refreshPointsHistory()
-        refreshMyPublications()
-        refreshRequests()
-        refreshNotifications()
-        refreshConversations()
-        refreshModeration()
+        quietly { refreshFeed() }
+        quietly { refreshPointsHistory() }
+        quietly { refreshMyPublications() }
+        quietly { refreshRequests() }
+        quietly { refreshNotifications() }
+        quietly { refreshConversations() }
+        if (_currentUser.value?.isModerator == true) quietly { refreshModeration() } else clearModeration()
     }
 
+    /** Refrescos después de una escritura: si fallan, la escritura sigue siendo un éxito (ítem 27). */
+    private suspend fun quietly(block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
+    }
+
+    /** Relee desde el principio tantas filas como ya estaban cargadas (mínimo una página) con los filtros vigentes. */
     private suspend fun refreshFeed() {
-        val rows = apiCall { api.getPublications() }
-        _publications.value = rows.map { it.toPublication() }
+        _publications.value = fetchFeed(offset = 0, limit = maxOf(FEED_PAGE, _publications.value.size))
     }
 
     private suspend fun refreshMyPublications() {
@@ -546,10 +813,12 @@ object SupabaseRepository : HuellaRepository {
     }
 
     private suspend fun refreshNotifications() {
+        val now = System.currentTimeMillis()
         _notifications.value = apiCall { api.getNotifications() }.map { row ->
             AppNotification(
                 id = row.string("id").orEmpty(),
-                group = row.string("group_label") ?: "Hoy",
+                // group_label en BD es texto fijo ("Hoy") que caduca: el grupo se calcula con created_at.
+                group = notificationGroup(parseSupabaseDate(row.string("created_at")), now),
                 type = notificationType(row.string("type")),
                 title = row.string("title").orEmpty(),
                 text = row.string("text").orEmpty(),
@@ -573,6 +842,7 @@ object SupabaseRepository : HuellaRepository {
                         who = row.obj("reporter")?.string("name") ?: "Anónimo",
                         reason = row.string("reason").orEmpty(),
                         detail = row.string("detail").orEmpty(),
+                        id = row.string("id").orEmpty(),
                     )
                 }
                 ModerationItem(
@@ -584,7 +854,7 @@ object SupabaseRepository : HuellaRepository {
                 )
             }
         _moderationQueue.value = pending.map {
-            ModerationItem(it, "En revisión", authorApproved = 0, authorRejected = 0)
+            ModerationItem(it, UiText.Res(R.string.post_status_review), authorApproved = 0, authorRejected = 0)
         }
         _moderationReports.value = reported
         val midnightUtc = SimpleDateFormat("yyyy-MM-dd'T'00:00:00'Z'", Locale.US).apply {
@@ -617,7 +887,7 @@ object SupabaseRepository : HuellaRepository {
             id = id,
             contact = author,
             about = row.string("about").orEmpty(),
-            phone = contact?.string("phone").orEmpty(),
+            phone = conversations[id]?.phone.orEmpty(),
         )
     }
 
@@ -632,56 +902,78 @@ object SupabaseRepository : HuellaRepository {
             )
         }
 
-    private fun requireConfigured() {
-        check(BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank()) {
-            "Configura SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY en app/.env"
-        }
-    }
+    private fun requireConfigured() = SupabaseConfig.requireConfigured()
 
     private fun requireUserId(): String {
         requireConfigured()
-        return SupabaseSession.userId ?: error("Inicia sesión para continuar")
+        return SupabaseSession.userId ?: fail(R.string.err_login_required)
     }
 
     private suspend fun <T> result(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: AppError) {
+            Result.failure(e)
+        } catch (e: java.io.IOException) {
+            Result.failure(AppError(R.string.err_no_connection)) // sin red: no mostrar el texto técnico de OkHttp
         } catch (e: Exception) {
-            Result.failure(IllegalStateException(errorMessage(e), e))
+            Result.failure(e.message?.takeIf { it.isNotBlank() }?.let { IllegalStateException(it, e) } ?: AppError(R.string.err_no_connection))
         }
 
+    /** Error con texto en recursos: la UI lo muestra en su idioma (ítem 37). */
+    private fun fail(@StringRes res: Int): Nothing = throw AppError(res)
+
     private suspend fun <T> apiCall(call: suspend () -> Response<T>): T {
+        val tokenUsed = SupabaseSession.accessToken
         var response = call()
-        if (response.code() == 401 && SupabaseSession.refreshToken != null) {
-            val refreshBody = json { addProperty("refresh_token", SupabaseSession.refreshToken!!) }
-            val refreshed = runCatching { api.refreshSession(refreshBody) }.getOrNull()
-            val auth = refreshed?.body()
-            val newAccessToken = auth?.string("access_token")
-            val currentUserId = SupabaseSession.userId
-            if (refreshed?.isSuccessful == true && newAccessToken != null && currentUserId != null) {
-                SupabaseSession.save(appContext, newAccessToken, currentUserId, auth.string("refresh_token"))
-                response = call()
-            } else {
-                SupabaseSession.clear(appContext)
-                _currentUser.value = null
-            }
+        if (response.code() == 401 && tokenUsed != null && refreshAccessToken(tokenUsed)) {
+            response = call()
         }
         if (!response.isSuccessful) {
             val serverText = runCatching { response.errorBody()?.string() }.getOrNull()
-            throw IllegalStateException(parseError(serverText) ?: "Error de Supabase (${response.code()})")
+            throw parseError(serverText)?.let { IllegalStateException(it) } ?: AppError(R.string.err_server_code, response.code())
         }
         return response.body() ?: Unit as T
     }
 
-    private fun errorMessage(error: Exception): String =
-        error.message?.takeIf { it.isNotBlank() } ?: "No pudimos conectar con Supabase"
+    /**
+     * Un solo refresh a la vez (ítem 26): si dos llamadas reciben 401 juntas, la segunda reutiliza el
+     * token nuevo en vez de gastar otra vez el mismo refresh token (Supabase revocaría la familia).
+     * Sin red no se cierra la sesión; si Supabase rechaza el refresh token, se cierra y se avisa.
+     */
+    private suspend fun refreshAccessToken(staleToken: String): Boolean = refreshMutex.withLock {
+        val current = SupabaseSession.accessToken
+        if (current != null && current != staleToken) return@withLock true
+        val refreshToken = SupabaseSession.refreshToken
+        val userId = SupabaseSession.userId
+        if (refreshToken != null && userId != null) {
+            val response = try {
+                api.refreshSession(json { addProperty("refresh_token", refreshToken) })
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return@withLock false
+            }
+            val newToken = response.body()?.string("access_token")
+            if (response.isSuccessful && newToken != null) {
+                SupabaseSession.save(appContext, newToken, userId, response.body()?.string("refresh_token") ?: refreshToken)
+                return@withLock true
+            }
+        }
+        logout()
+        _sessionExpired.tryEmit(Unit)
+        false
+    }
 
+    /** Mensaje del servidor tal cual (se muestra Raw); null si no hay. Un UNIQUE repetido lanza AppError. */
     private fun parseError(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
-        return runCatching {
-            val json = com.google.gson.JsonParser.parseString(raw).asJsonObject
-            json.string("message") ?: json.string("msg") ?: json.string("error_description")
-        }.getOrNull()
+        val json = runCatching { com.google.gson.JsonParser.parseString(raw).asJsonObject }.getOrNull() ?: return null
+        // 23505: restricción UNIQUE (reporte o solicitud repetidos).
+        if (json.string("code") == "23505") throw AppError(R.string.err_duplicate)
+        return json.string("message") ?: json.string("msg") ?: json.string("error_description")
     }
 
     private fun JsonObject.toUser() = User(
@@ -695,7 +987,12 @@ object SupabaseRepository : HuellaRepository {
         initials = string("initials").orEmpty(),
         memberSince = string("member_since") ?: "2026",
         role = if (boolean("is_moderator")) Role.MODERADOR else Role.USUARIO,
-        stats = ProfileStats(activeCount = int("active_count"), adoptionsCount = int("adoptions_count"), fosterCount = int("foster_count")),
+        stats = ProfileStats(
+            activeCount = int("active_count"),
+            finishedCount = (int("publications_count") - int("active_count")).coerceAtLeast(0),
+            adoptionsCount = int("adoptions_count"),
+            fosterCount = int("foster_count"),
+        ),
     )
 
     private fun JsonObject.toPublication(): Publication {
@@ -707,14 +1004,6 @@ object SupabaseRepository : HuellaRepository {
             initials = profile?.string("initials").orEmpty(),
         )
         val title = string("title").orEmpty()
-        val authorId = string("author_id") ?: profile?.string("id").orEmpty()
-        if (profile != null && authorId.isNotBlank()) {
-            userCache[authorId] = User(
-                id = authorId, name = profile.string("name").orEmpty(), email = "",
-                city = string("city").orEmpty(), points = 0,
-                initials = profile.string("initials").orEmpty(),
-            )
-        }
         return Publication(
             id = string("id").orEmpty(),
             category = runCatching { Category.valueOf(string("category").orEmpty()) }.getOrDefault(Category.ADOPCION),
@@ -735,6 +1024,9 @@ object SupabaseRepository : HuellaRepository {
             photoLabel = string("photo_label") ?: title,
             author = author,
             status = runCatching { PostStatus.valueOf(string("status").orEmpty()) }.getOrDefault(PostStatus.EN_REVISION),
+            lifecycle = runCatching { LifecycleStatus.valueOf(string("lifecycle").orEmpty()) }.getOrDefault(LifecycleStatus.ACTIVA),
+            votesCount = int("votes_count"),
+            commentsCount = int("comments_count"),
             eventDate = string("event_date"),
             schedule = string("schedule"),
             place = string("place"),
@@ -748,28 +1040,16 @@ object SupabaseRepository : HuellaRepository {
 
     private fun level(value: String?) = runCatching { Level.valueOf(value.orEmpty()) }.getOrDefault(Level.AMIGO_ANIMAL)
     private fun requestStatus(value: String?) = runCatching { RequestStatus.valueOf(value.orEmpty()) }.getOrDefault(RequestStatus.PENDIENTE)
-    private fun notificationType(value: String?) = runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
+    private fun notificationType(value: String?) =
+        runCatching { NotificationType.valueOf(value.orEmpty()) }.getOrDefault(NotificationType.POST_APPROVED)
 
-    private fun relativeTime(value: String?): String {
-        val time = parseDate(value) ?: return "hoy"
-        val minutes = ((System.currentTimeMillis() - time) / 60_000L).coerceAtLeast(0)
-        return when {
-            minutes < 1 -> "ahora"
-            minutes < 60 -> "hace $minutes min"
-            minutes < 1440 -> "hace ${minutes / 60} h"
-            else -> "hace ${minutes / 1440} d"
-        }
-    }
+    private fun relativeTime(value: String?): UiText = relativeTimeText(parseSupabaseDate(value), System.currentTimeMillis())
 
     private fun clockLabel(value: String?): String {
-        val date = parseDate(value) ?: return ""
+        val date = parseSupabaseDate(value) ?: return ""
         return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(date))
     }
 
-    private fun parseDate(value: String?): Long? = runCatching {
-        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).parse(value?.substringBefore('.')?.removeSuffix("Z") ?: return null)
-            ?.time
-    }.getOrNull()
 
     private fun json(build: JsonObject.() -> Unit) = JsonObject().apply(build)
 
@@ -799,3 +1079,43 @@ object SupabaseRepository : HuellaRepository {
         get(key)?.takeUnless { it.isJsonNull }?.asBoolean
 }
 
+/**
+ * Instante (epoch ms) de un timestamptz de Supabase: "2026-11-08T15:04:05.123456+00:00", con "Z",
+ * con offset corto "+00" o sin zona (se asume UTC). Nunca usa la zona del dispositivo (ítem 12).
+ */
+internal fun parseSupabaseDate(value: String?): Long? {
+    if (value.isNullOrBlank()) return null
+    var iso = value.trim().replace(' ', 'T')
+    if (Regex("[+-]\\d{2}$").containsMatchIn(iso)) iso += ":00"
+    return runCatching { OffsetDateTime.parse(iso).toInstant().toEpochMilli() }
+        .recoverCatching { LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC).toEpochMilli() }
+        .getOrNull()
+}
+
+/**
+ * Tiempo relativo como texto de recursos ("ahora", "hace 3 h" / "now", "3 h ago"): la UI lo resuelve en su
+ * idioma (ítems 37 y 60). Sin fecha devuelve "hoy".
+ */
+internal fun relativeTimeText(time: Long?, now: Long): UiText {
+    if (time == null) return UiText.Res(R.string.time_today)
+    val minutes = ((now - time) / 60_000L).coerceAtLeast(0)
+    return when {
+        minutes < 1 -> UiText.Res(R.string.time_now)
+        minutes < 60 -> UiText.Plural(R.plurals.time_minutes_ago, minutes.toInt())
+        minutes < 1440 -> UiText.Plural(R.plurals.time_hours_ago, (minutes / 60).toInt())
+        else -> UiText.Plural(R.plurals.time_days_ago, (minutes / 1440).toInt())
+    }
+}
+
+/** Sección de la lista de notificaciones según el día local de created_at: Hoy, Ayer, Esta semana o Antes. */
+internal fun notificationGroup(createdAt: Long?, now: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+    if (createdAt == null) return "Antes"
+    val day = Instant.ofEpochMilli(createdAt).atZone(zone).toLocalDate()
+    val days = ChronoUnit.DAYS.between(day, Instant.ofEpochMilli(now).atZone(zone).toLocalDate())
+    return when {
+        days <= 0 -> "Hoy"
+        days == 1L -> "Ayer"
+        days < 7 -> "Esta semana"
+        else -> "Antes"
+    }
+}

@@ -1,5 +1,6 @@
 package com.desarrolloMovielexample.huella.features.profile
 
+import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +31,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +44,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextButton
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.domain.model.AppNotification
@@ -58,14 +62,17 @@ fun NotificationsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
 
     fun open(n: AppNotification) {
         when (n.type) {
             NotificationType.NEW_REQUEST -> onOpenRequests(1)
-            NotificationType.REQUEST_ACCEPTED -> onOpenChat(n.targetId ?: "c1")
-            NotificationType.POST_APPROVED, NotificationType.POST_REJECTED -> n.targetId?.let(onOpenPublication)
-            NotificationType.NEW_COMMENT, NotificationType.NEW_VOTE -> n.targetId?.let(onOpenPublication)
+            // target_id de REQUEST_ACCEPTED es el id de la conversación (respond_to_request).
+            NotificationType.REQUEST_ACCEPTED -> n.targetId?.let(onOpenChat)
+            NotificationType.POST_APPROVED, NotificationType.POST_REJECTED,
+            NotificationType.NEW_COMMENT, NotificationType.NEW_VOTE,
+            NotificationType.REQUEST_REJECTED, NotificationType.SIGHTING -> n.targetId?.let(onOpenPublication)
             NotificationType.BADGE_EARNED -> onOpenLevels()
             NotificationType.LEVEL_UP -> onOpenLevels()
         }
@@ -75,8 +82,8 @@ fun NotificationsScreen(
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
         topBar = {
-            HuellaTopBar("Notificaciones", Modifier.statusBarsPadding(), onBack = onBack) {
-                if (!state.isEmpty) HuellaTextButton("Marcar le├¡das", viewModel::markAllRead)
+            HuellaTopBar(stringResource(R.string.notifications_title), Modifier.statusBarsPadding(), onBack = onBack) {
+                if (!state.isEmpty) HuellaTextButton(stringResource(R.string.notifications_mark_read), viewModel::markAllRead)
             }
         },
     ) { inner ->
@@ -90,8 +97,8 @@ fun NotificationsScreen(
             ) {
                 EmptyState(
                     illustration = R.drawable.illus_empty_inbox,
-                    title = "Todo tranquilo por aqu├¡",
-                    text = "Te avisaremos cuando alguien se interese en tus publicaciones o cuando subas de nivel.",
+                    title = stringResource(R.string.notifications_empty_title),
+                    text = stringResource(R.string.notifications_empty_text),
                     illustrationSize = 230.dp,
                 )
             }
@@ -107,7 +114,7 @@ fun NotificationsScreen(
             state.groups.forEach { (day, items) ->
                 item(key = day) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GroupCaption(day)
+                        GroupCaption(optionLabel(day))
                         items.forEach { n -> NotificationCard(n, onClick = { viewModel.markAsRead(n.id); open(n) }) }
                     }
                 }
@@ -125,10 +132,12 @@ private fun iconFor(type: NotificationType): Int = when (type) {
     NotificationType.NEW_VOTE -> R.drawable.icon_accion_aprobar
     NotificationType.BADGE_EARNED -> R.drawable.icon_animal_otro
     NotificationType.LEVEL_UP -> R.drawable.icon_animal_otro
+    NotificationType.REQUEST_REJECTED -> R.drawable.icon_accion_rechazar
+    NotificationType.SIGHTING -> R.drawable.icon_attr_ubicacion
 }
 
 private fun colorFor(type: NotificationType): Color = when (type) {
-    NotificationType.POST_REJECTED -> HuellaColors.Error
+    NotificationType.POST_REJECTED, NotificationType.REQUEST_REJECTED -> HuellaColors.Error
     NotificationType.NEW_COMMENT -> HuellaColors.Primary
     NotificationType.NEW_VOTE -> HuellaColors.Primary
     NotificationType.BADGE_EARNED -> HuellaColors.LevelProtector
@@ -162,11 +171,11 @@ private fun NotificationCard(n: AppNotification, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
                     color = HuellaColors.TextPrimary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Text(n.time, style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = HuellaColors.TextTertiary, maxLines = 1)
+                Text(n.time.asString(), style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp), color = HuellaColors.TextTertiary, maxLines = 1)
             }
             Text(
                 n.text,
@@ -177,7 +186,7 @@ private fun NotificationCard(n: AppNotification, onClick: () -> Unit) {
     }
 }
 
-/** Confetti pieces of the "┬íSubiste de nivel!" card (positions from the design, in dp). */
+/** Confetti pieces of the "¡Subiste de nivel!" card (positions from the design, in dp). */
 private fun Modifier.confetti(): Modifier = drawBehind {
     fun piece(x: Float, y: Float, w: Float, h: Float, degrees: Float, color: Color, fromBottom: Boolean = false, round: Boolean = false) {
         val pw = w.dp.toPx()

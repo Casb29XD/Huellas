@@ -1,6 +1,7 @@
 package com.desarrolloMovielexample.huella.features.moderation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,20 +10,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,13 +42,15 @@ import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTabs
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
-import com.desarrolloMovielexample.huella.core.components.ModerationStatusTag
-import com.desarrolloMovielexample.huella.core.components.PublicationRowCard
+import com.desarrolloMovielexample.huella.core.components.CategoryChip
+import com.desarrolloMovielexample.huella.core.components.PetImage
+import com.desarrolloMovielexample.huella.core.components.huellaCard
+import com.desarrolloMovielexample.huella.core.components.optionLabel
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaShapes
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
+import com.desarrolloMovielexample.huella.core.utils.asString
 import com.desarrolloMovielexample.huella.domain.model.ModerationItem
-import com.desarrolloMovielexample.huella.domain.model.PostStatus
 
 /** 06 · Panel de moderación (Pendientes / Reportes) + "Cola al día" empty state. */
 @Composable
@@ -51,13 +61,14 @@ fun ModerationScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalContext.current.resources
     androidx.compose.runtime.LaunchedEffect(viewModel) {
-        viewModel.messages.collect { snackbarHostState.showSnackbar(it) }
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) }
     }
 
     Scaffold(
         topBar = {
-            HuellaTopBar(title = "Moderación", onBack = onBack) {
+            HuellaTopBar(title = stringResource(R.string.moderation_title), onBack = onBack) {
                 ModeratorBadge(Modifier.padding(end = 4.dp))
             }
         },
@@ -85,13 +96,13 @@ fun ModerationScreen(
                 } else {
                     HuellaColors.SurfaceMuted to HuellaColors.TextSecondary
                 }
-                StatCard(state.stats.pending, "Pendientes", pendingColors.first, pendingColors.second, Modifier.weight(1f))
-                StatCard(state.stats.reported, "Reportadas", reportedColors.first, reportedColors.second, Modifier.weight(1f))
-                StatCard(state.stats.approvedToday, "Aprobadas hoy", HuellaColors.PrimarySoft, HuellaColors.Primary, Modifier.weight(1f))
+                StatCard(state.stats.pending, stringResource(R.string.moderation_pending), pendingColors.first, pendingColors.second, Modifier.weight(1f))
+                StatCard(state.stats.reported, stringResource(R.string.moderation_reported), reportedColors.first, reportedColors.second, Modifier.weight(1f))
+                StatCard(state.stats.approvedToday, stringResource(R.string.moderation_approved_today), HuellaColors.PrimarySoft, HuellaColors.Primary, Modifier.weight(1f))
             }
 
             HuellaTabs(
-                tabs = listOf("Pendientes", "Reportes"),
+                tabs = listOf(stringResource(R.string.moderation_pending), stringResource(R.string.moderation_tab_reports)),
                 selectedIndex = state.selectedTab,
                 onSelect = viewModel::selectTab,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp),
@@ -112,10 +123,10 @@ fun ModerationScreen(
                 ) {
                     EmptyState(
                         illustration = R.drawable.illus_tasks,
-                        title = "No pudimos cargar la cola",
-                        text = state.loadError.orEmpty(),
+                        title = stringResource(R.string.moderation_load_error),
+                        text = state.loadError?.asString().orEmpty(),
                         illustrationSize = 210.dp,
-                        actionText = "Reintentar",
+                        actionText = stringResource(R.string.action_retry),
                         onAction = viewModel::retry,
                         actionOutlined = true,
                     )
@@ -130,15 +141,11 @@ fun ModerationScreen(
                 ) {
                     EmptyState(
                         illustration = R.drawable.illus_tasks,
-                        title = "Cola al día",
-                        text = if (state.selectedTab == 0) {
-                            "No hay publicaciones pendientes de revisión. Gracias por cuidar la comunidad."
-                        } else {
-                            "No hay publicaciones reportadas. Gracias por cuidar la comunidad."
-                        },
+                        title = stringResource(R.string.moderation_empty_title),
+                        text = stringResource(if (state.selectedTab == 0) R.string.moderation_empty_pending else R.string.moderation_empty_reported),
                         illustrationSize = 230.dp,
                         // ponytail: no home callback in the fixed signature; back returns to Perfil.
-                        actionText = "Ir al inicio",
+                        actionText = stringResource(R.string.moderation_go_home),
                         onAction = onBack,
                         actionOutlined = true,
                     )
@@ -170,7 +177,7 @@ private fun ModeratorBadge(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         HuellaIcon(R.drawable.icon_accion_moderacion, tint = HuellaColors.TextPrimary, size = 18.dp)
-        Text("Moderador", style = MaterialTheme.typography.labelSmall, color = HuellaColors.TextPrimary)
+        Text(stringResource(R.string.moderation_moderator), style = MaterialTheme.typography.labelSmall, color = HuellaColors.TextPrimary)
     }
 }
 
@@ -192,36 +199,60 @@ private fun StatCard(value: Int, label: String, background: Color, content: Colo
     }
 }
 
+/** Fila propia del panel: título a 2 líneas y una sola métrica de tiempo (ítems 45 y 43). */
 @Composable
 private fun ModerationListItem(item: ModerationItem, onClick: () -> Unit) {
-    val pendingTag: (@Composable () -> Unit)? =
-        if (item.isReported) null else ({ ModerationStatusTag(PostStatus.EN_REVISION, small = true) })
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        PublicationRowCard(publication = item.publication, onClick = onClick, trailingTag = pendingTag)
-        Row(
+    val pub = item.publication
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .huellaCard()
+            .clickable(onClick = onClick)
+            .padding(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
             Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .size(96.dp)
+                .clip(RoundedCornerShape(10.dp)),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                HuellaIcon(R.drawable.icon_estado_en_revision, tint = HuellaColors.TextTertiary, size = 18.dp)
-                Text(item.waitTime, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
-            }
+            PetImage(pub, Modifier.matchParentSize())
+            CategoryChip(pub.category, Modifier.padding(6.dp), small = true)
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                pub.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = HuellaColors.TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                listOf(optionLabel(pub.species), pub.breed, pub.city).filter { it.isNotBlank() }.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = HuellaColors.TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                stringResource(R.string.moderation_published_by, pub.timeAgo.asString(), pub.author.name),
+                style = MaterialTheme.typography.bodySmall,
+                color = HuellaColors.TextTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             if (item.isReported) {
                 val count = item.reports.size
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     HuellaIcon(R.drawable.icon_accion_reportar, tint = HuellaColors.Error, size = 18.dp)
                     Text(
-                        if (count == 1) "1 denuncia" else "$count denuncias",
+                        pluralStringResource(R.plurals.moderation_reports_count, count, count),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
-                        color = HuellaColors.Error,
+                        color = HuellaColors.ErrorDark,
                     )
                 }
-            } else {
-                Text(item.publication.author.name, style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
             }
         }
     }

@@ -25,13 +25,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import com.desarrolloMovielexample.huella.core.components.LocalizedText as Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,7 +63,8 @@ fun PublicProfileScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(userId) { viewModel.load(userId) }
-    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it) } }
+    val resources = LocalContext.current.resources
+    LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
     LaunchedEffect(Unit) { viewModel.openChats.collect(onContact) }
     val user = state.user
 
@@ -77,10 +82,11 @@ fun PublicProfileScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Atrás", tint = HuellaColors.TextPrimary)
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = HuellaColors.TextPrimary)
                 }
                 if (user != null) {
-                    IconButton(onClick = viewModel::report) {
+                    val reportLabel = stringResource(R.string.public_report_profile)
+                    IconButton(onClick = viewModel::report, modifier = Modifier.semantics { contentDescription = reportLabel }) {
                         HuellaIcon(R.drawable.icon_accion_reportar, tint = HuellaColors.TextSecondary, size = 31.dp)
                     }
                 }
@@ -105,7 +111,7 @@ fun PublicProfileScreen(
                     ) {
                         HuellaIcon(R.drawable.icon_accion_mensaje, tint = Color.White, size = 26.dp)
                         Spacer(Modifier.size(8.dp))
-                        Text("Contactar", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.public_contact), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -119,7 +125,7 @@ fun PublicProfileScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 if (state.isLoaded) {
-                    Text("No encontramos este perfil", style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
+                    Text(stringResource(R.string.public_not_found), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
                 }
             }
             return@Scaffold
@@ -143,7 +149,7 @@ fun PublicProfileScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     HuellaIcon(R.drawable.icon_attr_ubicacion, tint = HuellaColors.TextSecondary, size = 21.dp)
                     Text(
-                        "${user.city.substringBefore(",")} · Miembro desde ${user.memberSince}",
+                        stringResource(R.string.public_member_since, user.city.substringBefore(","), user.memberSince),
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                         color = HuellaColors.TextSecondary,
                     )
@@ -152,21 +158,21 @@ fun PublicProfileScreen(
             }
             StatsRow(
                 listOf(
-                    user.activeCount.toString() to "Activas",
-                    user.adoptionsCount.toString() to "Adopciones",
-                    user.points.toString() to "Puntos",
+                    user.activeCount.toString() to stringResource(R.string.stats_active),
+                    user.adoptionsCount.toString() to stringResource(R.string.public_adoptions),
+                    user.points.toString() to stringResource(R.string.public_points),
                 ),
                 Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp),
             )
             Text(
-                "Publicaciones activas",
+                stringResource(R.string.public_active_posts),
                 style = MaterialTheme.typography.titleMedium,
                 color = HuellaColors.TextPrimary,
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 10.dp),
             )
             Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (state.publications.isEmpty()) {
-                    Text("No tiene publicaciones activas.", style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
+                    Text(stringResource(R.string.public_no_active), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextSecondary)
                 }
                 state.publications.forEach { p ->
                     PublicationRowCard(publication = p, onClick = { onOpenPublication(p.id) })
