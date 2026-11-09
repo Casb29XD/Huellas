@@ -249,7 +249,7 @@ private fun FeedList(
                     .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CategoryFilterChip(stringResource(R.string.filter_all), R.drawable.icon_animal_otro, HuellaColors.TextPrimary, state.category == null) { onCategory(null) }
+                CategoryFilterChip(stringResource(R.string.filter_all), R.drawable.icon_animal_otro, HuellaColors.Primary, state.category == null) { onCategory(null) }
                 Category.entries.forEach { c ->
                     CategoryFilterChip(stringResource(c.labelRes), categoryIcon(c), c.color, state.category == c) { onCategory(c) }
                 }
