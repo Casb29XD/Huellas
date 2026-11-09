@@ -338,11 +338,11 @@
     <string name="profile_tab_posts">Mis publicaciones</string>
     <string name="profile_tab_points">Historial de puntos</string>
     <string name="profile_no_posts">Aún no tienes publicaciones.</string>
-    <string name="profile_points_suffix"> puntos</string>
+    <string name="profile_points_suffix">" puntos"</string>
     <string name="profile_view_levels">Ver niveles</string>
-    <string name="profile_missing">Te faltan </string>
+    <string name="profile_missing">"Te faltan "</string>
     <string name="profile_points_n">%1$d puntos</string>
-    <string name="profile_for"> para </string>
+    <string name="profile_for">" para "</string>
     <string name="profile_max_level">Alcanzaste el nivel máximo</string>
     <string name="moderation_panel">Panel de moderación</string>
     <string name="moderation_role">rol moderador</string>

@@ -335,11 +335,11 @@
     <string name="profile_tab_posts">My posts</string>
     <string name="profile_tab_points">Points history</string>
     <string name="profile_no_posts">You don\'t have any posts yet.</string>
-    <string name="profile_points_suffix"> points</string>
+    <string name="profile_points_suffix">" points"</string>
     <string name="profile_view_levels">View levels</string>
-    <string name="profile_missing">You need </string>
+    <string name="profile_missing">"You need "</string>
     <string name="profile_points_n">%1$d points</string>
-    <string name="profile_for"> to reach </string>
+    <string name="profile_for">" to reach "</string>
     <string name="profile_max_level">You\'ve reached the highest level</string>
     <string name="moderation_panel">Moderation panel</string>
     <string name="moderation_role">moderator role</string>
