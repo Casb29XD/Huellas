@@ -487,7 +487,6 @@ private fun Gallery(pub: Publication, onBack: () -> Unit, onShare: () -> Unit) {
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 48.dp)
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(HuellaColors.Surface.copy(alpha = 0.9f))
