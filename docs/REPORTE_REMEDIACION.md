@@ -27,8 +27,7 @@ Fecha del reporte: 2026-11-08. La prueba que cubre cada ítem está en `docs/MAT
   - `deno test supabase/functions/`: 10/10 (`moderate-ai` y `verify-image`).
   - JVM: 119/119 en 30 clases, con 24 E2E contra el hosted, sin saltos ni fallos.
 - **Pendiente operativo:**
-  - Configurar `DEEPSEEK_API_KEY`, si el dueño lo decide (sigue sin key).
-  - Hechos el 2026-11-09: contraseña de `admin@huella.app` rotada (ítem 5) y secretos de Vault cargados con
+  - Ninguno. Hechos el 2026-11-09: `DEEPSEEK_API_KEY` configurada (`moderate-ai` devuelve `status: ok` con revisión), contraseña de `admin@huella.app` rotada (ítem 5) y secretos de Vault cargados con
     `scripts/configure-storage-vault.sh` (ítem 18).
 
 ### Cómo se llegó aquí
@@ -209,9 +208,9 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
 | Recurso | Estado |
 |---|---|
 | Migraciones | 27 registradas en `supabase_migrations.schema_migrations`; la última es `20261109350200`. Son las mismas 27 de `supabase/migrations/`, no falta ninguna |
-| Edge Function `moderate-ai` | `ACTIVE`, **versión 3** (la de `04fcc63`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de un moderador de prueba `{"status":"not_configured"}` |
+| Edge Function `moderate-ai` | `ACTIVE`, **versión 3** (la de `04fcc63`), con `verify_jwt=true`. Sin JWT responde 401 y con JWT de un moderador de prueba `{"status":"ok","review":{...}}` (modelo `deepseek-chat`) |
 | Edge Function `verify-image` | `ACTIVE`, versión 2, con `verify_jwt=true`. Solo acepta el service role: anon recibe 403 |
-| Secrets de funciones | Solo los que Supabase crea por defecto. **No hay `DEEPSEEK_API_KEY`** (decisión del dueño), así que `moderate-ai` responde `not_configured` y la UI lo muestra |
+| Secrets de funciones | Los que Supabase crea por defecto y `DEEPSEEK_API_KEY` (configurada el 2026-11-09). `moderate-ai` genera la sugerencia con `deepseek-chat`; el veredicto sigue siendo solo una sugerencia en la UI |
 | Vault | `huellas_project_url` y `huellas_service_role_key` cargados el 2026-11-09 con `scripts/configure-storage-vault.sh`. Los triggers llaman a la Storage API y a `verify-image` (ítem 18) |
 | pg_cron | Tres jobs: `huellas_cierre_automatico` (`0 8 * * *`), `huellas_limpieza_notificaciones` (`30 8 * * *`) y `huellas_reconciliacion_storage` (`15 * * * *`) |
 | Storage | Bucket `pet-images`, público, con límite de 5 MB y MIME `image/jpeg`, `image/png` o `image/webp`. Cuatro políticas, todas limitadas a la carpeta propia (ver, subir, actualizar y borrar). Ya no hay listado público |
@@ -251,8 +250,9 @@ Consultado en solo lectura el 2026-11-08, después de la corrida final (proyecto
      "ventana". Lo cubre `review_test.ts`.
    - `20261109350200` (`871f26a`, aplicada) retira EXECUTE a PUBLIC, anon y authenticated de todas las funciones de
      trigger SECURITY DEFINER de public. Lo exige `test_47_triggers_sin_execute`.
-5. **Key de DeepSeek.** Sigue sin configurar (2026-11-09): falta decidir si se activa la sugerencia de IA:
-   - Se activa con `supabase secrets set DEEPSEEK_API_KEY=... --project-ref <ref>` y, si se quiere, `DEEPSEEK_MODEL`.
+5. **Key de DeepSeek: configurada el 2026-11-09.** Verificado con un moderador temporal (borrado al terminar):
+   `POST /functions/v1/moderate-ai` devuelve `{"status":"ok","review":{...}}` y `ModerateAiE2eTest` pasa 3/3.
+   - Se desactiva con `supabase secrets unset DEEPSEEK_API_KEY --project-ref <ref>`.
    - Activarla manda el contenido de cada publicación a un tercero (ya sin `phone`), así que conviene revisarlo
      contra la política de datos.
    - Detalles en `docs/MODERACION_IA.md`.

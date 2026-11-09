@@ -5,7 +5,7 @@ No modera sola: guarda un veredicto en `public.publication_ai_reviews` y el mode
 
 ## Estado en el hosted
 
-- Función desplegada en el proyecto hosted, **sin** `DEEPSEEK_API_KEY`: responde `200 {"status":"not_configured"}`.
+- Función desplegada en el proyecto hosted, **con** `DEEPSEEK_API_KEY` (desde el 2026-11-09): responde `200 {"status":"ok","review":{...}}`.
 - Tabla `publication_ai_reviews` (migración `20261109150000_revisiones_ia.sql`): solo moderadores la leen; escribe la función con service_role.
 - Para activarla, alguien del equipo solo tiene que poner la key (ver abajo).
 
@@ -75,7 +75,7 @@ https://api-docs.deepseek.com/quick_start/pricing) sale por **menos de 0,001 USD
 
 ## Pruebas
 
-- `app/src/test/.../e2e/ModerateAiE2eTest.kt`: 401 sin JWT, 403 no moderador, 200 `not_configured` con moderador
+- `app/src/test/.../e2e/ModerateAiE2eTest.kt`: 401 sin JWT, 403 no moderador, 200 `not_configured` u `ok` con moderador
   (se salta si no hay `SUPABASE_URL`; ver docs/PRUEBAS.md).
 - Camino 502: `supabase secrets set DEEPSEEK_API_KEY=sk-falsa`, llamar como moderador (DeepSeek responde 401 → la
   función devuelve 502) y luego `supabase secrets unset DEEPSEEK_API_KEY`.
