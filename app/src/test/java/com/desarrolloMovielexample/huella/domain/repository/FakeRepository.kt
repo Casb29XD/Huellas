@@ -275,6 +275,14 @@ object FakeRepository : HuellaRepository {
         return Result.success(user)
     }
 
+    override suspend fun loginWithGoogle(idToken: String, nonce: String): Result<User> {
+        delay(LATENCY)
+        val user = users.value.first()
+        _currentUser.value = user
+        syncDerivedPublications()
+        return Result.success(user)
+    }
+
     override suspend fun register(name: String, email: String, city: String, password: String): Result<User> {
         delay(LATENCY)
         val newUser = User(

@@ -24,6 +24,7 @@ interface HuellaRepository {
     // Auth / user
     val currentUser: StateFlow<User?>
     suspend fun login(email: String, password: String): Result<User>
+    suspend fun loginWithGoogle(idToken: String, nonce: String): Result<User>
     suspend fun register(name: String, email: String, city: String, password: String): Result<User>
     suspend fun handleAuthCallback(uri: android.net.Uri): Result<User>
     suspend fun sendPasswordReset(email: String): Result<Unit>

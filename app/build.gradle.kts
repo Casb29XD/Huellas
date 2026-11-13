@@ -21,6 +21,7 @@ fun buildConfigString(value: String): String =
 val supabaseUrl = readEnvValue("SUPABASE_URL").trimEnd('/')
 val supabasePublishableKey = readEnvValue("SUPABASE_PUBLISHABLE_KEY")
 val mapsApiKey = readEnvValue("MAPS_API_KEY").ifBlank { "" }
+val googleWebClientId = readEnvValue("GOOGLE_WEB_CLIENT_ID")
 
 android {
     namespace = "com.desarrolloMovielexample.huella"
@@ -38,6 +39,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
         buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", buildConfigString(supabasePublishableKey))
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", buildConfigString(googleWebClientId))
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
@@ -76,6 +78,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.identity.credentials)
+    implementation(libs.androidx.identity.credentials.play.services.auth)
+    implementation(libs.google.identity.id)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)

@@ -38,7 +38,39 @@ class LoginViewModel(private val repo: HuellaRepository = SupabaseRepository) : 
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, emailError = null) }
     fun onPasswordChange(value: String) = _uiState.update { it.copy(password = value, passwordError = null) }
     fun togglePasswordVisibility() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
-    fun onGoogleClick() { _messages.trySend(uiText(R.string.msg_coming_soon)) }
+
+    fun beginGoogleSignIn(): Boolean {
+        if (_uiState.value.isLoading) return false
+        _uiState.update { it.copy(isLoading = true) }
+        return true
+    }
+
+    fun cancelGoogleSignIn() {
+        _uiState.update { it.copy(isLoading = false) }
+    }
+
+    fun googleSignInConfigurationMissing() {
+        _messages.trySend(uiText(R.string.error_google_config))
+    }
+
+    fun googleSignInFailed() {
+        _uiState.update { it.copy(isLoading = false) }
+        _messages.trySend(uiText(R.string.error_google_sign_in))
+    }
+
+    fun loginWithGoogle(idToken: String, nonce: String) {
+        viewModelScope.launch {
+            repo.loginWithGoogle(idToken, nonce)
+                .onSuccess { user ->
+                    _messages.trySend(uiText(R.string.msg_hello, user.name.substringBefore(' ')))
+                    _uiState.update { it.copy(isLoading = false, loggedIn = true) }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _messages.trySend(error.toUiText(R.string.error_google_sign_in))
+                }
+        }
+    }
 
     fun login() {
         val s = _uiState.value

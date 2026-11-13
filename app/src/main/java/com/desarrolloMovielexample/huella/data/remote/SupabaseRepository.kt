@@ -176,6 +176,28 @@ object SupabaseRepository : HuellaRepository {
         user
     }
 
+    override suspend fun loginWithGoogle(idToken: String, nonce: String): Result<User> = result {
+        requireConfigured()
+        val auth = apiCall {
+            api.signInWithGoogleIdToken(json {
+                addProperty("provider", "google")
+                addProperty("id_token", idToken)
+                addProperty("nonce", nonce)
+            })
+        }
+        val token = auth.string("access_token")
+            ?: fail(R.string.err_unexpected_response)
+        val userId = auth.obj("user")?.string("id")
+            ?: fail(R.string.err_unexpected_response)
+        SupabaseSession.save(appContext, token, userId, auth.string("refresh_token"))
+        val profile = apiCall { api.getMyProfile() }.firstOrNull()
+            ?: fail(R.string.err_profile_missing)
+        val user = profile.toUser()
+        _currentUser.value = user
+        startRefreshAll()
+        user
+    }
+
     override suspend fun register(name: String, email: String, city: String, password: String): Result<User> = result {
         requireConfigured()
         val metadata = json {

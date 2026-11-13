@@ -92,6 +92,9 @@
     <string name="field_password_placeholder">Tu contraseña</string>
     <string name="login_forgot">Olvidé mi contraseña</string>
     <string name="login_submit">Ingresar</string>
+    <string name="login_google">Continuar con Google</string>
+    <string name="error_google_config">Falta configurar GOOGLE_WEB_CLIENT_ID en app/.env y el proveedor Google en Supabase.</string>
+    <string name="error_google_sign_in">No pudimos iniciar sesión con Google. Verifica la configuración e inténtalo de nuevo.</string>
     <string name="login_no_account">¿No tienes cuenta? </string>
     <string name="register_title">Crear cuenta</string>
     <string name="field_name">Nombre</string>

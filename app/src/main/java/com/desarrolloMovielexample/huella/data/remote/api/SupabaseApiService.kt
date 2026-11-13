@@ -32,6 +32,10 @@ interface SupabaseApiService {
     @POST("auth/v1/token?grant_type=password")
     suspend fun signIn(@Body body: JsonObject): Response<JsonObject>
 
+    /** Canjea un ID token de Google nativo por una sesión de Supabase. */
+    @POST("auth/v1/token?grant_type=id_token")
+    suspend fun signInWithGoogleIdToken(@Body body: JsonObject): Response<JsonObject>
+
     /** Supabase Auth: refresh an expired access token using the refresh token. */
     @POST("auth/v1/token?grant_type=refresh_token")
     suspend fun refreshSession(@Body body: JsonObject): Response<JsonObject>
