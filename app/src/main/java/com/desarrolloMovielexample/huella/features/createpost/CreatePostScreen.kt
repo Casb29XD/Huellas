@@ -48,6 +48,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -104,6 +107,7 @@ fun CreatePostScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scroll = rememberScrollState()
+    var showLocationPicker by rememberSaveable { mutableStateOf(false) }
 
     val resources = LocalContext.current.resources
     LaunchedEffect(Unit) {
@@ -180,10 +184,22 @@ fun CreatePostScreen(
                 when (state.step) {
                     1 -> StepCategoryAndPhotos(state, viewModel) { photoPicker.launch("image/*") }
                     2 -> StepPetData(state, viewModel)
-                    else -> StepDescriptionAndLocation(state, viewModel)
+                    else -> StepDescriptionAndLocation(state, viewModel) { showLocationPicker = true }
                 }
             }
         }
+    }
+    if (showLocationPicker) {
+        PublicationLocationPickerDialog(
+            city = state.city,
+            latitude = state.latitude,
+            longitude = state.longitude,
+            onDismiss = { showLocationPicker = false },
+            onConfirm = { latitude, longitude ->
+                viewModel.onMapLocation(latitude, longitude)
+                showLocationPicker = false
+            },
+        )
     }
 }
 
@@ -417,7 +433,7 @@ private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChang
 // ---------------- Paso 3 · Descripción y ubicación ----------------
 
 @Composable
-private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostViewModel) {
+private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostViewModel, onPickMap: () -> Unit) {
     HuellaTextField(
         value = state.title,
         onValueChange = vm::onTitle,
@@ -440,15 +456,26 @@ private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostV
         label = stringResource(R.string.field_department),
         municipalityLabel = stringResource(R.string.field_city),
     )
-    // ponytail: no map this phase — plain text location field in place of the mini-map.
-    HuellaTextField(
-        value = state.location,
-        onValueChange = vm::onLocation,
-        label = stringResource(R.string.create_map_location),
-        labelTrailing = stringResource(R.string.optional),
-        placeholder = stringResource(R.string.create_map_placeholder),
-        leadingIcon = { Icon(Icons.Outlined.AddLocation, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp)) },
-    )
+    androidx.compose.material3.OutlinedButton(
+        onClick = onPickMap,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Icon(Icons.Outlined.AddLocation, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.create_pick_map_location))
+    }
+    if (state.latitude != null && state.longitude != null) {
+        Text(
+            stringResource(R.string.create_map_location_saved),
+            style = MaterialTheme.typography.bodySmall,
+            color = HuellaColors.PrimaryText,
+        )
+        PublicationLocationPreview(
+            latitude = state.latitude,
+            longitude = state.longitude,
+            onEditLocation = onPickMap,
+        )
+    }
     if (state.needsDate) {
         HuellaTextField(
             value = state.eventDate,

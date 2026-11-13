@@ -399,6 +399,8 @@ object SupabaseRepository : HuellaRepository {
             addProperty("neighborhood", draft.city)
             addProperty("description", draft.description.trim())
             addProperty("event_date", draft.eventDate)
+            draft.latitude?.let { addProperty("latitude", it) }
+            draft.longitude?.let { addProperty("longitude", it) }
             addProperty("status", PostStatus.EN_REVISION.name)
             addProperty("image_url", draft.imageUrl)
         }
@@ -544,6 +546,8 @@ object SupabaseRepository : HuellaRepository {
             addProperty("neighborhood", draft.city)
             addProperty("description", draft.description.trim())
             addProperty("event_date", draft.eventDate)
+            draft.latitude?.let { addProperty("latitude", it) }
+            draft.longitude?.let { addProperty("longitude", it) }
             draft.imageUrl?.let { addProperty("image_url", it) }
         }
         // El servidor devuelve la fila editada de vuelta en EN_REVISION: el autor no elige el estado.

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
@@ -32,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
@@ -172,7 +172,12 @@ fun HuellaDropdownField(
                 )
                 Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null, tint = HuellaColors.TextSecondary)
             }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, containerColor = HuellaColors.Surface) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.heightIn(max = 160.dp),
+                containerColor = HuellaColors.Surface,
+            ) {
                 options.forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option, style = MaterialTheme.typography.bodyMedium) },

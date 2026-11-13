@@ -180,6 +180,7 @@
     <string name="action_cancel">Cancelar</string>
     <string name="detail_description">Descripción</string>
     <string name="detail_location">Ubicación</string>
+    <string name="detail_manage_actions">Administrar publicación</string>
     <string name="detail_delete_title">¿Eliminar publicación?</string>
     <string name="detail_delete_text">Esta acción eliminará la publicación definitivamente.</string>
     <string name="detail_interest">Me interesa adoptar</string>
@@ -274,9 +275,11 @@
     <string name="create_title">Título</string>
     <string name="create_title_placeholder">Ej: Luna busca un hogar tranquilo</string>
     <string name="create_description_placeholder">Carácter, salud, historia, qué tipo de hogar necesita…</string>
-    <string name="create_map_location">Ubicación en el mapa</string>
+    <string name="create_map_location_saved">Ubicación marcada en el mapa.</string>
+    <string name="create_pick_map_location">Ubicar en el mapa</string>
+    <string name="create_map_pick_instruction">Toca el mapa para poner el marcador en el lugar exacto.</string>
+    <string name="create_map_confirm">Usar ubicación</string>
     <string name="optional">Opcional</string>
-    <string name="create_map_placeholder">Marcar ubicación (barrio o referencia)</string>
     <string name="create_date_placeholder">Sáb 5 sep 2026 · 6:30 p. m.</string>
     <string name="create_rules">Las publicaciones son revisadas por moderadores. </string>
     <string name="create_rules_no_sale">Está prohibida la venta de animales.</string>

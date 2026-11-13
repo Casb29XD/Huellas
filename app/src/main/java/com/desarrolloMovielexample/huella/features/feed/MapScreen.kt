@@ -90,7 +90,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** ViewModel para el mapa: incluye perdidos, encontrados, veterinaria/jornadas y hogar temporal. */
-class MapViewModel(repo: HuellaRepository = SupabaseRepository) : ViewModel() {
+class MapViewModel(private val repo: HuellaRepository = SupabaseRepository) : ViewModel() {
+    fun getPublication(id: String): Publication? = repo.getPublication(id)
+
     val publications: StateFlow<List<Publication>> = repo.publications
         .map { list ->
             list.filter {
@@ -126,6 +128,7 @@ private val MapGround = Color(0xFFE8EFE9)
 fun MapScreen(
     onBack: () -> Unit,
     onOpenPublication: (String) -> Unit,
+    publicationId: String? = null,
     viewModel: MapViewModel = viewModel(),
 ) {
     val all by viewModel.publications.collectAsStateWithLifecycle()
@@ -148,10 +151,18 @@ fun MapScreen(
         (c == Category.VETERINARIA && showVet) ||
         (c == Category.TEMPORAL && showFound)
     }
-    val posts = all.filter { visible(it.category) }
+    val selectedPublication = publicationId?.let(viewModel::getPublication)
+    val posts = buildList {
+        addAll(all.filter { visible(it.category) })
+        selectedPublication?.takeIf { selected -> none { it.id == selected.id } }?.let(::add)
+    }
 
-    // Coordenada inicial (por ejemplo Medellín o la primera publicación activa)
-    val firstCoords = remember(posts) { posts.firstOrNull()?.toLatLng() ?: LatLng(6.2442, -75.5812) }
+    // Al venir desde una publicación, abre el mapa directamente en su marcador.
+    val firstCoords = remember(posts, publicationId) {
+        posts.firstOrNull { it.id == publicationId }?.toLatLng()
+            ?: posts.firstOrNull()?.toLatLng()
+            ?: LatLng(6.2442, -75.5812)
+    }
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(firstCoords, 13.5f)
     }
@@ -173,7 +184,7 @@ fun MapScreen(
                 manager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     ?: manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
             }.getOrNull()
-            if (location != null) {
+            if (location != null && publicationId == null) {
                 cameraPositionState.animate(
                     CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude), 14.5f),
                 )

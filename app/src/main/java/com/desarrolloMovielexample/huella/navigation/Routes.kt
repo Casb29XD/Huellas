@@ -32,7 +32,7 @@ sealed interface Routes {
     data object Home : Routes
 
     @Serializable
-    data object Map : Routes
+    data class Map(val publicationId: String? = null) : Routes
 
     @Serializable
     data class Detail(val id: String) : Routes

@@ -137,7 +137,7 @@ fun AppNavigation(
                     onItemClick = { item ->
                         when (item) {
                             BottomBarItem.INICIO -> navController.navigateToTab(Routes.Home)
-                            BottomBarItem.BUSCAR -> navController.navigateToTab(Routes.Map)
+                            BottomBarItem.BUSCAR -> navController.navigateToTab(Routes.Map())
                             BottomBarItem.PUBLICAR -> navController.navigate(Routes.CreatePost())
                             BottomBarItem.SOLICITUDES -> navController.navigateToTab(Routes.Requests(0))
                             BottomBarItem.PERFIL -> navController.navigateToTab(Routes.Profile)
@@ -210,15 +210,17 @@ fun AppNavigation(
             composable<Routes.Home> {
                 HomeScreen(
                     onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
-                    onOpenMap = { navController.navigateToTab(Routes.Map) },
+                    onOpenMap = { navController.navigateToTab(Routes.Map()) },
                     onOpenNotifications = { navController.navigate(Routes.Notifications) },
                     onOpenProfile = { navController.navigateToTab(Routes.Profile) },
                     onCreatePost = { navController.navigate(Routes.CreatePost()) },
                 )
             }
-            composable<Routes.Map> {
+            composable<Routes.Map> { entry ->
+                val route = entry.toRoute<Routes.Map>()
                 MapScreen(
-                    onBack = { navController.navigateToTab(Routes.Home) },
+                    publicationId = route.publicationId,
+                    onBack = { navController.popBackStack() },
                     onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
                 )
             }
@@ -228,7 +230,7 @@ fun AppNavigation(
                     publicationId = detailRoute.id,
                     onBack = { navController.popBackStack() },
                     onOpenAuthor = { userId -> navController.navigate(Routes.PublicProfile(userId)) },
-                    onOpenMap = { navController.navigateToTab(Routes.Map) },
+                    onOpenMap = { id -> navController.navigate(Routes.Map(publicationId = id)) },
                     onEditPublication = { id -> navController.navigate(Routes.CreatePost(id)) }
                 )
             }

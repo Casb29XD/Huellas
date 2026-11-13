@@ -38,7 +38,8 @@ data class CreatePostUiState(
     val title: String = "",
     val description: String = "",
     val city: String = "", // sin ciudad preseleccionada: la del perfil si coincide con el catálogo (ítem 33)
-    val location: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val eventDate: String = "",
     val breedError: UiText? = null,
     val ageError: UiText? = null,
@@ -93,6 +94,8 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
                 sterilized = p.sterilized == true, age = p.age.orEmpty(), sex = p.sex ?: it.sex, title = p.title,
                 description = p.description, city = repo.cities.firstOrNull { c -> c.substringBefore(",") == p.city } ?: p.city,
                 eventDate = p.eventDate.orEmpty(),
+                latitude = p.lat.takeIf { it != 0.0 },
+                longitude = p.lon.takeIf { it != 0.0 },
             )
         }
     }
@@ -111,8 +114,10 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
     fun onSex(v: String) = _uiState.update { it.copy(sex = v) }
     fun onTitle(v: String) = _uiState.update { it.copy(title = v, titleError = null) }
     fun onDescription(v: String) = _uiState.update { it.copy(description = v, descriptionError = null) }
-    fun onCity(v: String) = _uiState.update { it.copy(city = v) }
-    fun onLocation(v: String) = _uiState.update { it.copy(location = v) }
+    fun onCity(v: String) = _uiState.update { it.copy(city = v, latitude = null, longitude = null) }
+    fun onMapLocation(latitude: Double, longitude: Double) = _uiState.update {
+        it.copy(latitude = latitude, longitude = longitude)
+    }
     fun onEventDate(v: String) = _uiState.update { it.copy(eventDate = v, eventDateError = null) }
 
     /** Returns false when already on step 1 (caller leaves the screen). */
@@ -166,7 +171,6 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
         }
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            // ponytail: `location` is not in PublicationDraft yet (no maps this phase); add it with the map picker.
             val result = runCatching {
                 // Al editar, la foto que ya está en pet-images (http/https) no se vuelve a subir.
                 val photo = s.photos.first()
@@ -176,7 +180,7 @@ class CreatePostViewModel(private val repo: HuellaRepository = SupabaseRepositor
                     category = s.category, title = s.title, description = s.description, species = s.species,
                     breed = s.breed, size = s.size, vaccinated = s.vaccinated, sterilized = s.sterilized,
                     age = s.age, sex = s.sex, city = s.city, eventDate = s.eventDate.takeIf { s.needsDate },
-                    imageUrl = imageUrl,
+                    imageUrl = imageUrl, latitude = s.latitude, longitude = s.longitude,
                 )
                 val editingId = s.editingId
                 if (editingId != null) repo.updatePublication(editingId, draft).getOrThrow()

@@ -8,6 +8,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.desarrolloMovielexample.huella.core.utils.asString
 import android.content.Intent
+import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +47,8 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Directions
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MilitaryTech
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Visibility
@@ -94,6 +97,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaTextField
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
 import com.desarrolloMovielexample.huella.core.components.PetImage
 import com.desarrolloMovielexample.huella.core.components.PrimaryButton
+import com.desarrolloMovielexample.huella.core.components.SecondaryButton
 import com.desarrolloMovielexample.huella.core.components.StripedPlaceholder
 import com.desarrolloMovielexample.huella.core.components.categoryIcon
 import com.desarrolloMovielexample.huella.core.components.labelRes
@@ -113,7 +117,7 @@ fun PublicationDetailScreen(
     publicationId: String,
     onBack: () -> Unit,
     onOpenAuthor: (String) -> Unit,
-    onOpenMap: () -> Unit,
+    onOpenMap: (String) -> Unit,
     onEditPublication: (String) -> Unit = {},
     viewModel: PublicationDetailViewModel = viewModel(key = "detail_$publicationId") { PublicationDetailViewModel(publicationId) },
 ) {
@@ -148,12 +152,15 @@ fun PublicationDetailScreen(
 
     val context = LocalContext.current
     val shareText = stringResource(R.string.detail_share_text, pub.title, stringResource(pub.category.labelRes), pub.city)
+    val mapQuery = if (pub.lat != 0.0 && pub.lon != 0.0) "${pub.lat},${pub.lon}"
+        else "${pub.neighborhood}, ${pub.city}, Colombia"
+    val mapLink = "https://maps.google.com/?q=${Uri.encode(mapQuery)}"
     val share = {
         runCatching {
             context.startActivity(
                 Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, shareText)
+                    putExtra(Intent.EXTRA_TEXT, "$shareText\\n$mapLink")
                 }, null),
             )
         }
@@ -166,17 +173,6 @@ fun PublicationDetailScreen(
         snackbarHost = { HuellaSnackbarHost(screenHost) },
         bottomBar = {
             Column {
-                if (state.isAuthorOrMod) {
-                    Row(
-                        Modifier.fillMaxWidth().background(HuellaColors.Surface).padding(horizontal = 16.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (state.isAuthor) {
-                            PrimaryButton(stringResource(R.string.action_edit), onClick = { onEditPublication(pub.id) }, modifier = Modifier.weight(1f))
-                        }
-                        PillButton(stringResource(R.string.action_delete), onClick = { showDeleteConfirm = true }, container = HuellaColors.Error, modifier = Modifier.weight(1f))
-                    }
-                }
                 ActionBar(
                     pub = pub,
                     requestSent = state.requestSent,
@@ -184,7 +180,7 @@ fun PublicationDetailScreen(
                         when {
                             pub.category.isAdoption -> viewModel.openSheet(DetailSheet.INTERES)
                             pub.category.isLostFound -> viewModel.openSheet(DetailSheet.VISTO)
-                            else -> onOpenMap()
+                            else -> onOpenMap(pub.id)
                         }
                     },
                     onCall = { viewModel.openSheet(DetailSheet.LLAMAR) },
@@ -216,6 +212,46 @@ fun PublicationDetailScreen(
                         style = MaterialTheme.typography.titleLarge.copy(lineHeight = 28.6.sp),
                         color = HuellaColors.TextPrimary,
                     )
+                    if (state.isAuthorOrMod) {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(HuellaColors.Surface)
+                                .border(1.dp, HuellaColors.Divider, RoundedCornerShape(16.dp))
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.detail_manage_actions),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = HuellaColors.TextSecondary,
+                            )
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                if (state.isAuthor) {
+                                    SecondaryButton(
+                                        text = stringResource(R.string.action_edit),
+                                        onClick = { onEditPublication(pub.id) },
+                                        modifier = Modifier.weight(1f),
+                                        icon = Icons.Outlined.Edit,
+                                        height = 44.dp,
+                                    )
+                                }
+                                SecondaryButton(
+                                    text = stringResource(R.string.action_delete),
+                                    onClick = { showDeleteConfirm = true },
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Outlined.DeleteOutline,
+                                    contentColor = HuellaColors.Error,
+                                    borderColor = HuellaColors.Error,
+                                    height = 44.dp,
+                                )
+                            }
+                        }
+                    }
                     when {
                         pub.category.isLostFound -> LostFoundInfo(pub)
                         pub.category == Category.VETERINARIA -> VetInfo(pub)
@@ -232,10 +268,10 @@ fun PublicationDetailScreen(
                                 .fillMaxWidth()
                                 .height(140.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .clickable(onClickLabel = stringResource(R.string.home_view_map), onClick = onOpenMap),
+                                .clickable(onClickLabel = stringResource(R.string.home_view_map), onClick = { onOpenMap(pub.id) }),
                             contentAlignment = Alignment.Center,
                         ) {
-                            DetailMiniMap(pub, onOpenMap, Modifier.fillMaxSize())
+                            DetailMiniMap(pub, onOpenMap = { onOpenMap(pub.id) }, Modifier.fillMaxSize())
                             Box(
                                 Modifier
                                     .size(44.dp)

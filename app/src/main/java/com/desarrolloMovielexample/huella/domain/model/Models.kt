@@ -243,4 +243,6 @@ data class PublicationDraft(
     val city: String,
     val eventDate: String? = null,
     val imageUrl: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )

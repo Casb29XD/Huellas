@@ -180,6 +180,7 @@
     <string name="action_cancel">Cancel</string>
     <string name="detail_description">Description</string>
     <string name="detail_location">Location</string>
+    <string name="detail_manage_actions">Manage publication</string>
     <string name="detail_delete_title">Delete post?</string>
     <string name="detail_delete_text">This will permanently delete the post.</string>
     <string name="detail_interest">I\'m interested in adopting</string>
@@ -271,9 +272,11 @@
     <string name="create_title">Title</string>
     <string name="create_title_placeholder">E.g. Luna is looking for a quiet home</string>
     <string name="create_description_placeholder">Personality, health, story, and the kind of home needed…</string>
-    <string name="create_map_location">Location on the map</string>
+    <string name="create_map_location_saved">Map location selected.</string>
+    <string name="create_pick_map_location">Set location on map</string>
+    <string name="create_map_pick_instruction">Tap the map to place the marker at the exact location.</string>
+    <string name="create_map_confirm">Use location</string>
     <string name="optional">Optional</string>
-    <string name="create_map_placeholder">Add a location (neighborhood or landmark)</string>
     <string name="create_date_placeholder">Sat Sep 5 2026 · 6:30 p.m.</string>
     <string name="create_rules">Posts are reviewed by moderators. </string>
     <string name="create_rules_no_sale">Selling animals is prohibited.</string>
