@@ -211,6 +211,7 @@ object FakeRepository : HuellaRepository {
         Conversation("conv_1", author("u_carlos", "Carlos Pérez", Level.PROTECTOR, "CP"), "Sobre: Max, beagle juguetón", "+57 300 555 0144"),
         Conversation("conv_2", author("u_camila", "Camila Restrepo", Level.PROTECTOR, "CR"), "Sobre: Mía, cachorrita juguetona", "+57 300 555 0188"),
     )
+    override val conversationList: StateFlow<List<Conversation>> = MutableStateFlow(conversations).asStateFlow()
     private val chatFlows = mutableMapOf<String, MutableStateFlow<List<ChatMessage>>>()
 
     // ---------- Notifications ----------

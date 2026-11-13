@@ -49,6 +49,9 @@ sealed interface Routes {
     data class Requests(val tab: Int = 0) : Routes
 
     @Serializable
+    data object Messages : Routes
+
+    @Serializable
     data class Chat(val id: String) : Routes
 
     // 05 Perfil

@@ -69,6 +69,7 @@ interface HuellaRepository {
     suspend fun closePublication(publicationId: String): Result<Unit>
 
     // Chat
+    val conversationList: StateFlow<List<Conversation>>
     fun getConversation(id: String): Conversation?
     suspend fun openConversation(contactUserId: String, publicationId: String? = null): Result<String>
     fun messages(conversationId: String): StateFlow<List<ChatMessage>>

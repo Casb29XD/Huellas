@@ -121,6 +121,8 @@ object SupabaseRepository : HuellaRepository {
 
     private val messageFlows = mutableMapOf<String, MutableStateFlow<List<ChatMessage>>>()
     private val conversations = mutableMapOf<String, Conversation>()
+    private val _conversationList = MutableStateFlow<List<Conversation>>(emptyList())
+    override val conversationList: StateFlow<List<Conversation>> = _conversationList.asStateFlow()
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -327,6 +329,7 @@ object SupabaseRepository : HuellaRepository {
         messageFlows.clear()
         commentFlows.clear()
         conversations.clear()
+        _conversationList.value = emptyList()
         clearModeration()
     }
 
@@ -810,6 +813,7 @@ object SupabaseRepository : HuellaRepository {
         val rows = apiCall { api.getConversations() }
         conversations.clear()
         rows.forEach { cacheConversation(it, id) }
+        _conversationList.value = rows.mapNotNull { row -> row.string("id")?.let(conversations::get) }
     }
 
     private suspend fun refreshNotifications() {
@@ -889,6 +893,12 @@ object SupabaseRepository : HuellaRepository {
             about = row.string("about").orEmpty(),
             phone = conversations[id]?.phone.orEmpty(),
         )
+        val updated = conversations.getValue(id)
+        _conversationList.value = if (_conversationList.value.any { it.id == id }) {
+            _conversationList.value.map { if (it.id == id) updated else it }
+        } else {
+            listOf(updated) + _conversationList.value
+        }
     }
 
     private suspend fun fetchMessages(conversationId: String): List<ChatMessage> =

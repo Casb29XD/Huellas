@@ -375,6 +375,10 @@
     <string name="chat_attach_photo">Attach photo</string>
     <string name="chat_placeholder">Write a message</string>
     <string name="requests_title">My requests</string>
+    <string name="messages_title">Messages</string>
+    <string name="messages_empty_title">No messages yet</string>
+    <string name="messages_empty_body">Your conversations will appear here.</string>
+    <string name="messages_you_prefix">You: </string>
     <string name="requests_sent">Sent</string>
     <string name="requests_received">Received</string>
     <string name="requests_sent_empty_title">You haven\'t sent any requests yet</string>

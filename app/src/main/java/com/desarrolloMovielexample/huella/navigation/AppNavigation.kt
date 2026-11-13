@@ -45,6 +45,7 @@ import com.desarrolloMovielexample.huella.features.feed.PublicationDetailScreen
 import com.desarrolloMovielexample.huella.features.legal.TermsScreen
 import com.desarrolloMovielexample.huella.features.moderation.ModerationDetailScreen
 import com.desarrolloMovielexample.huella.features.moderation.ModerationScreen
+import com.desarrolloMovielexample.huella.features.messages.MessagesScreen
 import com.desarrolloMovielexample.huella.features.profile.EditProfileScreen
 import com.desarrolloMovielexample.huella.features.profile.LevelsScreen
 import com.desarrolloMovielexample.huella.features.profile.NotificationsScreen
@@ -61,7 +62,7 @@ private fun tabForDestination(destination: androidx.navigation.NavDestination?):
     return when {
         destination.hierarchy.any { it.hasRoute<Routes.Home>() } -> BottomBarItem.INICIO
         destination.hierarchy.any { it.hasRoute<Routes.Map>() } -> BottomBarItem.BUSCAR
-        destination.hierarchy.any { it.hasRoute<Routes.Requests>() } -> BottomBarItem.SOLICITUDES
+        destination.hierarchy.any { it.hasRoute<Routes.Requests>() || it.hasRoute<Routes.Messages>() } -> BottomBarItem.SOLICITUDES
         destination.hierarchy.any { it.hasRoute<Routes.Profile>() } -> BottomBarItem.PERFIL
         else -> null
     }
@@ -263,6 +264,13 @@ fun AppNavigation(
                     onOpenPublication = { id -> navController.navigate(Routes.Detail(id)) },
                     onOpenChat = { id -> navController.navigate(Routes.Chat(id)) },
                     onExplore = { navController.navigateToTab(Routes.Home) },
+                    onOpenMessages = { navController.navigate(Routes.Messages) },
+                )
+            }
+            composable<Routes.Messages> {
+                MessagesScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenChat = { id -> navController.navigate(Routes.Chat(id)) },
                 )
             }
             composable<Routes.Chat> { entry ->

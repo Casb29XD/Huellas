@@ -378,6 +378,10 @@
     <string name="chat_attach_photo">Adjuntar foto</string>
     <string name="chat_placeholder">Escribe un mensaje</string>
     <string name="requests_title">Mis solicitudes</string>
+    <string name="messages_title">Mensajes</string>
+    <string name="messages_empty_title">Aún no tienes mensajes</string>
+    <string name="messages_empty_body">Cuando inicies una conversación, aparecerá aquí.</string>
+    <string name="messages_you_prefix">Tú: </string>
     <string name="requests_sent">Enviadas</string>
     <string name="requests_received">Recibidas</string>
     <string name="requests_sent_empty_title">Aún no has enviado solicitudes</string>

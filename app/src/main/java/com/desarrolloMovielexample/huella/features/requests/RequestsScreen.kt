@@ -19,8 +19,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -70,6 +72,7 @@ fun RequestsScreen(
     onOpenPublication: (String) -> Unit,
     onOpenChat: (String) -> Unit,
     onExplore: () -> Unit,
+    onOpenMessages: () -> Unit,
     viewModel: RequestsViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -88,12 +91,24 @@ fun RequestsScreen(
                 .fillMaxSize()
                 .padding(inner),
         ) {
-            Text(
-                stringResource(R.string.requests_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = HuellaColors.TextPrimary,
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
-            )
+            Row(
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.requests_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = HuellaColors.TextPrimary,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onOpenMessages) {
+                    Icon(
+                        Icons.Outlined.Email,
+                        contentDescription = stringResource(R.string.messages_title),
+                        tint = HuellaColors.Primary,
+                    )
+                }
+            }
             HuellaTabs(
                 tabs = listOf(stringResource(R.string.requests_sent), stringResource(R.string.requests_received)),
                 selectedIndex = state.selectedTab,
@@ -393,6 +408,7 @@ fun RequestsScreenPreview() {
             onOpenPublication = {},
             onOpenChat = {},
             onExplore = {},
+            onOpenMessages = {},
         )
     }
 }
