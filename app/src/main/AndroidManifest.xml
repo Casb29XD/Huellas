@@ -34,13 +34,13 @@
             <!--
                 Deep link para los correos de Supabase Auth (flujo PKCE, ítems 11 y 36):
                   · Confirmación de registro  → huella://auth/confirm?code=…
-                  · Reset de contraseña       → huella://auth/confirm?type=recovery&code=…
+                  · Reset de contraseña       → huella://auth/recovery?code=…
                 El esquema custom puede interceptarlo otra app, pero el code no sirve sin el
                 code_verifier que solo guarda esta app; los enlaces con token_hash o access_token se
                 rechazan. Pendiente: App Links https con autoVerify=true y assetlinks.json (requiere dominio).
                 Configura la misma URL en Supabase Dashboard → Authentication → URL Configuration:
                   Site URL            : huella://auth
-                  Redirect URLs       : huella://auth/confirm
+                  Redirect URLs       : huella://auth/confirm y huella://auth/recovery
             -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />

@@ -31,6 +31,7 @@ import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.utils.UiText
 import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
+import com.desarrolloMovielexample.huella.data.remote.SupabaseSession
 import com.desarrolloMovielexample.huella.features.auth.ForgotPasswordScreen
 import com.desarrolloMovielexample.huella.features.auth.LoginScreen
 import com.desarrolloMovielexample.huella.features.auth.OnboardingScreen
@@ -116,11 +117,16 @@ fun AppNavigation(
             ?.substringAfter("=")
         val type = deepLinkUri.getQueryParameter("type") ?: fragmentType
 
-        // Recuperación (ítem 11): se canjea el enlace y se pide la contraseña nueva en vez de reenviar el correo.
+        // El callback dedicado evita depender de type=recovery o del estado en memoria del proceso.
+        val isPasswordRecovery = deepLinkUri.path.equals("/recovery", ignoreCase = true) ||
+            type.equals("recovery", ignoreCase = true) ||
+            SupabaseSession.passwordRecoveryPending
+
+        // Recuperación: canjear primero el code PKCE y abrir el formulario solo con una sesión válida.
         val authResult = SupabaseRepository.handleAuthCallback(deepLinkUri)
         val target = when {
             authResult.isFailure -> Routes.Login
-            type == "recovery" -> Routes.SetPassword
+            isPasswordRecovery -> Routes.SetPassword
             else -> Routes.Home
         }
         navController.navigateClearingStack(target)

@@ -51,8 +51,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * All write operations use the user's access token so Supabase RLS remains authoritative.
  */
 object SupabaseRepository : HuellaRepository {
-    /** Deep link de los correos de Auth (debe estar en las Redirect URLs del proyecto). */
+    /** Deep links de Auth: callback de registro y callback dedicado para recuperación. */
     private const val AUTH_REDIRECT = "huella://auth/confirm"
+    private const val PASSWORD_RECOVERY_REDIRECT = "huella://auth/recovery"
     private const val FEED_PAGE = 20
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var appContext: Context
@@ -254,6 +255,7 @@ object SupabaseRepository : HuellaRepository {
             initials = "UH",
         )
         _currentUser.value = user
+        SupabaseSession.setPasswordRecoveryPending(appContext, false)
         startRefreshAll()
         user
     }
@@ -264,8 +266,9 @@ object SupabaseRepository : HuellaRepository {
             addProperty("email", email.trim())
             addPkceChallenge()
         }
-        // type=recovery viaja en el redirect para que AppNavigation abra SetPassword tras canjear el code.
-        apiCall { api.recoverPassword(body, "$AUTH_REDIRECT?type=recovery") }
+        // El path dedicado permite identificar recuperación aunque navegador o correo eliminen parámetros.
+        SupabaseSession.setPasswordRecoveryPending(appContext, true)
+        apiCall { api.recoverPassword(body, PASSWORD_RECOVERY_REDIRECT) }
         Unit
     }
 
