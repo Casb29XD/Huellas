@@ -1,5 +1,12 @@
 package com.desarrolloMovielexample.huella.features.feed
 
+import android.Manifest
+import android.content.Context
+import android.location.LocationManager
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -46,6 +53,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -125,6 +133,14 @@ fun MapScreen(
     var showLost by rememberSaveable { mutableStateOf(true) }
     var showFound by rememberSaveable { mutableStateOf(true) }
     var showVet by rememberSaveable { mutableStateOf(true) }
+    val context = LocalContext.current
+    var hasLocationPermission by remember { mutableStateOf(false) }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { result ->
+        hasLocationPermission = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+    }
 
     val visible = { c: Category ->
         (c == Category.PERDIDOS && showLost) ||
@@ -142,6 +158,28 @@ fun MapScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    LaunchedEffect(Unit) {
+        val fineGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarseGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        hasLocationPermission = fineGranted || coarseGranted
+        if (!hasLocationPermission) {
+            locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+    }
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val location = runCatching {
+                manager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    ?: manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            }.getOrNull()
+            if (location != null) {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude), 14.5f),
+                )
+            }
+        }
+    }
 
     // Centrar cámara si cambian las publicaciones
     LaunchedEffect(firstCoords) {
@@ -160,12 +198,12 @@ fun MapScreen(
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = false,
-                    myLocationButtonEnabled = false,
+                    myLocationButtonEnabled = hasLocationPermission,
                     mapToolbarEnabled = true,
                     compassEnabled = true,
                 ),
                 properties = MapProperties(
-                    isMyLocationEnabled = false,
+                    isMyLocationEnabled = hasLocationPermission,
                 ),
             ) {
                 posts.forEachIndexed { index, post ->

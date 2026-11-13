@@ -69,7 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
 import com.desarrolloMovielexample.huella.core.components.FieldLabel
-import com.desarrolloMovielexample.huella.core.components.HuellaDropdownField
+import com.desarrolloMovielexample.huella.core.components.ColombiaLocationFields
 import com.desarrolloMovielexample.huella.core.components.HuellaFilterChip
 import com.desarrolloMovielexample.huella.core.components.HuellaIcon
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
@@ -434,7 +434,12 @@ private fun StepDescriptionAndLocation(state: CreatePostUiState, vm: CreatePostV
         singleLine = false,
         minHeight = 120.dp,
     )
-    HuellaDropdownField(value = state.city, options = vm.cities, onSelect = vm::onCity, label = stringResource(R.string.field_city))
+    ColombiaLocationFields(
+        value = state.city,
+        onValueChange = vm::onCity,
+        label = stringResource(R.string.field_department),
+        municipalityLabel = stringResource(R.string.field_city),
+    )
     // ponytail: no map this phase — plain text location field in place of the mini-map.
     HuellaTextField(
         value = state.location,

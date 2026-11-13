@@ -177,7 +177,7 @@ object SupabaseRepository : HuellaRepository {
         requireConfigured()
         val metadata = json {
             addProperty("name", name.trim())
-            addProperty("city", city.substringBefore(",").trim())
+            addProperty("city", city.trim())
             addProperty("phone", "")
             addProperty("bio", "")
         }
@@ -291,7 +291,7 @@ object SupabaseRepository : HuellaRepository {
         val id = requireUserId()
         val values = json {
             addProperty("name", name.trim())
-            addProperty("city", city.substringBefore(",").trim())
+            addProperty("city", city.trim())
             addProperty("phone", phone.trim())
             addProperty("bio", bio.trim())
         }

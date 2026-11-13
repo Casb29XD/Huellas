@@ -97,6 +97,7 @@
     <string name="field_name">Name</string>
     <string name="field_name_placeholder">Mariana López</string>
     <string name="field_city">City</string>
+    <string name="field_department">Department</string>
     <string name="field_password_min">At least 8 characters</string>
     <string name="field_confirm_password">Confirm password</string>
     <string name="field_confirm_placeholder">Enter your password again</string>

@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
-import com.desarrolloMovielexample.huella.core.components.HuellaDropdownField
+import com.desarrolloMovielexample.huella.core.components.ColombiaLocationFields
 import com.desarrolloMovielexample.huella.core.components.HuellaSnackbarHost
 import com.desarrolloMovielexample.huella.core.components.HuellaTextField
 import com.desarrolloMovielexample.huella.core.components.HuellaTopBar
@@ -111,13 +111,12 @@ fun RegisterScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
             )
-            HuellaDropdownField(
+            ColombiaLocationFields(
                 value = state.city,
-                options = state.cities,
-                onSelect = viewModel::onCityChange,
-                label = stringResource(R.string.field_city),
+                onValueChange = viewModel::onCityChange,
+                label = stringResource(R.string.field_department),
+                municipalityLabel = stringResource(R.string.field_city),
                 error = state.cityError?.asString(),
-                modifier = Modifier.fillMaxWidth(),
             )
             HuellaTextField(
                 value = state.password,
