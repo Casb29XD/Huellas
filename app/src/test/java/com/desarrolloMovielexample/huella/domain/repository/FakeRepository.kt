@@ -205,6 +205,7 @@ object FakeRepository : HuellaRepository {
         ),
     )
     override val receivedRequests: StateFlow<List<ReceivedRequestGroup>> = _receivedRequests.asStateFlow()
+    override suspend fun refreshReceivedRequests(): Result<Unit> = Result.success(Unit)
 
     // ---------- Chat ----------
     private val conversations = listOf(
@@ -534,6 +535,8 @@ object FakeRepository : HuellaRepository {
         flow.update { it + ChatMessage("m${System.currentTimeMillis()}", conversationId, true, text.trim(), "ahora") }
         return Result.success(Unit)
     }
+
+    override suspend fun refreshNotifications(): Result<Unit> = Result.success(Unit)
 
     override fun markAllNotificationsRead() {
         _notifications.update { list -> list.map { it.copy(read = true) } }

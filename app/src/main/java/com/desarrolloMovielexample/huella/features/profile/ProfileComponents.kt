@@ -6,7 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -67,11 +70,15 @@ internal fun ProfileAvatar(
 /** Row of 3 stat boxes ("3 Publicaciones", "1 Adopciones concretadas", ...). */
 @Composable
 internal fun StatsRow(stats: List<Pair<String, String>>, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(
+        modifier.fillMaxWidth().height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         stats.forEach { (value, label) ->
             Column(
                 Modifier
                     .weight(1f)
+                    .fillMaxHeight()
                     .outlinedCard()
                     .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -87,6 +94,7 @@ internal fun StatsRow(stats: List<Pair<String, String>>, modifier: Modifier = Mo
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
                     color = HuellaColors.TextTertiary,
                     textAlign = TextAlign.Center,
+                    maxLines = 2,
                 )
             }
         }

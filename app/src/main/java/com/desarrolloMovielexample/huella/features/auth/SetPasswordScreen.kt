@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -56,7 +57,7 @@ fun SetPasswordScreen(
     val transformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
 
     Scaffold(
-        topBar = { HuellaTopBar(title = "", onBack = onBack) },
+        topBar = { HuellaTopBar(title = "", modifier = Modifier.statusBarsPadding(), onBack = onBack) },
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
     ) { innerPadding ->

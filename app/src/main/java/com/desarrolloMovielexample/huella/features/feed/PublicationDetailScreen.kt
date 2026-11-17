@@ -136,7 +136,16 @@ fun PublicationDetailScreen(
 
     val pub = state.publication
     if (pub == null) {
-        Scaffold(containerColor = HuellaColors.Background, topBar = { HuellaTopBar(stringResource(R.string.detail_title), onBack = onBack) }) { padding ->
+        Scaffold(
+            containerColor = HuellaColors.Background,
+            topBar = {
+                HuellaTopBar(
+                    stringResource(R.string.detail_title),
+                    Modifier.statusBarsPadding(),
+                    onBack = onBack,
+                )
+            },
+        ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 EmptyState(
                     illustration = R.drawable.illus_searching,

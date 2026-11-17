@@ -202,6 +202,13 @@ interface SupabaseApiService {
         @Query("order") order: String = "created_at.desc",
     ): Response<List<JsonObject>>
 
+    @GET("rest/v1/sightings")
+    suspend fun getSightings(
+        @Query("select") select: String = "*,reporter:profiles!sightings_reporter_id_fkey(id,name,level,initials),publication:publications!inner(author_id)",
+        @Query("publication.author_id") authorId: String,
+        @Query("order") order: String = "created_at.desc",
+    ): Response<List<JsonObject>>
+
     @POST("rest/v1/adoption_requests")
     suspend fun createAdoptionRequest(@Body body: JsonObject): Response<Unit>
 

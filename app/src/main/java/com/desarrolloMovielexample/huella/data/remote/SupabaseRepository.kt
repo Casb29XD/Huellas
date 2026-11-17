@@ -793,6 +793,11 @@ object SupabaseRepository : HuellaRepository {
         }.map { it.toPublication() }
     }
 
+    override suspend fun refreshReceivedRequests(): Result<Unit> = result {
+        refreshRequests()
+        Unit
+    }
+
     private suspend fun refreshRequests() {
         val id = SupabaseSession.userId ?: return
         val sent = apiCall { api.getRequests(select = "*,publications(*)", applicantId = "eq.$id") }
@@ -809,22 +814,40 @@ object SupabaseRepository : HuellaRepository {
         val received = apiCall {
             api.getRequests(select = "*,publications!inner(author_id),applicant:profiles!adoption_requests_applicant_id_fkey(name,level,initials)", order = "created_at.desc")
         }.filter { it.obj("publications")?.string("author_id") == id }
-        _receivedRequests.value = received.groupBy { it.string("publication_id").orEmpty() }
-            .map { (publicationId, rows) ->
-                ReceivedRequestGroup(publicationId, rows.map { row ->
-                    val applicant = row.obj("applicant")
-                    Applicant(
-                        id = row.string("id").orEmpty(),
-                        userId = row.string("applicant_id").orEmpty(),
-                        name = applicant?.string("name") ?: "Usuario Huella",
-                        level = level(applicant?.string("level")),
-                        initials = applicant?.string("initials").orEmpty(),
-                        message = row.string("message").orEmpty(),
-                        timeAgo = relativeTime(row.string("created_at")),
-                        status = requestStatus(row.string("status")),
-                    )
-                })
+        val applicantsByPublication = received.groupBy { it.string("publication_id").orEmpty() }
+        val sightingRows = apiCall { api.getSightings(authorId = "eq.$id") }
+            .filter { it.obj("publication")?.string("author_id") == id }
+        val sightingsByPublication = sightingRows.groupBy { it.string("publication_id").orEmpty() }
+        val publicationIds = (applicantsByPublication.keys + sightingsByPublication.keys).distinct()
+
+        _receivedRequests.value = publicationIds.map { publicationId ->
+            val applicants = applicantsByPublication[publicationId].orEmpty().map { row ->
+                val applicant = row.obj("applicant")
+                Applicant(
+                    id = row.string("id").orEmpty(),
+                    userId = row.string("applicant_id").orEmpty(),
+                    name = applicant?.string("name") ?: "Usuario Huella",
+                    level = level(applicant?.string("level")),
+                    initials = applicant?.string("initials").orEmpty(),
+                    message = row.string("message").orEmpty(),
+                    timeAgo = relativeTime(row.string("created_at")),
+                    status = requestStatus(row.string("status")),
+                )
             }
+            val sightings = sightingsByPublication[publicationId].orEmpty().map { row ->
+                val reporter = row.obj("reporter")
+                SightingReport(
+                    id = row.string("id").orEmpty(),
+                    userId = row.string("reporter_id").orEmpty(),
+                    name = reporter?.string("name") ?: "Usuario Huella",
+                    level = level(reporter?.string("level")),
+                    initials = reporter?.string("initials").orEmpty(),
+                    message = row.string("text").orEmpty(),
+                    timeAgo = relativeTime(row.string("created_at")),
+                )
+            }
+            ReceivedRequestGroup(publicationId, applicants, sightings)
+        }
     }
 
     private suspend fun refreshPointsHistory() {
@@ -845,7 +868,7 @@ object SupabaseRepository : HuellaRepository {
         _conversationList.value = rows.mapNotNull { row -> row.string("id")?.let(conversations::get) }
     }
 
-    private suspend fun refreshNotifications() {
+    override suspend fun refreshNotifications(): Result<Unit> = result {
         val now = System.currentTimeMillis()
         _notifications.value = apiCall { api.getNotifications() }.map { row ->
             AppNotification(
@@ -860,6 +883,7 @@ object SupabaseRepository : HuellaRepository {
                 targetId = row.string("target_id"),
             )
         }
+        Unit
     }
 
     private suspend fun refreshModeration() {

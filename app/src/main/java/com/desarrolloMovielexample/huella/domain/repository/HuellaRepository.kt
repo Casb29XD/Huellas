@@ -65,6 +65,7 @@ interface HuellaRepository {
     // Requests
     val sentRequests: StateFlow<List<SentRequest>>
     val receivedRequests: StateFlow<List<ReceivedRequestGroup>>
+    suspend fun refreshReceivedRequests(): Result<Unit>
     suspend fun sendAdoptionRequest(publicationId: String, message: String): Result<Unit>
     suspend fun respondToRequest(applicantId: String, accept: Boolean): Result<Unit>
     suspend fun closePublication(publicationId: String): Result<Unit>
@@ -78,6 +79,7 @@ interface HuellaRepository {
 
     // Notifications
     val notifications: StateFlow<List<AppNotification>>
+    suspend fun refreshNotifications(): Result<Unit>
     fun markAllNotificationsRead()
     fun markNotificationRead(id: String)
     fun deleteNotification(id: String)

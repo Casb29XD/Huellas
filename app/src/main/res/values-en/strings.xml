@@ -391,7 +391,9 @@
     <string name="requests_sent_empty_text">When you find a pet you love, tap “I\'m interested in adopting” and your request will appear here.</string>
     <string name="requests_explore">Explore pets</string>
     <string name="requests_received_empty_title">You haven\'t received any requests yet</string>
-    <string name="requests_received_empty_text">When someone is interested in your posts, their message will appear here so you can reply.</string>
+    <string name="requests_received_empty_text">When someone is interested in your posts or reports a sighting, you will see who it was and their message here.</string>
+    <string name="requests_sighting_title">Sighting reported</string>
+    <string name="requests_contact_sighter">Message them</string>
     <string name="requests_pub_summary">%1$s · %2$s · %3$s</string>
     <string name="requests_view_post">View post</string>
     <string name="action_reject">Reject</string>

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,7 +81,7 @@ fun RegisterScreen(
     val passwordTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
 
     Scaffold(
-        topBar = { HuellaTopBar(title = stringResource(R.string.register_title), onBack = onBack) },
+        topBar = { HuellaTopBar(stringResource(R.string.register_title), Modifier.statusBarsPadding(), onBack = onBack) },
         snackbarHost = { HuellaSnackbarHost(snackbarHostState) },
         containerColor = HuellaColors.Background,
     ) { innerPadding ->

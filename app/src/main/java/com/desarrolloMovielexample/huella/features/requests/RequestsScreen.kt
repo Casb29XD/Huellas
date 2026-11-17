@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +65,7 @@ import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.core.theme.toneColor
 import com.desarrolloMovielexample.huella.domain.model.Applicant
 import com.desarrolloMovielexample.huella.domain.model.RequestStatus
+import com.desarrolloMovielexample.huella.domain.model.SightingReport
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -77,7 +79,10 @@ fun RequestsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(initialTab) { viewModel.setInitialTab(initialTab) }
+    LaunchedEffect(initialTab) {
+        viewModel.setInitialTab(initialTab)
+        viewModel.refreshReceived()
+    }
     val resources = LocalContext.current.resources
     LaunchedEffect(Unit) { viewModel.messages.collect { snackbarHostState.showSnackbar(it.resolve(resources)) } }
     LaunchedEffect(Unit) { viewModel.openChats.collect(onOpenChat) }
@@ -173,6 +178,7 @@ fun RequestsScreen(
                                 onOpenPublication = { onOpenPublication(group.publication.id) },
                                 onRespond = { applicant, accept -> viewModel.respond(applicant, group.publication.id, accept) },
                                 onContact = { applicant -> viewModel.openChat(applicant, group.publication.id) },
+                                onContactSighting = { sighting -> viewModel.openChat(sighting.userId, group.publication.id) },
                             )
                         }
                     }
@@ -202,6 +208,7 @@ private fun ReceivedGroupCard(
     onOpenPublication: () -> Unit,
     onRespond: (Applicant, Boolean) -> Unit,
     onContact: (Applicant) -> Unit,
+    onContactSighting: (SightingReport) -> Unit,
 ) {
     val p = group.publication
     Column(
@@ -245,6 +252,9 @@ private fun ReceivedGroupCard(
             }
             Icon(Icons.Outlined.ChevronRight, contentDescription = stringResource(R.string.requests_view_post), tint = HuellaColors.TextTertiary, modifier = Modifier.size(22.dp))
         }
+        group.sightings.forEach { sighting ->
+            SightingCard(sighting, onContact = { onContactSighting(sighting) })
+        }
         group.applicants.forEach { applicant ->
             ApplicantCard(
                 applicant = applicant,
@@ -252,6 +262,48 @@ private fun ReceivedGroupCard(
                 onReject = { onRespond(applicant, false) },
                 onAccept = { onRespond(applicant, true) },
                 onContact = { onContact(applicant) },            )
+        }
+    }
+}
+
+@Composable
+private fun SightingCard(sighting: SightingReport, onContact: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(HuellaColors.Background)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Avatar(sighting.initials, sighting.level, size = 40.dp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    sighting.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = MaterialTheme.typography.labelMedium.fontWeight,
+                    color = HuellaColors.TextPrimary,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Outlined.Visibility, contentDescription = null, tint = HuellaColors.Primary, modifier = Modifier.size(16.dp))
+                    Text(stringResource(R.string.requests_sighting_title), style = MaterialTheme.typography.labelMedium, color = HuellaColors.Primary)
+                }
+            }
+            Text(sighting.timeAgo.asString(), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextTertiary)
+        }
+        Text(
+            sighting.message,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, lineHeight = 19.5.sp),
+            color = HuellaColors.TextBody,
+        )
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onContact).padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            HuellaIcon(R.drawable.icon_accion_mensaje, tint = HuellaColors.Primary, size = 20.dp)
+            Text(stringResource(R.string.requests_contact_sighter), style = MaterialTheme.typography.labelMedium, color = HuellaColors.PrimaryText)
         }
     }
 }

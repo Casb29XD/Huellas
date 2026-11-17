@@ -165,9 +165,20 @@ data class Applicant(
     val status: RequestStatus = RequestStatus.PENDIENTE,
 )
 
+data class SightingReport(
+    val id: String,
+    val userId: String,
+    val name: String,
+    val level: Level,
+    val initials: String,
+    val message: String,
+    val timeAgo: UiText,
+)
+
 data class ReceivedRequestGroup(
     val publicationId: String,
     val applicants: List<Applicant>,
+    val sightings: List<SightingReport> = emptyList(),
 )
 
 data class Conversation(

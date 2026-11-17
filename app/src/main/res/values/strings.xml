@@ -394,7 +394,9 @@
     <string name="requests_sent_empty_text">Cuando encuentres una mascota que te robe el corazón, toca “Me interesa adoptar” y aparecerá aquí.</string>
     <string name="requests_explore">Explorar mascotas</string>
     <string name="requests_received_empty_title">Aún no has recibido solicitudes</string>
-    <string name="requests_received_empty_text">Cuando alguien se interese en tus publicaciones, verás aquí su mensaje para que puedas responder.</string>
+    <string name="requests_received_empty_text">Cuando alguien se interese en tus publicaciones o reporte un avistamiento, verás aquí quién fue y su mensaje.</string>
+    <string name="requests_sighting_title">Avistamiento reportado</string>
+    <string name="requests_contact_sighter">Escribirle</string>
     <string name="requests_pub_summary">%1$s · %2$s · %3$s</string>
     <string name="requests_view_post">Ver publicación</string>
     <string name="action_reject">Rechazar</string>

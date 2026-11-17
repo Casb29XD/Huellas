@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,7 +53,10 @@ fun DetailedStatsSection(stats: ProfileStats, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(stringResource(R.string.stats_title), style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), color = HuellaColors.TextPrimary)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             StatPill(
                 count = stats.activeCount,
                 label = stringResource(R.string.stats_active),
@@ -86,6 +92,7 @@ private fun StatPill(
 ) {
     Column(
         modifier = modifier
+            .fillMaxHeight()
             .clip(RoundedCornerShape(10.dp))
             .background(containerColor)
             .padding(vertical = 8.dp, horizontal = 6.dp),
@@ -93,7 +100,13 @@ private fun StatPill(
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(count.toString(), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = contentColor)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = contentColor)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = contentColor,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            maxLines = 2,
+        )
     }
 }
 

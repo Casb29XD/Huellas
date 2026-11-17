@@ -2,6 +2,7 @@ package com.desarrolloMovielexample.huella.features.profile
 
 import com.desarrolloMovielexample.huella.core.utils.asString
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -32,13 +34,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -291,28 +289,20 @@ private fun ModerationEntry(onClick: () -> Unit, modifier: Modifier = Modifier) 
     Row(
         modifier
             .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(HuellaColors.Surface)
-            .drawBehind {
-                val stroke = 1.dp.toPx()
-                drawRoundRect(
-                    color = HuellaColors.Outline,
-                    topLeft = androidx.compose.ui.geometry.Offset(stroke / 2, stroke / 2),
-                    size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
-                    cornerRadius = CornerRadius(12.dp.toPx()),
-                    style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))),
-                )
-            }
+            .background(HuellaColors.PrimarySoft)
+            .border(1.dp, HuellaColors.Primary.copy(alpha = 0.24f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        HuellaIcon(R.drawable.icon_accion_moderacion, tint = HuellaColors.TextSecondary, size = 26.dp)
+        HuellaIcon(R.drawable.icon_accion_moderacion, tint = HuellaColors.Primary, size = 28.dp)
         Text(
             stringResource(R.string.moderation_panel),
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-            color = HuellaColors.TextSecondary,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+            color = HuellaColors.PrimaryText,
             modifier = Modifier.weight(1f),
         )
         Text(

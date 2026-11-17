@@ -9,6 +9,7 @@ import com.desarrolloMovielexample.huella.core.utils.uiText
 import com.desarrolloMovielexample.huella.domain.model.Applicant
 import com.desarrolloMovielexample.huella.domain.model.Publication
 import com.desarrolloMovielexample.huella.domain.model.ReceivedRequestGroup
+import com.desarrolloMovielexample.huella.domain.model.SightingReport
 import com.desarrolloMovielexample.huella.domain.model.SentRequest
 import com.desarrolloMovielexample.huella.data.remote.SupabaseRepository
 import com.desarrolloMovielexample.huella.domain.repository.HuellaRepository
@@ -24,7 +25,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class SentRequestUi(val request: SentRequest, val publication: Publication)
-data class ReceivedGroupUi(val publication: Publication, val applicants: List<Applicant>)
+data class ReceivedGroupUi(
+    val publication: Publication,
+    val applicants: List<Applicant>,
+    val sightings: List<SightingReport>,
+)
 
 data class RequestsUiState(
     val selectedTab: Int = 0,
@@ -54,10 +59,16 @@ class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository)
 
     private fun merge(l: RequestsUiState, sent: List<SentRequest>, received: List<ReceivedRequestGroup>) = l.copy(
         sent = sent.mapNotNull { r -> repo.getPublication(r.publicationId)?.let { SentRequestUi(r, it) } },
-        received = received.mapNotNull { g -> repo.getPublication(g.publicationId)?.let { ReceivedGroupUi(it, g.applicants) } },
+        received = received.mapNotNull { g ->
+            repo.getPublication(g.publicationId)?.let { ReceivedGroupUi(it, g.applicants, g.sightings) }
+        },
     )
 
     private var tabInitialized = false
+
+    fun refreshReceived() {
+        viewModelScope.launch { repo.refreshReceivedRequests() }
+    }
 
     /** Applies the tab requested by navigation only once (returning from chat keeps the user's tab). */
     fun setInitialTab(tab: Int) {
@@ -84,9 +95,11 @@ class RequestsViewModel(private val repo: HuellaRepository = SupabaseRepository)
         }
     }
 
-    fun openChat(applicant: Applicant, publicationId: String) {
+    fun openChat(applicant: Applicant, publicationId: String) = openChat(applicant.userId, publicationId)
+
+    fun openChat(userId: String, publicationId: String) {
         viewModelScope.launch {
-            repo.openConversation(applicant.userId, publicationId)
+            repo.openConversation(userId, publicationId)
                 .onSuccess { _openChats.send(it) }
                 .onFailure { e -> _messages.send(e.toUiText(R.string.error_open_chat)) }
         }

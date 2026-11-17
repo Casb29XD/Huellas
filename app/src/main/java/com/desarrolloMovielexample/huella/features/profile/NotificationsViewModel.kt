@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class NotificationsUiState(
     /** Grupos "Hoy", "Ayer", "Esta semana", "Antes" en orden de aparición (la lista llega por created_at desc). */
@@ -33,6 +34,10 @@ class NotificationsViewModel(private val repo: HuellaRepository = SupabaseReposi
 
     private val _messages = Channel<UiText>(Channel.BUFFERED)
     val messages: Flow<UiText> = _messages.receiveAsFlow()
+
+    init {
+        viewModelScope.launch { repo.refreshNotifications() }
+    }
 
     fun markAsRead(id: String) {
         repo.markNotificationRead(id)

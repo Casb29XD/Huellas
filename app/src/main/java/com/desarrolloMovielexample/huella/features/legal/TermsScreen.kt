@@ -3,6 +3,7 @@ package com.desarrolloMovielexample.huella.features.legal
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +28,7 @@ fun TermsScreen(onBack: () -> Unit) {
         context.resources.openRawResource(R.raw.terminos).bufferedReader(Charsets.UTF_8).use { it.readText() }
     }
     Scaffold(
-        topBar = { HuellaTopBar(title = stringResource(R.string.terms_title), onBack = onBack) },
+        topBar = { HuellaTopBar(stringResource(R.string.terms_title), Modifier.statusBarsPadding(), onBack = onBack) },
         containerColor = HuellaColors.Background,
     ) { padding ->
         Column(
