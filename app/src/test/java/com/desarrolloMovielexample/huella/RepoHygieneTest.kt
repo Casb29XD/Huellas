@@ -79,9 +79,11 @@ class RepoHygieneTest {
     }
 
     @Test
-    fun `item 33 - sin permisos de ubicacion ni slider de distancia mientras no haya geolocalizacion`() {
+    fun `item 33 - el permiso de ubicacion solo si el mapa lo pide y sin slider de distancia`() {
+        // MapScreen ya centra el mapa en el usuario: el permiso se declara solo si el código lo solicita.
         val manifest = file("app/src/main/AndroidManifest.xml")
-        assertFalse("permiso de ubicación sin uso", "LOCATION" in manifest)
+        val requested = "ACCESS_FINE_LOCATION" in file("app/src/main/java/com/desarrolloMovielexample/huella/features/feed/MapScreen.kt")
+        assertTrue("permiso de ubicación sin uso", "LOCATION" !in manifest || requested)
         assertFalse("filtro de distancia decorativo", "distanceKm" in file("app/src/main/java/com/desarrolloMovielexample/huella/features/feed/HomeViewModel.kt"))
     }
 

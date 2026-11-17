@@ -112,11 +112,7 @@ object SupabaseRepository : HuellaRepository {
         PointsAction("Reportar un avistamiento", 5),
         PointsAction("Adopción concretada", 50),
     )
-    override val cities = listOf(
-        "Medellín, Antioquia", "Envigado, Antioquia", "Bogotá, Cundinamarca",
-        "Cali, Valle del Cauca", "Barranquilla, Atlántico", "Cartagena, Bolívar",
-        "Bucaramanga, Santander", "Pereira, Risaralda", "Manizales, Caldas",
-    )
+    override val cities = com.desarrolloMovielexample.huella.core.components.ColombiaLocations.cities
     override val species = listOf("Perro", "Gato", "Ave", "Conejo", "Roedor", "Otro")
     override val breedSuggestions = listOf("Criollo", "Mestizo")
 
