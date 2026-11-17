@@ -372,12 +372,11 @@ Más detalles en [docs/MODERACION_IA.md](docs/MODERACION_IA.md).
 </details>
 
 <details>
-<summary><b>Tareas programadas, Storage y Realtime</b></summary>
+<summary><b>Tareas programadas y Storage</b></summary>
 
 - **pg_cron** (horas UTC): `huellas_cierre_automatico` (08:00, finaliza perdidos y encontrados de más de 60 días) y
   `huellas_limpieza_notificaciones` (08:30, borra avisos leídos de más de 90 días).
 - **Storage**: bucket público `pet-images`; cada usuario escribe solo en `<uid>/…`, máximo 5 MB, solo imágenes.
-- **Realtime**: `chat_messages` y `notifications` están publicadas; la app todavía recarga al enviar o abrir la pantalla.
 </details>
 
 <details>
