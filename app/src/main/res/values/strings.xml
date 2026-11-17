@@ -161,6 +161,12 @@
     <string name="filter_size">Tamaño</string>
     <string name="filter_only_vaccinated">Solo con vacunas</string>
     <string name="filter_only_sterilized">Solo castrados</string>
+    <string name="filter_near_me">Cerca de mí</string>
+    <string name="filter_distance_value">Hasta %1$d km de tu ubicación</string>
+    <string name="filter_distance_chip">A %1$d km</string>
+    <string name="filter_distance_hint">Solo aparecen las publicaciones que tienen un punto en el mapa.</string>
+    <string name="filter_location_denied">Para filtrar por distancia, permite el acceso a tu ubicación.</string>
+    <string name="filter_location_unavailable">No pudimos obtener tu ubicación. Activa el GPS o abre el mapa y vuelve a intentarlo.</string>
     <string name="action_clear">Limpiar</string>
     <string name="action_apply">Aplicar</string>
     <string name="all_cities">Todas las ciudades</string>

@@ -87,6 +87,11 @@ import com.desarrolloMovielexample.huella.core.theme.HuellaColors
 import com.desarrolloMovielexample.huella.core.theme.HuellaTheme
 import com.desarrolloMovielexample.huella.core.theme.color
 import com.desarrolloMovielexample.huella.domain.model.Category
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import kotlin.math.roundToInt
 
 @Composable
 fun HomeScreen(
@@ -459,6 +464,10 @@ private fun ActiveFilterChips(
         filters.city?.let {
             HuellaFilterChip(it.substringBefore(","), true, { onUpdate(filters.copy(city = null)) }, onRemove = { onUpdate(filters.copy(city = null)) })
         }
+        filters.maxDistanceKm?.let { km ->
+            val off = { onUpdate(filters.copy(maxDistanceKm = null, origin = null)) }
+            HuellaFilterChip(stringResource(R.string.filter_distance_chip, km), true, off, onRemove = off)
+        }
     }
 }
 
@@ -509,10 +518,50 @@ private fun FiltersSheet(
                 label = stringResource(R.string.field_city),
                 placeholder = allCities,
             )
+            NearMeFilter(draft) { draft = it }
             Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryButton(stringResource(R.string.action_clear), onClick = onClear, modifier = Modifier.weight(1f))
                 PrimaryButton(stringResource(R.string.action_apply), onClick = { onApply(draft) }, modifier = Modifier.weight(1f))
             }
+        }
+    }
+}
+
+/** "Cerca de mí": pide permiso de ubicación, toma la posición del celular y muestra el slider de 1 a 50 km. */
+@Composable
+private fun NearMeFilter(draft: FeedFilters, onChange: (FeedFilters) -> Unit) {
+    val context = LocalContext.current
+    var error by remember { mutableStateOf<Int?>(null) }
+    fun enable() {
+        val here = lastKnownLocation(context)
+        error = if (here == null) R.string.filter_location_unavailable else null
+        if (here != null) onChange(draft.copy(maxDistanceKm = draft.maxDistanceKm ?: 10, origin = here))
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result.values.any { it }) enable() else error = R.string.filter_location_denied
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SwitchRow(stringResource(R.string.filter_near_me), draft.maxDistanceKm != null) { on ->
+            when {
+                !on -> {
+                    error = null
+                    onChange(draft.copy(maxDistanceKm = null, origin = null))
+                }
+                hasLocationPermission(context) -> enable()
+                else -> permissionLauncher.launch(LocationPermissions)
+            }
+        }
+        error?.let { Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = HuellaColors.ErrorDark) }
+        draft.maxDistanceKm?.let { km ->
+            Text(stringResource(R.string.filter_distance_value, km), style = MaterialTheme.typography.bodyMedium, color = HuellaColors.TextPrimary)
+            Slider(
+                value = km.toFloat(),
+                onValueChange = { onChange(draft.copy(maxDistanceKm = it.roundToInt())) },
+                valueRange = 1f..50f,
+                colors = SliderDefaults.colors(thumbColor = HuellaColors.Primary, activeTrackColor = HuellaColors.Primary),
+                modifier = Modifier.testTag("distance_slider"),
+            )
+            Text(stringResource(R.string.filter_distance_hint), style = MaterialTheme.typography.bodySmall, color = HuellaColors.TextSecondary)
         }
     }
 }

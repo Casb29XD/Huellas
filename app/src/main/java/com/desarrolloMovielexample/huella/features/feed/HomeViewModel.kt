@@ -23,6 +23,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.Normalizer
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** Filters chosen in the "Filtros" bottom sheet. null / false = not applied. */
 data class FeedFilters(
@@ -31,9 +36,12 @@ data class FeedFilters(
     val onlyVaccinated: Boolean = false,
     val onlySterilized: Boolean = false,
     val city: String? = null,          // full name, e.g. "Medellín, Antioquia"
-    // ponytail: sin filtro de distancia hasta que haya geolocalización real (ítem 33).
+    /** "Cerca de mí": radio en km alrededor de [origin] (ubicación del celular al activarlo). */
+    val maxDistanceKm: Int? = null,
+    val origin: Pair<Double, Double>? = null,
 ) {
-    val isActive: Boolean get() = species != null || size != null || onlyVaccinated || onlySterilized || city != null
+    val isActive: Boolean
+        get() = species != null || size != null || onlyVaccinated || onlySterilized || city != null || maxDistanceKm != null
 }
 
 data class HomeUiState(
@@ -144,7 +152,19 @@ class HomeViewModel(private val repo: HuellaRepository = SupabaseRepository) : V
 private fun String.normalized(): String =
     Normalizer.normalize(lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
 
-/** Every word of [query] must appear in title / species / breed / city / category. */
+/** Distancia en km entre dos puntos (fórmula de Haversine). */
+internal fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val a = sin(dLat / 2).pow(2) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2)
+    return 6371.0 * 2 * atan2(sqrt(a), sqrt(1 - a))
+}
+
+/**
+ * Every word of [query] must appear in title / species / breed / city / category.
+ * Con "Cerca de mí" solo quedan las publicaciones con punto en el mapa dentro del radio.
+ */
+// ponytail: la distancia se filtra sobre las páginas ya cargadas, como tamaño y vacunas; pasarla a una RPC si el feed crece mucho.
 internal fun filterFeed(
     pubs: List<Publication>,
     query: String,
@@ -161,6 +181,14 @@ internal fun filterFeed(
             (filters.size == null || p.size == filters.size) &&
             (!filters.onlyVaccinated || p.vaccinated) &&
             (!filters.onlySterilized || p.sterilized == true) &&
-            (city == null || p.city == city)
+            (city == null || p.city == city) &&
+            withinDistance(p, filters)
     }
+}
+
+private fun withinDistance(p: Publication, filters: FeedFilters): Boolean {
+    val max = filters.maxDistanceKm ?: return true
+    val (lat, lon) = filters.origin ?: return true
+    if (p.lat == 0.0 && p.lon == 0.0) return false
+    return distanceKm(lat, lon, p.lat, p.lon) <= max
 }
