@@ -161,6 +161,12 @@
     <string name="filter_size">Size</string>
     <string name="filter_only_vaccinated">Vaccinated only</string>
     <string name="filter_only_sterilized">Spayed or neutered only</string>
+    <string name="filter_near_me">Near me</string>
+    <string name="filter_distance_value">Up to %1$d km from you</string>
+    <string name="filter_distance_chip">Within %1$d km</string>
+    <string name="filter_distance_hint">Only posts with a point on the map are shown.</string>
+    <string name="filter_location_denied">To filter by distance, allow access to your location.</string>
+    <string name="filter_location_unavailable">We could not get your location. Turn on GPS or open the map and try again.</string>
     <string name="action_clear">Clear</string>
     <string name="action_apply">Apply</string>
     <string name="all_cities">All cities</string>

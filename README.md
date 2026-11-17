@@ -57,15 +57,16 @@ cuando el publicador acepta se abre un chat dentro de la app para coordinar la a
 
 | | Funcionalidad | Detalle |
 |---|---|---|
-| 🔐 | **Cuenta** | Registro con correo o Google, verificación por correo, recuperación de contraseña (PKCE con deep link `huella://auth/confirm`) y borrado de cuenta. |
-| 🏠 | **Inicio** | Lista de publicaciones aprobadas con búsqueda y filtros por categoría, especie, tamaño, ciudad, vacunados y esterilizados. |
-| 🗺️ | **Mapa** | Vista de mapa con Google Maps para ver perdidos y encontrados cerca. |
-| 📝 | **Publicar** | Asistente de 3 pasos: categoría y fotos, datos de la mascota, título, descripción y ciudad. |
+| 🔐 | **Cuenta** | Registro con correo o Google (con departamento y municipio), verificación por correo, recuperación de contraseña (PKCE con deep link `huella://auth/confirm`) y borrado de cuenta. |
+| 🏠 | **Inicio** | Lista de publicaciones aprobadas con búsqueda y filtros por categoría, especie, tamaño, ciudad, vacunados, esterilizados y distancia. |
+| 🗺️ | **Mapa** | Google Maps centrado en tu ubicación (GPS) con los perdidos, encontrados y jornadas cercanas. |
+| 📍 | **Cerca de mí** | Filtro por distancia: usa la ubicación del celular y un slider de 1 a 50 km. |
+| 📝 | **Publicar** | Asistente de 3 pasos: categoría y fotos, datos de la mascota, título, descripción, departamento y municipio, y el punto exacto en el mapa. |
 | 🛡️ | **Moderación** | Toda publicación entra *En revisión*. Un moderador la aprueba o la rechaza con motivo obligatorio. |
 | 🤖 | **IA para moderadores** | Botón *Analizar con IA*: DeepSeek da una segunda opinión (señales de venta, contenido inapropiado). Solo sugiere, decide la persona. |
 | 🚩 | **Denuncias** | Cualquier usuario puede reportar una publicación; los reportes llegan al panel de moderación. |
 | 📨 | **Solicitudes de adopción** | El interesado postula con un mensaje; el publicador acepta o rechaza desde *Solicitudes recibidas*. |
-| 💬 | **Chat** | Al aceptar una solicitud se abre una conversación ligada a la publicación, sin exponer el teléfono. |
+| 💬 | **Chat y mensajes** | Al aceptar una solicitud se abre una conversación ligada a la publicación, sin exponer el teléfono. Todas quedan en la bandeja de Mensajes. |
 | 👀 | **Lo he visto** | Reporte de avistamiento en publicaciones de mascotas perdidas, con aviso al autor. |
 | 🔔 | **Notificaciones** | Solicitudes nuevas, solicitudes aceptadas o rechazadas, publicación aprobada o rechazada, subida de nivel. |
 | 🏆 | **Puntos y niveles** | El servidor da puntos por cada acción útil y calcula el nivel: Amigo Animal → Protector → Guardián → Héroe de las Mascotas. |
@@ -303,6 +304,11 @@ Huellas/
 
 ## Empezar
 
+### Instalar el APK
+
+Para probar la app sin compilar, descarga el APK de la [última versión](https://github.com/Casb29XD/Huellas/releases/latest)
+en el celular (Android 10 o superior) y permite *Instalar apps desconocidas*.
+
 ### Requisitos
 
 - JDK 17+ y Android SDK Platform 37 (Android Studio reciente con AGP 9.5). `minSdk 29`.
@@ -332,9 +338,9 @@ Huellas/
 
 ## Pruebas
 
-| Suite | Qué prueba | Resultado v1.0 |
+| Suite | Qué prueba | Resultado |
 |---|---|---|
-| App (JUnit + Robolectric + E2E) | Casos de uso, endpoints, pantallas sin emulador y flujos reales contra Supabase | 119 pruebas en 30 clases, sin fallos |
+| App (JUnit + Robolectric + E2E) | Casos de uso, endpoints, pantallas sin emulador y flujos reales contra Supabase | 122 pruebas en 32 clases, sin fallos |
 | Base de datos (pgTAP) | RLS, puntos, solicitudes, chat y borrado de cuenta | 22 pruebas, 225 comprobaciones |
 | Edge Functions (Deno) | `moderate-ai` y `verify-image` | 10 de 10 |
 
