@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 
 data class LoginUiState(
     val email: String = "",
@@ -53,22 +55,39 @@ class LoginViewModel(private val repo: HuellaRepository = SupabaseRepository) : 
         _messages.trySend(uiText(R.string.error_google_config))
     }
 
-    fun googleSignInFailed() {
+    fun googleSignInFailed(error: Throwable? = null) {
         _uiState.update { it.copy(isLoading = false) }
-        _messages.trySend(uiText(R.string.error_google_sign_in))
+        _messages.trySend(error?.toUiText(R.string.error_google_sign_in) ?: uiText(R.string.error_google_sign_in))
+    }
+
+    fun googleServerTimedOut() {
+        _uiState.update { it.copy(isLoading = false) }
+        _messages.trySend(uiText(R.string.error_google_server_timeout))
+    }
+
+    fun googleCredentialTimedOut() {
+        _uiState.update { it.copy(isLoading = false) }
+        _messages.trySend(uiText(R.string.error_google_credential_timeout))
+    }
+
+    fun googleSignInNoCredential() {
+        _uiState.update { it.copy(isLoading = false) }
+        _messages.trySend(uiText(R.string.error_google_no_credential))
     }
 
     fun loginWithGoogle(idToken: String, nonce: String) {
         viewModelScope.launch {
-            repo.loginWithGoogle(idToken, nonce)
-                .onSuccess { user ->
-                    _messages.trySend(uiText(R.string.msg_hello, user.name.substringBefore(' ')))
-                    _uiState.update { it.copy(isLoading = false, loggedIn = true) }
-                }
-                .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    _messages.trySend(error.toUiText(R.string.error_google_sign_in))
-                }
+            try {
+                // Auth y carga del perfil son dos llamadas secuenciales; móvil puede tardar más que Credential Manager.
+                withTimeout(60_000) { repo.loginWithGoogle(idToken, nonce) }
+                    .onSuccess { user ->
+                        _messages.trySend(uiText(R.string.msg_hello, user.name.substringBefore(' ')))
+                        _uiState.update { it.copy(isLoading = false, loggedIn = true) }
+                    }
+                    .onFailure { error -> googleSignInFailed(error) }
+            } catch (_: TimeoutCancellationException) {
+                googleServerTimedOut()
+            }
         }
     }
 

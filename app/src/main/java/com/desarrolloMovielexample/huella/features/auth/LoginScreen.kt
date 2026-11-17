@@ -45,12 +45,15 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import androidx.credentials.exceptions.NoCredentialException
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.desarrolloMovielexample.huella.BuildConfig
 import java.security.MessageDigest
 import java.security.SecureRandom
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.desarrolloMovielexample.huella.R
@@ -159,19 +162,18 @@ fun LoginScreen(
                             scope.launch {
                                 try {
                                     val (nonce, hashedNonce) = createGoogleNonce()
-                                    val googleOption = GetGoogleIdOption.Builder()
-                                        .setFilterByAuthorizedAccounts(false)
-                                        .setServerClientId(webClientId)
-                                        .setAutoSelectEnabled(false)
+                                    val googleOption = GetSignInWithGoogleOption.Builder(webClientId)
                                         .setNonce(hashedNonce)
                                         .build()
                                     val request = GetCredentialRequest.Builder()
                                         .addCredentialOption(googleOption)
                                         .build()
-                                    val result = credentialManager.getCredential(
-                                        context = activity,
-                                        request = request,
-                                    )
+                                    val result = withTimeout(60_000) {
+                                        credentialManager.getCredential(
+                                            context = activity,
+                                            request = request,
+                                        )
+                                    }
                                     val credential = result.credential as? CustomCredential
                                     if (credential?.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                                         viewModel.googleSignInFailed()
@@ -181,8 +183,12 @@ fun LoginScreen(
                                     }
                                 } catch (_: GetCredentialCancellationException) {
                                     viewModel.cancelGoogleSignIn()
-                                } catch (_: Exception) {
-                                    viewModel.googleSignInFailed()
+                                } catch (_: NoCredentialException) {
+                                    viewModel.googleSignInNoCredential()
+                                } catch (_: TimeoutCancellationException) {
+                                    viewModel.googleCredentialTimedOut()
+                                } catch (error: Exception) {
+                                    viewModel.googleSignInFailed(error)
                                 }
                             }
                         }

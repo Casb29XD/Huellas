@@ -95,6 +95,9 @@
     <string name="login_google">Continuar con Google</string>
     <string name="error_google_config">Falta configurar GOOGLE_WEB_CLIENT_ID en app/.env y el proveedor Google en Supabase.</string>
     <string name="error_google_sign_in">No pudimos iniciar sesión con Google. Verifica la configuración e inténtalo de nuevo.</string>
+    <string name="error_google_server_timeout">Supabase tardó demasiado en responder. Revisa la conexión del celular e inténtalo de nuevo.</string>
+    <string name="error_google_credential_timeout">Google tardó demasiado en mostrar la cuenta. Inténtalo de nuevo.</string>
+    <string name="error_google_no_credential">Este dispositivo no tiene una cuenta Google disponible. Añade una cuenta desde Ajustes y vuelve a intentarlo.</string>
     <string name="login_no_account">¿No tienes cuenta? </string>
     <string name="register_title">Crear cuenta</string>
     <string name="field_name">Nombre</string>

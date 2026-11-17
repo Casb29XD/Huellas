@@ -95,6 +95,9 @@
     <string name="login_google">Continue with Google</string>
     <string name="error_google_config">Set GOOGLE_WEB_CLIENT_ID in app/.env and configure the Google provider in Supabase.</string>
     <string name="error_google_sign_in">We couldn\'t sign in with Google. Check the configuration and try again.</string>
+    <string name="error_google_server_timeout">Supabase took too long to respond. Check the phone\'s connection and try again.</string>
+    <string name="error_google_credential_timeout">Google took too long to show an account. Please try again.</string>
+    <string name="error_google_no_credential">This device has no Google account available. Add an account in Settings and try again.</string>
     <string name="login_no_account">Don\'t have an account? </string>
     <string name="register_title">Create account</string>
     <string name="field_name">Name</string>
